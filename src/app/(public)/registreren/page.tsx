@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowRight, Building2, CheckCircle2, Dumbbell } from "lucide-react";
+import { ArrowRight, Building2, CheckCircle2, Dumbbell, PlayCircle } from "lucide-react";
 import { RegisterForm } from "@/components/auth/register-form";
 import {
   Card,
@@ -32,9 +32,9 @@ const roleCards = [
 ];
 
 const onboardingSteps = [
+  "Eerst demo bekijken kan zonder eigen account.",
   "Account aanmaken met naam, e-mail en wachtwoord.",
-  "Rol kiezen: sportschool of instructeur.",
-  "Profiel afronden zodat matches en demo-data logisch voelen.",
+  "Profiel afronden zodat matches en opdrachten logisch voelen.",
 ];
 
 export default async function RegistrerenPage({
@@ -60,11 +60,31 @@ export default async function RegistrerenPage({
             Kies hoe je SportMatch ZZP wilt gebruiken.
           </h1>
           <p className="text-muted-foreground">
-            Je begint met een kort account. Daarna rond je gericht je profiel af,
-            zodat je als sportschool opdrachten kunt plaatsen of als instructeur
-            passende opdrachten ziet.
+            Je kunt eerst met een demo-account rondkijken. Wil je daarna verder,
+            dan maak je een kort account aan en rond je gericht je profiel af.
           </p>
         </div>
+
+        <Link
+          className="group block rounded-lg border border-primary/30 bg-primary/5 p-4 transition-colors hover:bg-primary/10"
+          href="/demo"
+        >
+          <div className="flex items-start gap-3">
+            <div className="rounded-md bg-primary/10 p-2 text-primary">
+              <PlayCircle className="h-5 w-5" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="font-semibold">Eerst demo bekijken</h2>
+                <ArrowRight className="h-4 w-4 shrink-0 text-primary transition-transform group-hover:translate-x-0.5" />
+              </div>
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                Bekijk het platform als sportschool, instructeur, planner of admin
+                voordat je zelf een account aanmaakt.
+              </p>
+            </div>
+          </div>
+        </Link>
 
         <div className="grid gap-3">
           {roleCards.map((card) => {
@@ -96,7 +116,7 @@ export default async function RegistrerenPage({
         </div>
 
         <div className="rounded-lg border border-border bg-muted/40 p-4">
-          <p className="font-medium">Wat gebeurt er na registratie?</p>
+          <p className="font-medium">Wat gebeurt er als je echt start?</p>
           <div className="mt-3 space-y-2">
             {onboardingSteps.map((step) => (
               <p className="flex gap-2 text-sm text-muted-foreground" key={step}>
@@ -118,6 +138,12 @@ export default async function RegistrerenPage({
         <CardContent>
           <RegisterForm defaultRole={defaultRole} />
           <p className="mt-4 text-sm text-muted-foreground">
+            Eerst kijken?{" "}
+            <Link className="font-medium text-primary hover:underline" href="/demo">
+              Open de demo
+            </Link>
+          </p>
+          <p className="mt-2 text-sm text-muted-foreground">
             Al een account?{" "}
             <Link className="font-medium text-primary hover:underline" href="/login">
               Log in
