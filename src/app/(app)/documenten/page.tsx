@@ -13,7 +13,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { getSessionProfile } from "@/lib/auth/session";
-import { documentTypeLabels, formatDate } from "@/lib/labels";
+import { documentTypeLabels, expiresWithinDays, formatDate } from "@/lib/labels";
 import { createClient } from "@/lib/supabase/server";
 import type { DocumentUpload } from "@/types/database";
 
@@ -45,15 +45,11 @@ export default async function DocumentenPage() {
       .map((document) => document.doc_type),
   );
 
-  const expiringSoon = documents.filter((document) => {
-    if (document.status !== "approved" || !document.expires_at) {
-      return false;
-    }
-    const daysLeft =
-      (new Date(document.expires_at).getTime() - Date.now()) /
-      (1000 * 60 * 60 * 24);
-    return daysLeft > 0 && daysLeft <= EXPIRY_WARNING_DAYS;
-  });
+  const expiringSoon = documents.filter(
+    (document) =>
+      document.status === "approved" &&
+      expiresWithinDays(document.expires_at, EXPIRY_WARNING_DAYS),
+  );
 
   return (
     <div className="mx-auto w-full max-w-3xl space-y-6 px-4 py-8">

@@ -125,3 +125,15 @@ export function formatTime(value: string): string {
   // tijden komen als "HH:MM:SS" uit Postgres
   return value.slice(0, 5);
 }
+
+export function expiresWithinDays(
+  expiresAt: string | null,
+  days: number,
+): boolean {
+  if (!expiresAt) {
+    return false;
+  }
+  const daysLeft =
+    (new Date(expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24);
+  return daysLeft > 0 && daysLeft <= days;
+}
