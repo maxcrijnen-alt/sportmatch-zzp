@@ -15,12 +15,26 @@ export const metadata: Metadata = {
   title: "Inloggen",
 };
 
-export default async function LoginPage() {
+const demoEmails: Record<string, string> = {
+  sportschool: "sportschool@sportmatch.test",
+  instructeur: "instructeur@sportmatch.test",
+  planner: "planner@sportmatch.test",
+  admin: "admin@sportmatch.test",
+};
+
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ demo?: string }>;
+}) {
   const profile = await getSessionProfile();
 
   if (profile) {
     redirect("/dashboard");
   }
+
+  const { demo } = await searchParams;
+  const defaultDemoEmail = demo ? demoEmails[demo] : undefined;
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-col px-4 py-16">
@@ -32,8 +46,16 @@ export default async function LoginPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <LoginForm />
+          <LoginForm defaultEmail={defaultDemoEmail} />
           <div className="mt-4 space-y-1 text-sm text-muted-foreground">
+            <p>
+              <Link
+                className="font-medium text-primary hover:underline"
+                href="/demo"
+              >
+                Bekijk eerst een demo zonder account aan te maken
+              </Link>
+            </p>
             <p>
               <Link
                 className="font-medium text-primary hover:underline"
