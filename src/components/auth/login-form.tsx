@@ -33,13 +33,13 @@ const demoAccounts = [
   },
 ];
 
-export function LoginForm() {
+export function LoginForm({ defaultEmail = "" }: { defaultEmail?: string }) {
   const [state, formAction, isPending] = useActionState(
     signInAction,
     initialState,
   );
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState(defaultEmail);
+  const [password, setPassword] = useState(defaultEmail ? demoPassword : "");
 
   const useDemoAccount = (demoEmail: string) => {
     setEmail(demoEmail);
