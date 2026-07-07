@@ -6,11 +6,37 @@ create role service_role nologin bypassrls;
 create schema if not exists auth;
 create schema if not exists storage;
 
+create schema if not exists extensions;
+create extension if not exists pgcrypto with schema extensions;
+
 create table auth.users (
   id uuid primary key default gen_random_uuid(),
+  instance_id uuid,
+  aud text,
+  role text,
   email text,
+  encrypted_password text,
+  email_confirmed_at timestamptz,
+  raw_app_meta_data jsonb not null default '{}'::jsonb,
   raw_user_meta_data jsonb not null default '{}'::jsonb,
-  created_at timestamptz not null default now()
+  confirmation_token text default '',
+  recovery_token text default '',
+  email_change text default '',
+  email_change_token_new text default '',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table auth.identities (
+  id uuid primary key default gen_random_uuid(),
+  provider_id text not null,
+  user_id uuid not null references auth.users (id) on delete cascade,
+  identity_data jsonb not null,
+  provider text not null,
+  last_sign_in_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (provider_id, provider)
 );
 
 -- Sessiecontext-stubs: leest instellingen die tests via set_config zetten.
