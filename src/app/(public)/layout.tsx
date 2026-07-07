@@ -9,6 +9,7 @@ const navItems = [
   { href: "/voor-instructeurs", label: "Voor instructeurs" },
   { href: "/voor-sportscholen", label: "Voor sportscholen" },
   { href: "/tarieven", label: "Tarieven" },
+  { href: "/demo", label: "Demo" },
   { href: "/faq", label: "FAQ" },
 ];
 
@@ -38,6 +39,9 @@ export default function PublicLayout({
           </nav>
 
           <div className="hidden items-center gap-2 lg:flex">
+            <Link href="/demo">
+              <Button variant="outline">Demo bekijken</Button>
+            </Link>
             <Link href="/login">
               <Button variant="ghost">Inloggen</Button>
             </Link>
@@ -95,6 +99,7 @@ export default function PublicLayout({
                 <li><Link className="hover:text-foreground" href="/voor-instructeurs">Voor instructeurs</Link></li>
                 <li><Link className="hover:text-foreground" href="/voor-sportscholen">Voor sportscholen</Link></li>
                 <li><Link className="hover:text-foreground" href="/tarieven">Tarieven</Link></li>
+                <li><Link className="hover:text-foreground" href="/demo">Demo bekijken</Link></li>
               </ul>
             </div>
             <div>
