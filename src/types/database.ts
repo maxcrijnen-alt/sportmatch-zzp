@@ -218,6 +218,32 @@ export interface JobConfirmation {
   confirmed_at: string | null;
 }
 
+export interface Replacement {
+  id: string;
+  job_id: string;
+  original_instructor_id: string;
+  proposed_instructor_id: string;
+  reason: string;
+  status: ReplacementStatus;
+  decided_by: string | null;
+  decided_at: string | null;
+  created_at: string;
+}
+
+export interface Cancellation {
+  id: string;
+  job_id: string;
+  cancelled_by: string;
+  side: PartySide;
+  reason: string;
+  hours_before_start: number | null;
+  compensation_pct: number;
+  compensation_note: string;
+  admin_adjusted: boolean;
+  admin_note: string;
+  created_at: string;
+}
+
 export interface DocumentUpload {
   id: string;
   user_id: string;
