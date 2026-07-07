@@ -1,5 +1,14 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import {
+  BadgeCheck,
+  Building2,
+  CalendarPlus,
+  CheckCircle2,
+  Dumbbell,
+  MapPin,
+  ShieldCheck,
+} from "lucide-react";
 import { InstructorOnboardingForm } from "@/components/onboarding/instructor-onboarding-form";
 import { OrganizationOnboardingForm } from "@/components/onboarding/organization-onboarding-form";
 import { Button } from "@/components/ui/button";
@@ -18,6 +27,42 @@ import type { City, Sport } from "@/types/database";
 export const metadata: Metadata = {
   title: "Profiel afronden",
 };
+
+const organizationSteps = [
+  {
+    icon: Building2,
+    title: "Organisatie vastleggen",
+    text: "Vul de bedrijfsnaam, het type organisatie en het telefoonnummer van de contactpersoon in.",
+  },
+  {
+    icon: MapPin,
+    title: "Eerste vestiging toevoegen",
+    text: "Leg de plaats en adresgegevens vast. Extra vestigingen kun je later toevoegen.",
+  },
+  {
+    icon: CalendarPlus,
+    title: "Eerste opdracht plaatsen",
+    text: "Na onboarding kun je direct een invaldienst, reeks lessen of vacature plaatsen.",
+  },
+];
+
+const instructorSteps = [
+  {
+    icon: Dumbbell,
+    title: "Profiel compleet maken",
+    text: "Vul je woonplaats, reisafstand, tarief, ervaring en specialisaties in voor betere matches.",
+  },
+  {
+    icon: ShieldCheck,
+    title: "Documenten voorbereiden",
+    text: "Na onboarding kun je diploma's, VOG, EHBO/BHV en verzekering toevoegen voor badges.",
+  },
+  {
+    icon: BadgeCheck,
+    title: "Opdrachten vinden",
+    text: "Daarna zie je passende opdrachten en kun je reageren of een tegenvoorstel doen.",
+  },
+];
 
 export default async function OnboardingPage() {
   const profile = await getSessionProfile();
@@ -43,6 +88,7 @@ export default async function OnboardingPage() {
     ]);
 
   const isOrganization = profile.role === "organization";
+  const steps = isOrganization ? organizationSteps : instructorSteps;
   const invites =
     (pendingInvites as unknown as {
       id: string;
@@ -51,59 +97,116 @@ export default async function OnboardingPage() {
     }[]) ?? [];
 
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-6 px-4 py-8">
-      {invites.length > 0 ? (
-        <Card className="border-primary">
+    <div className="mx-auto grid w-full max-w-5xl gap-8 px-4 py-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
+      <aside className="space-y-5">
+        <div className="space-y-3">
+          <p className="text-sm font-medium text-primary">
+            Stap 2 van 2: profiel afronden
+          </p>
+          <h1 className="text-3xl font-bold tracking-tight">
+            {isOrganization
+              ? "Richt je sportschool klaar voor je eerste opdracht."
+              : "Maak je instructeursprofiel klaar voor passende opdrachten."}
+          </h1>
+          <p className="text-muted-foreground">
+            {isOrganization
+              ? "Na deze stap kun je vestigingen beheren, opdrachten plaatsen en reacties van instructeurs vergelijken."
+              : "Na deze stap kan SportMatch ZZP opdrachten beter matchen op sport, afstand, tarief en ervaring."}
+          </p>
+        </div>
+
+        <div className="grid gap-3">
+          {steps.map((step) => {
+            const Icon = step.icon;
+
+            return (
+              <div
+                className="rounded-lg border border-border bg-card p-4"
+                key={step.title}
+              >
+                <div className="flex items-start gap-3">
+                  <div className="rounded-md bg-primary/10 p-2 text-primary">
+                    <Icon className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h2 className="font-semibold">{step.title}</h2>
+                    <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                      {step.text}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="rounded-lg border border-primary/30 bg-primary/5 p-4">
+          <p className="flex gap-2 text-sm font-medium">
+            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+            Je kunt later alles aanpassen
+          </p>
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">
+            Deze onboarding zet alleen de basis goed. Details zoals extra
+            vestigingen, documenten, beschikbaarheid en teamleden kun je daarna
+            rustig aanvullen vanuit je dashboard.
+          </p>
+        </div>
+      </aside>
+
+      <div className="space-y-6">
+        {invites.length > 0 ? (
+          <Card className="border-primary">
+            <CardHeader>
+              <CardTitle className="text-lg">Je bent uitgenodigd</CardTitle>
+              <CardDescription>
+                Sluit je aan bij een bestaande organisatie in plaats van een
+                nieuwe aan te maken.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {invites.map((invite) => (
+                <form
+                  action={acceptOrgInviteAction.bind(null, invite.id)}
+                  className="flex items-center justify-between gap-3 rounded-lg border border-border p-3"
+                  key={invite.id}
+                >
+                  <p className="text-sm font-medium">
+                    {invite.organization?.name ?? "Organisatie"}
+                  </p>
+                  <Button size="sm" type="submit">
+                    Uitnodiging accepteren
+                  </Button>
+                </form>
+              ))}
+            </CardContent>
+          </Card>
+        ) : null}
+
+        <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Je bent uitgenodigd</CardTitle>
+            <CardTitle className="text-xl">
+              {isOrganization
+                ? "Richt je organisatie in"
+                : "Maak je instructeursprofiel af"}
+            </CardTitle>
             <CardDescription>
-              Sluit je aan bij een bestaande organisatie in plaats van een
-              nieuwe aan te maken.
+              {isOrganization
+                ? "Vul de gegevens van je organisatie en je eerste vestiging in. Daarna kun je direct opdrachten plaatsen."
+                : "Met een compleet profiel krijg je betere matches en meer reacties van organisaties."}
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-2">
-            {invites.map((invite) => (
-              <form
-                action={acceptOrgInviteAction.bind(null, invite.id)}
-                className="flex items-center justify-between gap-3 rounded-lg border border-border p-3"
-                key={invite.id}
-              >
-                <p className="text-sm font-medium">
-                  {invite.organization?.name ?? "Organisatie"}
-                </p>
-                <Button size="sm" type="submit">
-                  Uitnodiging accepteren
-                </Button>
-              </form>
-            ))}
+          <CardContent>
+            {isOrganization ? (
+              <OrganizationOnboardingForm cities={(cities as City[]) ?? []} />
+            ) : (
+              <InstructorOnboardingForm
+                cities={(cities as City[]) ?? []}
+                sports={(sports as Sport[]) ?? []}
+              />
+            )}
           </CardContent>
         </Card>
-      ) : null}
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-xl">
-            {isOrganization
-              ? "Richt je organisatie in"
-              : "Maak je instructeursprofiel af"}
-          </CardTitle>
-          <CardDescription>
-            {isOrganization
-              ? "Vul de gegevens van je organisatie en je eerste vestiging in. Daarna kun je direct opdrachten plaatsen."
-              : "Met een compleet profiel krijg je betere matches en meer reacties van organisaties."}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isOrganization ? (
-            <OrganizationOnboardingForm cities={(cities as City[]) ?? []} />
-          ) : (
-            <InstructorOnboardingForm
-              cities={(cities as City[]) ?? []}
-              sports={(sports as Sport[]) ?? []}
-            />
-          )}
-        </CardContent>
-      </Card>
+      </div>
     </div>
   );
 }
