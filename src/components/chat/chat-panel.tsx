@@ -6,6 +6,7 @@ import { SendHorizonal } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { sendChatMessageAction } from "@/lib/chat/actions";
+import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import type { ChatMessage } from "@/types/database";
 
@@ -31,6 +32,33 @@ export function ChatPanel({
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ block: "end" });
   }, [messages.length]);
+
+  // Realtime updates via Supabase; polling blijft als vangnet actief.
+  useEffect(() => {
+    const supabase = createClient();
+
+    if (!supabase) {
+      return;
+    }
+
+    const channel = supabase
+      .channel(`chat-${chatId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "chat_messages",
+          filter: `chat_id=eq.${chatId}`,
+        },
+        () => router.refresh(),
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [chatId, router]);
 
   useEffect(() => {
     const interval = setInterval(() => router.refresh(), REFRESH_INTERVAL_MS);

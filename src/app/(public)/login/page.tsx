@@ -33,12 +33,25 @@ export default async function LoginPage() {
         </CardHeader>
         <CardContent>
           <LoginForm />
-          <p className="mt-4 text-sm text-muted-foreground">
-            Nog geen account?{" "}
-            <Link className="font-medium text-primary hover:underline" href="/registreren">
-              Registreer gratis
-            </Link>
-          </p>
+          <div className="mt-4 space-y-1 text-sm text-muted-foreground">
+            <p>
+              <Link
+                className="font-medium text-primary hover:underline"
+                href="/wachtwoord-vergeten"
+              >
+                Wachtwoord vergeten?
+              </Link>
+            </p>
+            <p>
+              Nog geen account?{" "}
+              <Link
+                className="font-medium text-primary hover:underline"
+                href="/registreren"
+              >
+                Registreer gratis
+              </Link>
+            </p>
+          </div>
         </CardContent>
       </Card>
     </div>

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { AvatarUpload } from "@/components/profile/avatar-upload";
 import { InstructorDetailsForm } from "@/components/profile/instructor-details-form";
 import { ProfileForm } from "@/components/profile/profile-form";
 import {
@@ -101,7 +102,12 @@ export default async function ProfielPage() {
             gedeeld na een bevestigde opdracht.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-6">
+          <AvatarUpload
+            avatarUrl={profile.avatar_url}
+            name={profile.full_name}
+            userId={profile.id}
+          />
           <ProfileForm cities={(cities as City[]) ?? []} profile={profile} />
         </CardContent>
       </Card>
