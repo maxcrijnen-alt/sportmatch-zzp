@@ -46,14 +46,14 @@ voor de app zelf is een Supabase-project nodig.
 4. Zet e-mailbevestiging uit voor de testfase: Authentication → Sign in /
    Providers → Email → schakel "Confirm email" uit. (Anders moet elke
    registratie eerst een e-mail bevestigen.)
-5. Optioneel: demo-data laden:
+5. Optioneel: demo-data laden. Dat kan op twee manieren:
+   - **Zonder terminal:** plak `supabase/seed_demo.sql` in de SQL-editor en
+     klik Run (aanbevolen — geen service-role key nodig).
+   - **Via de terminal:** `npm run seed:demo` (vereist
+     `SUPABASE_SERVICE_ROLE_KEY` in `.env.local`).
 
-```bash
-npm run seed:demo
-```
-
-Dit maakt demo-accounts, 20 instructeurs, 5 organisaties met 8 vestigingen
-en 19 opdrachten aan.
+Beide maken demo-accounts, 20 instructeurs, 5 organisaties met 8
+vestigingen en 16+ opdrachten aan.
 
 ## Demo-accounts
 
