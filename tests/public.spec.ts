@@ -7,8 +7,8 @@ test("homepage toont propositie en CTA's", async ({ page }) => {
   await expect(
     page.getByRole("heading", { level: 1 }),
   ).toContainText("sportinstructeur");
-  await expect(page.getByRole("link", { name: "Ik ben instructeur" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Ik zoek instructeurs" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Start als instructeur" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Start als sportschool" })).toBeVisible();
 });
 
 test("homepage toont juridische disclaimer", async ({ page }) => {
