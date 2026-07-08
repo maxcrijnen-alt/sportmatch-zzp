@@ -18,8 +18,6 @@ export const metadata: Metadata = {
 const demoEmails: Record<string, string> = {
   sportschool: "sportschool@sportmatch.test",
   instructeur: "instructeur@sportmatch.test",
-  planner: "planner@sportmatch.test",
-  admin: "admin@sportmatch.test",
 };
 
 export default async function LoginPage({
