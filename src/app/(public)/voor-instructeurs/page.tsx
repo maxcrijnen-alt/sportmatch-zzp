@@ -128,7 +128,7 @@ export default function VoorInstructeursPage() {
             </Link>
             <Link href="/login?demo=instructeur">
               <Button className="w-full sm:w-auto" size="lg" variant="outline">
-                Bekijk instructeur-demo
+                Bekijk demo als instructeur
               </Button>
             </Link>
           </div>
@@ -168,9 +168,9 @@ export default function VoorInstructeursPage() {
               waarop je reageert.
             </p>
           </div>
-          <Link href="/demo">
+          <Link href="/login?demo=instructeur">
             <Button className="w-full sm:w-auto" variant="outline">
-              Eerst rondkijken
+              Bekijk demo als instructeur
             </Button>
           </Link>
         </div>
@@ -271,11 +271,11 @@ export default function VoorInstructeursPage() {
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">
           <Link href="/login?demo=instructeur">
-            <Button className="w-full sm:w-auto">Demo openen</Button>
+            <Button className="w-full sm:w-auto">Bekijk demo als instructeur</Button>
           </Link>
           <Link href="/registreren?rol=instructeur">
             <Button className="w-full sm:w-auto" variant="outline">
-              Gratis profiel maken
+              Start 30 dagen gratis
             </Button>
           </Link>
         </div>
