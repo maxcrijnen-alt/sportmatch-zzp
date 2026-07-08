@@ -13,23 +13,13 @@ const demoPassword = "SportMatch2026!";
 const demoAccounts = [
   {
     label: "Sportschool",
-    description: "Eigenaar FitZone Utrecht",
+    description: "Opdrachten plaatsen en reacties beoordelen",
     email: "sportschool@sportmatch.test",
   },
   {
     label: "Instructeur",
-    description: "Profiel met historie en badges",
+    description: "Opdrachten zoeken, reageren en opvolgen",
     email: "instructeur@sportmatch.test",
-  },
-  {
-    label: "Planner",
-    description: "Teamlid bij FitZone Utrecht",
-    email: "planner@sportmatch.test",
-  },
-  {
-    label: "Admin",
-    description: "Beheeromgeving controleren",
-    email: "admin@sportmatch.test",
   },
 ];
 
@@ -86,7 +76,8 @@ export function LoginForm({ defaultEmail = "" }: { defaultEmail?: string }) {
           <div>
             <p className="text-sm font-medium">Demo-accounts</p>
             <p className="text-xs text-muted-foreground">
-              Kies een rol om direct met gevulde inloggegevens te testen.
+              Kies sportschool of instructeur om direct met gevulde
+              inloggegevens te testen.
             </p>
           </div>
         </div>
@@ -108,7 +99,7 @@ export function LoginForm({ defaultEmail = "" }: { defaultEmail?: string }) {
           ))}
         </div>
         <p className="mt-2 text-xs text-muted-foreground">
-          Alle demo-accounts gebruiken wachtwoord {demoPassword}.
+          Beide demo-accounts gebruiken wachtwoord {demoPassword}.
         </p>
       </div>
 
