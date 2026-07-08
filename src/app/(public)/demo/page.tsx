@@ -219,7 +219,7 @@ export default function DemoPage() {
         <div>
           <p className="font-semibold">Daarna pas echt starten</p>
           <p className="mt-1 text-sm leading-6 text-muted-foreground">
-            Alle demo-accounts gebruiken hetzelfde wachtwoord: SportMatch2026!.
+            Alle demo-accounts gebruiken hetzelfde wachtwoord: SportMatch2026!
             Bevalt het platform, dan maak je daarna gratis je eigen account aan.
           </p>
         </div>
