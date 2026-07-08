@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Users } from "lucide-react";
+import { CheckCircle2, Users } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,12 @@ export const metadata: Metadata = {
 interface ApplicationRow extends JobApplication {
   job: { id: string; title: string; starts_on: string } | null;
 }
+
+const candidateReviewTips = [
+  "Vergelijk eerst beschikbaarheid, tarief en afstand voor de specifieke opdracht.",
+  "Gebruik badges, betrouwbaarheid en berichttekst als extra vertrouwen voordat je bevestigt.",
+  "Open de opdracht om de kandidaat in context te bekijken en de volgende stap te nemen.",
+];
 
 export default async function KandidatenPage() {
   const profile = await getSessionProfile();
@@ -83,14 +89,36 @@ export default async function KandidatenPage() {
         </p>
       </div>
 
+      <Card className="border-primary/30 bg-primary/5">
+        <CardContent className="pt-5">
+          <p className="text-sm font-medium text-primary">
+            Zo kies je sneller de juiste instructeur
+          </p>
+          <div className="mt-4 grid gap-2 md:grid-cols-3">
+            {candidateReviewTips.map((tip) => (
+              <p
+                className="flex gap-2 rounded-md border border-border bg-background p-3 text-sm leading-6"
+                key={tip}
+              >
+                <CheckCircle2 className="mt-1 h-4 w-4 shrink-0 text-primary" />
+                <span>{tip}</span>
+              </p>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
       {applications.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
             <Users className="h-8 w-8 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">
-              Geen openstaande reacties. Plaats een opdracht of nodig
-              instructeurs uit.
-            </p>
+            <div>
+              <p className="font-medium">Nog geen openstaande reacties</p>
+              <p className="mt-2 max-w-md text-sm leading-6 text-muted-foreground">
+                Plaats of verbeter je opdracht. Duidelijke tijden, vergoeding,
+                locatie en kwalificaties maken reageren makkelijker.
+              </p>
+            </div>
             <Link href="/organisatie/opdrachten/nieuw">
               <Button variant="outline">Nieuwe opdracht</Button>
             </Link>
