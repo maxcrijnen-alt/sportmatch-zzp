@@ -12,12 +12,12 @@ const demoPassword = "SportMatch2026!";
 
 const demoAccounts = [
   {
-    label: "Sportschool",
+    label: "Demo als sportschool",
     description: "Opdrachten plaatsen en reacties beoordelen",
     email: "sportschool@sportmatch.test",
   },
   {
-    label: "Instructeur",
+    label: "Demo als instructeur",
     description: "Opdrachten zoeken, reageren en opvolgen",
     email: "instructeur@sportmatch.test",
   },
@@ -35,6 +35,10 @@ export function LoginForm({ defaultEmail = "" }: { defaultEmail?: string }) {
     setEmail(demoEmail);
     setPassword(demoPassword);
   };
+
+  const demoSelected =
+    password === demoPassword &&
+    demoAccounts.some((account) => account.email === email);
 
   return (
     <form action={formAction} className="space-y-4">
@@ -99,12 +103,17 @@ export function LoginForm({ defaultEmail = "" }: { defaultEmail?: string }) {
           ))}
         </div>
         <p className="mt-2 text-xs text-muted-foreground">
-          Beide demo-accounts gebruiken wachtwoord {demoPassword}.
+          Beide demo-accounts gebruiken wachtwoord {demoPassword}. Klik daarna
+          op Log in met demo-account.
         </p>
       </div>
 
       <Button className="w-full" disabled={isPending} type="submit">
-        {isPending ? "Bezig met inloggen…" : "Inloggen"}
+        {isPending
+          ? "Bezig met inloggen…"
+          : demoSelected
+            ? "Log in met demo-account"
+            : "Inloggen"}
       </Button>
     </form>
   );
