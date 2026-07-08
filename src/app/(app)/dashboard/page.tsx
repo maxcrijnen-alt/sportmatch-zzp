@@ -32,26 +32,32 @@ export const metadata: Metadata = {
 
 const organizationNextActions = [
   {
-    title: "Bekijk of plaats een opdracht",
-    text: "Maak concreet wat je zoekt: sport, datum, tijd, vergoeding en locatie.",
+    title: "Plaats of bekijk je eerste opdracht",
+    text: "Maak sport, datum, tijd, vergoeding, locatie en vereiste kwalificaties concreet. In de demo zie je hoe dat eruitziet.",
     href: "/organisatie/opdrachten/nieuw",
-    cta: "Opdracht plaatsen",
+    cta: "Eerste opdracht",
   },
   {
-    title: "Vergelijk reacties",
-    text: "Check beschikbaarheid, tarief, afstand, documenten en opmerkingen van kandidaten.",
+    title: "Vergelijk kandidaten zonder zoeken",
+    text: "Open reacties en vergelijk beschikbaarheid, tarief, afstand, documenten en bericht op dezelfde plek.",
     href: "/organisatie/kandidaten",
     cta: "Kandidaten bekijken",
   },
   {
-    title: "Zet je team klaar",
-    text: "Nodig planners uit zodat zij mee kunnen kijken en berichten kunnen opvolgen.",
-    href: "/organisatie/medewerkers",
-    cta: "Team beheren",
+    title: "Zet vestiging en team klaar",
+    text: "Controleer je vestigingen en nodig planners uit zodat vervolgvragen en berichten snel worden opgepakt.",
+    href: "/organisatie/vestigingen",
+    cta: "Vestigingen beheren",
   },
 ];
 
 const instructorNextActions = [
+  {
+    title: "Check profiel, reisafstand en tarief",
+    text: "Je profiel bepaalt welke opdrachten logisch bovenaan staan en hoe sportscholen jou beoordelen.",
+    href: "/profiel",
+    cta: "Profiel openen",
+  },
   {
     title: "Bekijk passende opdrachten",
     text: "Start met opdrachten binnen je reisafstand en filter daarna op sport, datum of vergoeding.",
@@ -59,14 +65,8 @@ const instructorNextActions = [
     cta: "Opdrachten bekijken",
   },
   {
-    title: "Reageer gericht",
-    text: "Gebruik je reactie om beschikbaarheid, tarief en eventuele vragen meteen duidelijk te maken.",
-    href: "/opdrachten",
-    cta: "Matches openen",
-  },
-  {
-    title: "Volg je opvolging",
-    text: "Bekijk open reacties, bevestigingen en gesprekken zodat niets blijft hangen.",
+    title: "Volg reacties en uitnodigingen",
+    text: "Bekijk open reacties, bevestigingen en gesprekken zodat geen opvolging blijft hangen.",
     href: "/mijn-reacties",
     cta: "Mijn reacties",
   },
@@ -120,6 +120,8 @@ export default async function DashboardPage() {
     const hasInactiveLocation = subscriptions.some(
       (subscription) => !subscriptionGrantsAccess(subscription),
     );
+    const openJobCount = jobsResult.count ?? 0;
+    const pendingApplicationCount = applicationsResult.count ?? 0;
 
     return (
       <div className="mx-auto w-full max-w-5xl space-y-6 px-4 py-8">
@@ -128,9 +130,8 @@ export default async function DashboardPage() {
             {orgContext.organization.name}
           </h1>
           <p className="text-sm text-muted-foreground">
-            Overzicht van je opdrachten, reacties en volgende acties. Nieuw of in
-            demo? Bekijk eerst opdrachten, kandidaten en berichten om de route te
-            voelen.
+            Je startpunt voor opdrachten, kandidaten en opvolging. Begin bij je
+            eerste opdracht of pak nieuwe reacties direct op.
           </p>
         </div>
 
@@ -152,20 +153,36 @@ export default async function DashboardPage() {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <p className="text-sm font-medium text-primary">
-                Demo-route en volgende beste stap
+                Start hier als sportschool
               </p>
               <h2 className="mt-1 text-xl font-semibold tracking-tight">
-                Zie hoe een opdracht concreet wordt en plaats daarna je eerste eigen opdracht.
+                {openJobCount > 0
+                  ? pendingApplicationCount > 0
+                    ? "Vergelijk nieuwe reacties en kies wie je wilt spreken."
+                    : "Houd je open opdrachten scherp en deel ze met passende instructeurs."
+                  : "Plaats je eerste opdracht in een paar minuten."}
               </h2>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                In de demo kijk je naar open opdrachten, reacties en berichten.
-                In je echte account gebruik je dezelfde route om sport, datum,
-                tijd, locatie, vergoeding en afspraken duidelijk vast te leggen.
+                De snelste route naar waarde: leg een concrete opdracht vast,
+                vergelijk reacties op beschikbaarheid en tarief, en rond de
+                afspraak af via berichten en bevestiging.
               </p>
             </div>
-            <Link href="/organisatie/opdrachten/nieuw">
+            <Link
+              href={
+                pendingApplicationCount > 0
+                  ? "/organisatie/kandidaten"
+                  : openJobCount > 0
+                    ? "/organisatie/opdrachten"
+                    : "/organisatie/opdrachten/nieuw"
+              }
+            >
               <Button className="w-full sm:w-auto">
-                Nieuwe opdracht
+                {pendingApplicationCount > 0
+                  ? "Kandidaten bekijken"
+                  : openJobCount > 0
+                    ? "Opdrachten bekijken"
+                    : "Nieuwe opdracht"}
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </Link>
@@ -197,7 +214,7 @@ export default async function DashboardPage() {
           <Card>
             <CardHeader className="pb-2">
               <CardDescription>Open opdrachten</CardDescription>
-              <CardTitle className="text-3xl">{jobsResult.count ?? 0}</CardTitle>
+              <CardTitle className="text-3xl">{openJobCount}</CardTitle>
             </CardHeader>
             <CardContent>
               <Link
@@ -212,7 +229,7 @@ export default async function DashboardPage() {
             <CardHeader className="pb-2">
               <CardDescription>Nieuwe reacties</CardDescription>
               <CardTitle className="text-3xl">
-                {applicationsResult.count ?? 0}
+                {pendingApplicationCount}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -303,6 +320,7 @@ export default async function DashboardPage() {
 
   const subscription = subscriptionResult.data as Subscription | null;
   const hasAccess = subscriptionGrantsAccess(subscription);
+  const pendingApplicationCount = applicationsResult.count ?? 0;
 
   return (
     <div className="mx-auto w-full max-w-5xl space-y-6 px-4 py-8">
@@ -311,9 +329,8 @@ export default async function DashboardPage() {
           Hoi {profile.full_name.split(" ")[0]}!
         </h1>
         <p className="text-sm text-muted-foreground">
-          Dit is jouw overzicht voor opdrachten, reacties en gesprekken. Nieuw
-          of in demo? Open eerst opdrachten en bekijk waarom ze wel of niet
-          passen.
+          Je startpunt voor profiel, passende opdrachten, reacties en gesprekken.
+          Begin met je profiel en open daarna opdrachten die echt passen.
         </p>
       </div>
 
@@ -334,20 +351,22 @@ export default async function DashboardPage() {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <p className="text-sm font-medium text-primary">
-              Demo-route en volgende beste stap
+              Start hier als instructeur
             </p>
             <h2 className="mt-1 text-xl font-semibold tracking-tight">
-              Open opdrachten, check de match en reageer pas als tijd en vergoeding kloppen.
+              {pendingApplicationCount > 0
+                ? "Volg je open reacties en reageer snel op opvolging."
+                : "Check je profiel en open daarna passende opdrachten."}
             </h2>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              In de demo start je met passende opdrachten binnen je reisafstand.
-              Gebruik daarna filters voor sport, datum en minimale vergoeding,
-              en open een opdracht om details, vertrouwen en reactieflow te zien.
+              De snelste route naar waarde: zet reisafstand, tarief en
+              specialisaties goed, bekijk opdrachten binnen je voorkeuren en
+              reageer alleen wanneer tijd, locatie en vergoeding kloppen.
             </p>
           </div>
-          <Link href="/opdrachten">
+          <Link href={pendingApplicationCount > 0 ? "/mijn-reacties" : "/opdrachten"}>
             <Button className="w-full sm:w-auto">
-              Opdrachten bekijken
+              {pendingApplicationCount > 0 ? "Mijn reacties" : "Opdrachten bekijken"}
               <ArrowRight className="h-4 w-4" />
             </Button>
           </Link>
@@ -380,7 +399,7 @@ export default async function DashboardPage() {
           <CardHeader className="pb-2">
             <CardDescription>Openstaande reacties</CardDescription>
             <CardTitle className="text-3xl">
-              {applicationsResult.count ?? 0}
+              {pendingApplicationCount}
             </CardTitle>
           </CardHeader>
           <CardContent>
