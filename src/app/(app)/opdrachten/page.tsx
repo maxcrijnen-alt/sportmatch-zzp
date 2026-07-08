@@ -28,9 +28,9 @@ interface Filters {
 }
 
 const selectionTips = [
-  "Begin met passende opdrachten binnen je reisafstand.",
-  "Controleer sport, datum, locatie en vergoeding voordat je reageert.",
-  "Open een opdrachtkaart om matchscore, details en reactieflow te zien.",
+  "Je profiel, specialisaties, reisafstand en tarief bepalen welke opdrachten bovenaan staan.",
+  "Controleer sport, datum, locatie, vergoeding en vereiste kwalificaties voordat je reageert.",
+  "Open een opdrachtkaart om matchscore, details, contactafspraken en reactieflow te zien.",
 ];
 
 export default async function OpdrachtenPage({
@@ -122,6 +122,11 @@ export default async function OpdrachtenPage({
           </p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">
+          <Link href="/profiel">
+            <Button className="w-full sm:w-auto" variant="outline">
+              Profiel en tarief
+            </Button>
+          </Link>
           {hasFilters ? (
             <Link href="/opdrachten">
               <Button className="w-full sm:w-auto" variant="outline">
@@ -139,12 +144,12 @@ export default async function OpdrachtenPage({
 
       <div className="rounded-lg border border-primary/30 bg-primary/5 p-4">
         <p className="text-sm font-medium text-primary">
-          Demo-route: zo kies je sneller
+          Start hier: van profiel naar passende opdracht
         </p>
         <p className="mt-1 text-sm leading-6 text-muted-foreground">
-          Begin met passende opdrachten. Gebruik daarna filters voor sport, datum,
-          afstand en minimale vergoeding. Zie je te weinig? Open dan alle
-          opdrachten en kijk of je reisafstand of tarief wilt aanpassen.
+          Begin met opdrachten die passen bij je profiel. Zie je te weinig of
+          klopt de match niet? Controleer dan je specialisaties, reisafstand en
+          tarief op je profiel en gebruik daarna de filters hieronder.
         </p>
         <div className="mt-4 grid gap-2 md:grid-cols-3">
           {selectionTips.map((tip) => (
@@ -268,11 +273,16 @@ export default async function OpdrachtenPage({
             <div>
               <p className="font-medium">Geen opdrachten gevonden</p>
               <p className="mt-2 max-w-md text-sm leading-6 text-muted-foreground">
-                Probeer minder filters, bekijk alle opdrachten of pas je
+                Probeer minder filters, bekijk alle opdrachten of pas je profiel,
                 reisafstand en minimale vergoeding aan.
               </p>
             </div>
             <div className="flex w-full flex-col justify-center gap-2 sm:w-auto sm:flex-row">
+              <Link href="/profiel">
+                <Button className="w-full sm:w-auto" variant="outline">
+                  Profiel aanpassen
+                </Button>
+              </Link>
               <Link href="/opdrachten">
                 <Button className="w-full sm:w-auto" variant="outline">
                   Filters wissen
