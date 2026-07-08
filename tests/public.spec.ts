@@ -13,6 +13,9 @@ test("homepage toont propositie en CTA's", async ({ page }) => {
   await expect(
     page.getByRole("link", { name: "Start als sportschool" }).first(),
   ).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: /demo/i }).first(),
+  ).toBeVisible();
 });
 
 test("homepage toont juridische disclaimer", async ({ page }) => {
@@ -23,8 +26,9 @@ test("homepage toont juridische disclaimer", async ({ page }) => {
 
 for (const [path, heading] of [
   ["/hoe-het-werkt", "Hoe het werkt"],
-  ["/voor-instructeurs", "Meer opdrachten"],
-  ["/voor-sportscholen", "lesuitval"],
+  ["/voor-instructeurs", "Vind opdrachten"],
+  ["/voor-sportscholen", "Vul je rooster"],
+  ["/demo", "Bekijk SportMatch ZZP"],
   ["/tarieven", "Tarieven"],
   ["/faq", "Veelgestelde vragen"],
   ["/privacy", "Privacybeleid"],
@@ -38,6 +42,18 @@ for (const [path, heading] of [
   });
 }
 
+test("demo-pagina toont alleen sportschool en instructeur demo", async ({ page }) => {
+  await page.goto("/demo");
+  await expect(
+    page.getByRole("link", { name: /Bekijk demo als sportschool/i }).first(),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: /Bekijk demo als instructeur/i }).first(),
+  ).toBeVisible();
+  await expect(page.getByText("planner-demo", { exact: false })).toHaveCount(0);
+  await expect(page.getByText("admin-demo", { exact: false })).toHaveCount(0);
+});
+
 test("tarieven noemt prijs en proefperiode", async ({ page }) => {
   await page.goto("/tarieven");
   await expect(page.getByText("€ 5").first()).toBeVisible();
@@ -50,6 +66,19 @@ test("loginpagina toont formulier", async ({ page }) => {
   await expect(page.getByLabel("Wachtwoord")).toBeVisible();
   await expect(
     page.getByRole("main").getByRole("button", { name: "Inloggen" }),
+  ).toBeVisible();
+});
+
+test("demo-login vult sportschool account vooraf in", async ({ page }) => {
+  await page.goto("/login?demo=sportschool");
+  await expect(page.getByLabel("E-mailadres")).toHaveValue(
+    "sportschool@sportmatch.test",
+  );
+  await expect(page.getByLabel("Wachtwoord")).toHaveValue("SportMatch2026!");
+  await expect(
+    page.getByRole("main").getByRole("button", {
+      name: "Log in met demo-account",
+    }),
   ).toBeVisible();
 });
 
