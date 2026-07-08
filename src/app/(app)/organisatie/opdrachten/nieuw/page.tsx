@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { CheckCircle2 } from "lucide-react";
 import { CreateJobForm } from "@/components/jobs/create-job-form";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
@@ -18,6 +19,13 @@ import type { Qualification, Sport, Subscription } from "@/types/database";
 export const metadata: Metadata = {
   title: "Nieuwe opdracht",
 };
+
+const strongJobChecklist = [
+  "Kies sport, soort opdracht, datum, begin- en eindtijd zo concreet mogelijk.",
+  "Zet vergoeding, locatie en contactpersoon direct duidelijk in de opdracht.",
+  "Voeg vereiste diploma's of ervaring toe als die echt nodig zijn.",
+  "Beschrijf kort wat de instructeur vooraf moet weten om snel ja of nee te zeggen.",
+];
 
 export default async function NieuweOpdrachtPage() {
   const profile = await getSessionProfile();
@@ -64,6 +72,27 @@ export default async function NieuweOpdrachtPage() {
         </p>
       </div>
 
+      <Card className="border-primary/30 bg-primary/5">
+        <CardHeader>
+          <CardTitle className="text-xl">Maak je opdracht direct boekbaar</CardTitle>
+          <CardDescription>
+            Hoe concreter de opdracht, hoe sneller instructeurs kunnen reageren
+            met een bruikbaar antwoord.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-2 sm:grid-cols-2">
+          {strongJobChecklist.map((item) => (
+            <p
+              className="flex gap-2 rounded-md border border-border bg-background p-3 text-sm leading-6"
+              key={item}
+            >
+              <CheckCircle2 className="mt-1 h-4 w-4 shrink-0 text-primary" />
+              <span>{item}</span>
+            </p>
+          ))}
+        </CardContent>
+      </Card>
+
       {activeLocations.length === 0 ? (
         <Alert variant="warning">
           <AlertTitle>Geen vestiging met actieve toegang</AlertTitle>
@@ -78,7 +107,8 @@ export default async function NieuweOpdrachtPage() {
           <CardHeader>
             <CardTitle>Opdrachtgegevens</CardTitle>
             <CardDescription>
-              Hoe duidelijker de opdracht, hoe beter de reacties.
+              Vul de basis compleet in: daarna kun je reacties vergelijken op
+              beschikbaarheid, tarief, afstand en vertrouwen.
             </CardDescription>
           </CardHeader>
           <CardContent>
