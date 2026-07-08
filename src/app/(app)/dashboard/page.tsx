@@ -5,6 +5,7 @@ import {
   ArrowRight,
   Briefcase,
   CalendarCheck,
+  CheckCircle2,
   Inbox,
   MessageSquare,
   Search,
@@ -28,6 +29,48 @@ import type { Subscription } from "@/types/database";
 export const metadata: Metadata = {
   title: "Dashboard",
 };
+
+const organizationNextActions = [
+  {
+    title: "Plaats je eerste opdracht",
+    text: "Maak concreet wat je zoekt: sport, datum, tijd, vergoeding en locatie.",
+    href: "/organisatie/opdrachten/nieuw",
+    cta: "Opdracht plaatsen",
+  },
+  {
+    title: "Vergelijk reacties",
+    text: "Check beschikbaarheid, tarief, afstand, documenten en opmerkingen van kandidaten.",
+    href: "/organisatie/kandidaten",
+    cta: "Kandidaten bekijken",
+  },
+  {
+    title: "Zet je team klaar",
+    text: "Nodig planners uit zodat zij mee kunnen kijken en berichten kunnen opvolgen.",
+    href: "/organisatie/medewerkers",
+    cta: "Team beheren",
+  },
+];
+
+const instructorNextActions = [
+  {
+    title: "Bekijk passende opdrachten",
+    text: "Start met opdrachten binnen je reisafstand en filter daarna op sport, datum of vergoeding.",
+    href: "/opdrachten",
+    cta: "Opdrachten bekijken",
+  },
+  {
+    title: "Reageer gericht",
+    text: "Gebruik je reactie om beschikbaarheid, tarief en eventuele vragen meteen duidelijk te maken.",
+    href: "/opdrachten",
+    cta: "Matches openen",
+  },
+  {
+    title: "Volg je opvolging",
+    text: "Bekijk open reacties, bevestigingen en gesprekken zodat niets blijft hangen.",
+    href: "/mijn-reacties",
+    cta: "Mijn reacties",
+  },
+];
 
 export default async function DashboardPage() {
   const profile = await getSessionProfile();
@@ -85,7 +128,7 @@ export default async function DashboardPage() {
             {orgContext.organization.name}
           </h1>
           <p className="text-sm text-muted-foreground">
-            Overzicht van je opdrachten en kandidaten.
+            Overzicht van je opdrachten, reacties en volgende acties.
           </p>
         </div>
 
@@ -102,6 +145,50 @@ export default async function DashboardPage() {
             </AlertDescription>
           </Alert>
         ) : null}
+
+        <section className="rounded-lg border border-primary/30 bg-primary/5 p-5">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="text-sm font-medium text-primary">
+                Volgende beste stap
+              </p>
+              <h2 className="mt-1 text-xl font-semibold tracking-tight">
+                Maak je eerste opdracht zo concreet dat instructeurs direct kunnen reageren.
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                Noem sport, datum, tijd, locatie, vergoeding en wat iemand moet
+                kunnen. Daarna kun je reacties vergelijken en digitaal bevestigen.
+              </p>
+            </div>
+            <Link href="/organisatie/opdrachten/nieuw">
+              <Button className="w-full sm:w-auto">
+                Nieuwe opdracht
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </Link>
+          </div>
+          <div className="mt-5 grid gap-3 md:grid-cols-3">
+            {organizationNextActions.map((action) => (
+              <div
+                className="rounded-lg border border-border bg-background p-4"
+                key={action.title}
+              >
+                <CheckCircle2 className="mb-3 h-5 w-5 text-primary" />
+                <h3 className="font-semibold">{action.title}</h3>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                  {action.text}
+                </p>
+                <Link
+                  className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+                  href={action.href}
+                >
+                  {action.cta}
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+              </div>
+            ))}
+          </div>
+        </section>
 
         <div className="grid gap-4 sm:grid-cols-3">
           <Card>
@@ -221,7 +308,7 @@ export default async function DashboardPage() {
           Hoi {profile.full_name.split(" ")[0]}!
         </h1>
         <p className="text-sm text-muted-foreground">
-          Dit is jouw overzicht. Veel succes met je volgende opdracht.
+          Dit is jouw overzicht voor opdrachten, reacties en gesprekken.
         </p>
       </div>
 
@@ -237,6 +324,50 @@ export default async function DashboardPage() {
           </AlertDescription>
         </Alert>
       ) : null}
+
+      <section className="rounded-lg border border-primary/30 bg-primary/5 p-5">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p className="text-sm font-medium text-primary">
+              Volgende beste stap
+            </p>
+            <h2 className="mt-1 text-xl font-semibold tracking-tight">
+              Zoek een opdracht die past bij je sport, agenda en reisafstand.
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">
+              Bekijk eerst je beste matches. Reageer alleen als tijd, locatie en
+              vergoeding kloppen, of stel direct een duidelijke vraag.
+            </p>
+          </div>
+          <Link href="/opdrachten">
+            <Button className="w-full sm:w-auto">
+              Opdrachten bekijken
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </Link>
+        </div>
+        <div className="mt-5 grid gap-3 md:grid-cols-3">
+          {instructorNextActions.map((action) => (
+            <div
+              className="rounded-lg border border-border bg-background p-4"
+              key={action.title}
+            >
+              <CheckCircle2 className="mb-3 h-5 w-5 text-primary" />
+              <h3 className="font-semibold">{action.title}</h3>
+              <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                {action.text}
+              </p>
+              <Link
+                className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+                href={action.href}
+              >
+                {action.cta}
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+          ))}
+        </div>
+      </section>
 
       <div className="grid gap-4 sm:grid-cols-3">
         <Card>
