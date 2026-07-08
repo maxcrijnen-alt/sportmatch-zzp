@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
-import { SearchX } from "lucide-react";
+import { ArrowRight, SearchX } from "lucide-react";
 import { JobCard } from "@/components/jobs/job-card";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -40,6 +41,14 @@ export default async function OpdrachtenPage({
 
   const filters = await searchParams;
   const showAll = filters.weergave === "alles";
+  const hasFilters = Boolean(
+    filters.sport ||
+      filters.type ||
+      filters.maxkm ||
+      filters.datum ||
+      filters.minbedrag ||
+      showAll,
+  );
 
   const [{ jobs, matches }, sportsResult] = await Promise.all([
     fetchOpenJobsWithMatches(),
@@ -97,12 +106,37 @@ export default async function OpdrachtenPage({
 
   return (
     <div className="mx-auto w-full max-w-5xl space-y-6 px-4 py-8">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Opdrachten</h1>
-        <p className="text-sm text-muted-foreground">
-          {showAll
-            ? "Alle open opdrachten, ook buiten je reisafstand."
-            : "Passende opdrachten binnen jouw reisafstand, gesorteerd op match."}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Opdrachten</h1>
+          <p className="text-sm text-muted-foreground">
+            {showAll
+              ? "Alle open opdrachten, ook buiten je reisafstand."
+              : "Passende opdrachten binnen jouw reisafstand, gesorteerd op match."}
+          </p>
+        </div>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          {hasFilters ? (
+            <Link href="/opdrachten">
+              <Button className="w-full sm:w-auto" variant="outline">
+                Filters wissen
+              </Button>
+            </Link>
+          ) : null}
+          <Link href="/opdrachten?weergave=alles">
+            <Button className="w-full sm:w-auto" variant="outline">
+              Alle opdrachten
+            </Button>
+          </Link>
+        </div>
+      </div>
+
+      <div className="rounded-lg border border-primary/30 bg-primary/5 p-4">
+        <p className="text-sm font-medium text-primary">Zo kies je sneller</p>
+        <p className="mt-1 text-sm leading-6 text-muted-foreground">
+          Begin met passende opdrachten. Gebruik daarna filters voor sport, datum,
+          afstand en minimale vergoeding. Zie je te weinig? Open dan alle
+          opdrachten en kijk of je reisafstand of tarief wilt aanpassen.
         </p>
       </div>
 
@@ -187,10 +221,17 @@ export default async function OpdrachtenPage({
                 <option value="alles">Alle opdrachten</option>
               </Select>
             </div>
-            <div className="sm:col-span-3 lg:col-span-6">
-              <Button size="sm" type="submit" variant="outline">
+            <div className="flex flex-col gap-2 sm:col-span-3 sm:flex-row lg:col-span-6">
+              <Button className="w-full sm:w-auto" size="sm" type="submit" variant="outline">
                 Filteren
               </Button>
+              {hasFilters ? (
+                <Link href="/opdrachten">
+                  <Button className="w-full sm:w-auto" size="sm" variant="outline">
+                    Reset
+                  </Button>
+                </Link>
+              ) : null}
             </div>
           </form>
         </CardContent>
@@ -198,12 +239,28 @@ export default async function OpdrachtenPage({
 
       {filtered.length === 0 ? (
         <Card>
-          <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
+          <CardContent className="flex flex-col items-center gap-4 py-12 text-center">
             <SearchX className="h-8 w-8 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">
-              Geen opdrachten gevonden met deze filters. Probeer minder filters
-              of bekijk alle opdrachten.
-            </p>
+            <div>
+              <p className="font-medium">Geen opdrachten gevonden</p>
+              <p className="mt-2 max-w-md text-sm leading-6 text-muted-foreground">
+                Probeer minder filters, bekijk alle opdrachten of pas je
+                reisafstand en minimale vergoeding aan.
+              </p>
+            </div>
+            <div className="flex w-full flex-col justify-center gap-2 sm:w-auto sm:flex-row">
+              <Link href="/opdrachten">
+                <Button className="w-full sm:w-auto" variant="outline">
+                  Filters wissen
+                </Button>
+              </Link>
+              <Link href="/opdrachten?weergave=alles">
+                <Button className="w-full sm:w-auto">
+                  Alle opdrachten bekijken
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </Link>
+            </div>
           </CardContent>
         </Card>
       ) : (
