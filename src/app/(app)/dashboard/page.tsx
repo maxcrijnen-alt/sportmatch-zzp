@@ -32,7 +32,7 @@ export const metadata: Metadata = {
 
 const organizationNextActions = [
   {
-    title: "Plaats je eerste opdracht",
+    title: "Bekijk of plaats een opdracht",
     text: "Maak concreet wat je zoekt: sport, datum, tijd, vergoeding en locatie.",
     href: "/organisatie/opdrachten/nieuw",
     cta: "Opdracht plaatsen",
@@ -128,7 +128,9 @@ export default async function DashboardPage() {
             {orgContext.organization.name}
           </h1>
           <p className="text-sm text-muted-foreground">
-            Overzicht van je opdrachten, reacties en volgende acties.
+            Overzicht van je opdrachten, reacties en volgende acties. Nieuw of in
+            demo? Bekijk eerst opdrachten, kandidaten en berichten om de route te
+            voelen.
           </p>
         </div>
 
@@ -150,14 +152,15 @@ export default async function DashboardPage() {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <p className="text-sm font-medium text-primary">
-                Volgende beste stap
+                Demo-route en volgende beste stap
               </p>
               <h2 className="mt-1 text-xl font-semibold tracking-tight">
-                Maak je eerste opdracht zo concreet dat instructeurs direct kunnen reageren.
+                Zie hoe een opdracht concreet wordt en plaats daarna je eerste eigen opdracht.
               </h2>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                Noem sport, datum, tijd, locatie, vergoeding en wat iemand moet
-                kunnen. Daarna kun je reacties vergelijken en digitaal bevestigen.
+                In de demo kijk je naar open opdrachten, reacties en berichten.
+                In je echte account gebruik je dezelfde route om sport, datum,
+                tijd, locatie, vergoeding en afspraken duidelijk vast te leggen.
               </p>
             </div>
             <Link href="/organisatie/opdrachten/nieuw">
@@ -308,7 +311,9 @@ export default async function DashboardPage() {
           Hoi {profile.full_name.split(" ")[0]}!
         </h1>
         <p className="text-sm text-muted-foreground">
-          Dit is jouw overzicht voor opdrachten, reacties en gesprekken.
+          Dit is jouw overzicht voor opdrachten, reacties en gesprekken. Nieuw
+          of in demo? Open eerst opdrachten en bekijk waarom ze wel of niet
+          passen.
         </p>
       </div>
 
@@ -329,14 +334,15 @@ export default async function DashboardPage() {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <p className="text-sm font-medium text-primary">
-              Volgende beste stap
+              Demo-route en volgende beste stap
             </p>
             <h2 className="mt-1 text-xl font-semibold tracking-tight">
-              Zoek een opdracht die past bij je sport, agenda en reisafstand.
+              Open opdrachten, check de match en reageer pas als tijd en vergoeding kloppen.
             </h2>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              Bekijk eerst je beste matches. Reageer alleen als tijd, locatie en
-              vergoeding kloppen, of stel direct een duidelijke vraag.
+              In de demo start je met passende opdrachten binnen je reisafstand.
+              Gebruik daarna filters voor sport, datum en minimale vergoeding,
+              en open een opdracht om details, vertrouwen en reactieflow te zien.
             </p>
           </div>
           <Link href="/opdrachten">
@@ -423,8 +429,9 @@ export default async function DashboardPage() {
           <Search className="mb-1 h-6 w-6 text-primary" />
           <CardTitle>Vind je volgende opdracht</CardTitle>
           <CardDescription>
-            Opdrachten worden gesorteerd op afstand, specialisatie en jouw
-            beoordeling.
+            Opdrachten worden gesorteerd op afstand, specialisatie en match met
+            jouw profiel. Open een kaart om vergoeding, locatie en reactieopties
+            te bekijken.
           </CardDescription>
         </CardHeader>
         <CardContent>
