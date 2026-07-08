@@ -3,12 +3,14 @@ import Link from "next/link";
 import {
   ArrowRight,
   Building2,
+  CalendarCheck,
   CheckCircle2,
+  ClipboardList,
   Dumbbell,
   LogIn,
+  MessageSquare,
   MousePointerClick,
-  ShieldCheck,
-  Users,
+  Search,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,13 +19,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 export const metadata: Metadata = {
   title: "Demo bekijken",
   description:
-    "Bekijk SportMatch ZZP met demo-accounts voordat je een eigen account aanmaakt.",
+    "Bekijk SportMatch ZZP als sportschool of instructeur voordat je een eigen account aanmaakt.",
 };
 
 const demoSteps = [
   {
-    title: "Kies je rol",
-    text: "Start als sportschool, instructeur, planner of admin. Zo zie je direct de kant die voor jou relevant is.",
+    title: "Kies je kant",
+    text: "Start als sportschool als je invallers zoekt. Start als instructeur als je opdrachten wilt vinden.",
     icon: MousePointerClick,
   },
   {
@@ -32,72 +34,62 @@ const demoSteps = [
     icon: LogIn,
   },
   {
-    title: "Bekijk de eerste acties",
-    text: "Open dashboard, opdrachten, reacties en berichten om te voelen hoe het dagelijkse werk loopt.",
+    title: "Doe drie echte acties",
+    text: "Bekijk dashboard, opdrachten en reacties zodat je direct voelt hoe het dagelijkse werk loopt.",
     icon: CheckCircle2,
   },
 ];
 
 const demoAccounts = [
   {
-    title: "Bekijk als sportschool",
-    role: "Eigenaar FitZone Utrecht",
+    title: "Demo voor sportscholen",
+    role: "Eigenaar of planner die snel bezetting zoekt",
     description:
-      "Voor sportscholen die snel willen zien hoe je opdrachten plaatst en reacties vergelijkt.",
+      "Je kijkt mee vanuit FitZone Utrecht. Deze kant draait om opdrachten plaatsen, reacties beoordelen en duidelijk krijgen wie je kunt inzetten.",
     href: "/login?demo=sportschool",
     icon: Building2,
-    highlights: ["Opdrachten beheren", "Kandidaten vergelijken", "Vestigingen bekijken"],
+    primaryFocus: "Snel vervanging regelen zonder losse appjes en onduidelijke beschikbaarheid.",
+    highlights: ["Opdracht plaatsen", "Reacties vergelijken", "Team en vestigingen"],
     route: [
-      "Check het dashboard met open opdrachten en nieuwe reacties.",
-      "Open de opdrachtlijst en bekijk hoe kandidaten binnenkomen.",
-      "Bekijk vestigingen en teamrollen voor planners.",
+      {
+        icon: ClipboardList,
+        text: "Open het dashboard en zie hoeveel opdrachten, reacties en vestigingen er lopen.",
+      },
+      {
+        icon: CalendarCheck,
+        text: "Bekijk hoe je een opdracht concreet maakt met sport, datum, tijd, locatie en vergoeding.",
+      },
+      {
+        icon: MessageSquare,
+        text: "Ga naar kandidaten en berichten om te zien hoe opvolging richting instructeurs werkt.",
+      },
     ],
-    cta: "Bekijk sportschool-demo",
+    cta: "Start sportschool-demo",
   },
   {
-    title: "Bekijk als instructeur",
-    role: "Instructeur met historie en badges",
+    title: "Demo voor instructeurs",
+    role: "ZZP-instructeur die passende opdrachten zoekt",
     description:
-      "Voor instructeurs die willen zien hoe passende opdrachten, reacties en reviews werken.",
+      "Je kijkt vanuit een instructeursprofiel met historie en badges. Deze kant draait om passende opdrachten vinden, reageren en opvolging bewaren.",
     href: "/login?demo=instructeur",
     icon: Dumbbell,
-    highlights: ["Passende opdrachten", "Documentbadges", "Reviews en berichten"],
+    primaryFocus: "Snel zien welke opdrachten bij je sport, agenda, tarief en reisafstand passen.",
+    highlights: ["Matches zoeken", "Gericht reageren", "Reviews en badges"],
     route: [
-      "Bekijk passende opdrachten en filters op sport, afstand en vergoeding.",
-      "Open je reacties om te zien hoe opvolging werkt.",
-      "Check berichten, reviews en documentbadges.",
+      {
+        icon: Search,
+        text: "Open opdrachten en filter op sport, datum, afstand en minimale vergoeding.",
+      },
+      {
+        icon: CalendarCheck,
+        text: "Bekijk je reacties om te zien welke aanvragen nog openstaan of bevestigd zijn.",
+      },
+      {
+        icon: MessageSquare,
+        text: "Check berichten, reviews en documentbadges om te zien hoe vertrouwen wordt opgebouwd.",
+      },
     ],
-    cta: "Bekijk instructeur-demo",
-  },
-  {
-    title: "Bekijk als planner",
-    role: "Planner bij FitZone Utrecht",
-    description:
-      "Voor medewerkers die opdrachten en kandidaten volgen zonder eigenaar te zijn.",
-    href: "/login?demo=planner",
-    icon: Users,
-    highlights: ["Teamrol testen", "Opdrachten volgen", "Berichten bekijken"],
-    route: [
-      "Bekijk hoe een planner opdrachten kan volgen.",
-      "Controleer kandidaten en berichten vanuit een teamrol.",
-      "Zie wat wel en niet bij de plannerrol hoort.",
-    ],
-    cta: "Bekijk planner-demo",
-  },
-  {
-    title: "Bekijk als admin",
-    role: "Beheerder",
-    description:
-      "Voor platformbeheer: gebruikers, documenten, organisaties, opdrachten en reviews controleren.",
-    href: "/login?demo=admin",
-    icon: ShieldCheck,
-    highlights: ["Documentcontrole", "Gebruikersbeheer", "Platformoverzicht"],
-    route: [
-      "Bekijk gebruikers en organisaties vanuit beheer.",
-      "Controleer documenten en badges.",
-      "Zie hoe platformbrede signalen worden opgevolgd.",
-    ],
-    cta: "Bekijk admin-demo",
+    cta: "Start instructeur-demo",
   },
 ];
 
@@ -107,15 +99,15 @@ export default function DemoPage() {
       <div className="grid gap-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-end">
         <div className="space-y-4">
           <Badge className="w-fit" variant="accent">
-            Geen eigen account nodig
+            Twee demo's, twee gebruikers
           </Badge>
           <h1 className="text-3xl font-bold tracking-tight sm:text-5xl">
-            Kijk eerst rond voordat je een account aanmaakt.
+            Bekijk SportMatch ZZP vanuit de rol die bij jou past.
           </h1>
           <p className="text-lg leading-8 text-muted-foreground">
-            Kies een demo-rol en zie direct hoe SportMatch ZZP werkt voor
-            opdrachten, reacties, berichten, documenten en beheer. De login wordt
-            automatisch ingevuld met een bestaand demo-account.
+            Kies sportschool als je instructeurs wilt vinden. Kies instructeur
+            als je opdrachten wilt aannemen. Je krijgt meteen een gevulde login,
+            zodat je eerst kunt rondkijken voordat je een eigen account maakt.
           </p>
           <div className="flex flex-col gap-3 sm:flex-row">
             <Link href="/login?demo=sportschool">
@@ -179,6 +171,12 @@ export default function DemoPage() {
                 <p className="text-sm leading-6 text-muted-foreground">
                   {account.description}
                 </p>
+                <div className="rounded-lg border border-border bg-muted/30 p-3">
+                  <p className="text-sm font-medium">Waar deze demo om draait</p>
+                  <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                    {account.primaryFocus}
+                  </p>
+                </div>
                 <div className="flex flex-wrap gap-2">
                   {account.highlights.map((highlight) => (
                     <span
@@ -189,18 +187,22 @@ export default function DemoPage() {
                     </span>
                   ))}
                 </div>
-                <div className="space-y-2 rounded-lg border border-border bg-muted/30 p-3">
-                  <p className="text-sm font-medium">Wat je het beste bekijkt</p>
+                <div className="space-y-2 rounded-lg border border-border bg-background p-3">
+                  <p className="text-sm font-medium">Bekijk vooral dit</p>
                   <ul className="space-y-2">
-                    {account.route.map((item) => (
-                      <li
-                        className="flex gap-2 text-sm leading-6 text-muted-foreground"
-                        key={item}
-                      >
-                        <CheckCircle2 className="mt-1 h-4 w-4 shrink-0 text-primary" />
-                        <span>{item}</span>
-                      </li>
-                    ))}
+                    {account.route.map((item) => {
+                      const RouteIcon = item.icon;
+
+                      return (
+                        <li
+                          className="flex gap-2 text-sm leading-6 text-muted-foreground"
+                          key={item.text}
+                        >
+                          <RouteIcon className="mt-1 h-4 w-4 shrink-0 text-primary" />
+                          <span>{item.text}</span>
+                        </li>
+                      );
+                    })}
                   </ul>
                 </div>
                 <Link href={account.href}>
@@ -219,8 +221,9 @@ export default function DemoPage() {
         <div>
           <p className="font-semibold">Daarna pas echt starten</p>
           <p className="mt-1 text-sm leading-6 text-muted-foreground">
-            Alle demo-accounts gebruiken hetzelfde wachtwoord: SportMatch2026!
-            Bevalt het platform, dan maak je daarna gratis je eigen account aan.
+            De twee demo-accounts gebruiken hetzelfde wachtwoord:
+            SportMatch2026! Bevalt het platform, dan maak je daarna gratis je
+            eigen account aan.
           </p>
         </div>
         <Link href="/registreren">
