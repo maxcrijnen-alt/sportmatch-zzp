@@ -141,7 +141,7 @@ export default function HomePage() {
                 vacatures.
               </p>
             </div>
-            <div className="flex flex-col gap-3 sm:flex-row">
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
               <Link href="/registreren?rol=organisatie">
                 <Button className="w-full sm:w-auto" size="lg">
                   Start als sportschool
@@ -155,6 +155,15 @@ export default function HomePage() {
                   variant="outline"
                 >
                   Start als instructeur
+                </Button>
+              </Link>
+              <Link href="/demo">
+                <Button
+                  className="w-full border-secondary-foreground/30 bg-transparent text-secondary-foreground hover:bg-secondary-foreground/10 sm:w-auto"
+                  size="lg"
+                  variant="outline"
+                >
+                  Bekijk eerst demo
                 </Button>
               </Link>
             </div>
@@ -240,9 +249,9 @@ export default function HomePage() {
                 Vul gaten in je rooster, vind vervanging bij ziekte en bouw een
                 flexibele poule van betrouwbare instructeurs op.
               </p>
-              <Link href="/registreren?rol=organisatie">
+              <Link href="/voor-sportscholen">
                 <Button className="mt-2" variant="outline">
-                  Start als sportschool
+                  Bekijk sportschool-route
                 </Button>
               </Link>
             </CardContent>
@@ -257,9 +266,9 @@ export default function HomePage() {
                 Vind opdrachten die passen bij jouw sport, agenda, tarief en
                 reisafstand, zonder commissie over je opdrachtvergoeding.
               </p>
-              <Link href="/registreren?rol=instructeur">
+              <Link href="/voor-instructeurs">
                 <Button className="mt-2" variant="outline">
-                  Start als instructeur
+                  Bekijk instructeur-route
                 </Button>
               </Link>
             </CardContent>
@@ -510,9 +519,9 @@ export default function HomePage() {
           </h2>
           <p className="max-w-2xl text-primary-foreground/85">
             Kies je rol, vul de basis in en start met plaatsen of reageren zodra
-            je profiel klaar is.
+            je profiel klaar is. Eerst rondkijken kan ook met de demo.
           </p>
-          <div className="flex w-full flex-col justify-center gap-3 sm:w-auto sm:flex-row">
+          <div className="flex w-full flex-col justify-center gap-3 sm:w-auto sm:flex-row sm:flex-wrap">
             <Link href="/registreren?rol=organisatie">
               <Button
                 className="w-full bg-secondary text-secondary-foreground hover:bg-secondary/90 sm:w-auto"
@@ -528,6 +537,15 @@ export default function HomePage() {
                 variant="outline"
               >
                 Ik zoek opdrachten
+              </Button>
+            </Link>
+            <Link href="/demo">
+              <Button
+                className="w-full border-primary-foreground/40 bg-transparent text-primary-foreground hover:bg-primary-foreground/10 sm:w-auto"
+                size="lg"
+                variant="outline"
+              >
+                Eerst demo bekijken
               </Button>
             </Link>
           </div>
