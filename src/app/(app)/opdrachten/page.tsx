@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowRight, SearchX } from "lucide-react";
+import { ArrowRight, CheckCircle2, SearchX } from "lucide-react";
 import { JobCard } from "@/components/jobs/job-card";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -26,6 +26,12 @@ interface Filters {
   minbedrag?: string;
   weergave?: string;
 }
+
+const selectionTips = [
+  "Begin met passende opdrachten binnen je reisafstand.",
+  "Controleer sport, datum, locatie en vergoeding voordat je reageert.",
+  "Open een opdrachtkaart om matchscore, details en reactieflow te zien.",
+];
 
 export default async function OpdrachtenPage({
   searchParams,
@@ -132,12 +138,25 @@ export default async function OpdrachtenPage({
       </div>
 
       <div className="rounded-lg border border-primary/30 bg-primary/5 p-4">
-        <p className="text-sm font-medium text-primary">Zo kies je sneller</p>
+        <p className="text-sm font-medium text-primary">
+          Demo-route: zo kies je sneller
+        </p>
         <p className="mt-1 text-sm leading-6 text-muted-foreground">
           Begin met passende opdrachten. Gebruik daarna filters voor sport, datum,
           afstand en minimale vergoeding. Zie je te weinig? Open dan alle
           opdrachten en kijk of je reisafstand of tarief wilt aanpassen.
         </p>
+        <div className="mt-4 grid gap-2 md:grid-cols-3">
+          {selectionTips.map((tip) => (
+            <p
+              className="flex gap-2 rounded-md border border-border bg-background p-3 text-sm leading-6"
+              key={tip}
+            >
+              <CheckCircle2 className="mt-1 h-4 w-4 shrink-0 text-primary" />
+              <span>{tip}</span>
+            </p>
+          ))}
+        </div>
       </div>
 
       <Card>
