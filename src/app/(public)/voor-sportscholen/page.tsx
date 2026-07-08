@@ -131,7 +131,7 @@ export default function VoorSportscholenPage() {
             </Link>
             <Link href="/login?demo=sportschool">
               <Button className="w-full sm:w-auto" size="lg" variant="outline">
-                Bekijk sportschool-demo
+                Bekijk demo als sportschool
               </Button>
             </Link>
           </div>
@@ -171,9 +171,9 @@ export default function VoorSportscholenPage() {
               bezetting wordt de vraag meteen concreet.
             </p>
           </div>
-          <Link href="/demo">
+          <Link href="/login?demo=sportschool">
             <Button className="w-full sm:w-auto" variant="outline">
-              Eerst rondkijken
+              Bekijk demo als sportschool
             </Button>
           </Link>
         </div>
@@ -267,11 +267,11 @@ export default function VoorSportscholenPage() {
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">
           <Link href="/login?demo=sportschool">
-            <Button className="w-full sm:w-auto">Demo openen</Button>
+            <Button className="w-full sm:w-auto">Bekijk demo als sportschool</Button>
           </Link>
           <Link href="/registreren?rol=organisatie">
             <Button className="w-full sm:w-auto" variant="outline">
-              Gratis starten
+              Start 30 dagen gratis
             </Button>
           </Link>
         </div>
