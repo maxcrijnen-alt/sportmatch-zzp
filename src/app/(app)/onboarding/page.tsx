@@ -64,6 +64,18 @@ const instructorSteps = [
   },
 ];
 
+const organizationValueChecklist = [
+  "Minimaal nodig: organisatiegegevens, contactpersoon en eerste vestiging.",
+  "Daarna: eerste opdracht plaatsen met sport, datum, tijd, locatie en vergoeding.",
+  "Meer vertrouwen: teamleden, extra vestigingen en duidelijke contactafspraken later aanvullen.",
+];
+
+const instructorValueChecklist = [
+  "Minimaal nodig: woonplaats, reisafstand, tarief en specialisaties.",
+  "Daarna: passende opdrachten bekijken en reageren op opdrachten die echt kloppen.",
+  "Meer vertrouwen: diploma's, VOG, EHBO/BHV en verzekering later toevoegen.",
+];
+
 export default async function OnboardingPage() {
   const profile = await getSessionProfile();
   const supabase = await createClient();
@@ -89,6 +101,9 @@ export default async function OnboardingPage() {
 
   const isOrganization = profile.role === "organization";
   const steps = isOrganization ? organizationSteps : instructorSteps;
+  const valueChecklist = isOrganization
+    ? organizationValueChecklist
+    : instructorValueChecklist;
   const invites =
     (pendingInvites as unknown as {
       id: string;
@@ -110,9 +125,25 @@ export default async function OnboardingPage() {
           </h1>
           <p className="text-muted-foreground">
             {isOrganization
-              ? "Na deze stap kun je vestigingen beheren, opdrachten plaatsen en reacties van instructeurs vergelijken."
-              : "Na deze stap kan SportMatch ZZP opdrachten beter matchen op sport, afstand, tarief en ervaring."}
+              ? "Vul alleen in wat nodig is om straks snel een concrete opdracht te plaatsen en reacties goed te vergelijken."
+              : "Vul de gegevens in die bepalen welke opdrachten je ziet en hoe sportscholen jouw reactie beoordelen."}
           </p>
+        </div>
+
+        <div className="rounded-lg border border-primary/30 bg-primary/5 p-4">
+          <p className="font-medium">
+            {isOrganization
+              ? "Wat moet nu echt af?"
+              : "Wat maakt je direct vindbaar?"}
+          </p>
+          <div className="mt-3 space-y-2">
+            {valueChecklist.map((item) => (
+              <p className="flex gap-2 text-sm leading-6 text-muted-foreground" key={item}>
+                <CheckCircle2 className="mt-1 h-4 w-4 shrink-0 text-primary" />
+                <span>{item}</span>
+              </p>
+            ))}
+          </div>
         </div>
 
         <div className="grid gap-3">
@@ -140,7 +171,7 @@ export default async function OnboardingPage() {
           })}
         </div>
 
-        <div className="rounded-lg border border-primary/30 bg-primary/5 p-4">
+        <div className="rounded-lg border border-border bg-muted/40 p-4">
           <p className="flex gap-2 text-sm font-medium">
             <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
             Je kunt later alles aanpassen
@@ -191,8 +222,8 @@ export default async function OnboardingPage() {
             </CardTitle>
             <CardDescription>
               {isOrganization
-                ? "Vul de gegevens van je organisatie en je eerste vestiging in. Daarna kun je direct opdrachten plaatsen."
-                : "Met een compleet profiel krijg je betere matches en meer reacties van organisaties."}
+                ? "Na opslaan kom je op je dashboard en kun je direct je eerste opdracht plaatsen."
+                : "Na opslaan kom je op je dashboard en kun je passende opdrachten openen."}
             </CardDescription>
           </CardHeader>
           <CardContent>
