@@ -227,7 +227,12 @@ export default async function OpdrachtenPage({
               </Button>
               {hasFilters ? (
                 <Link href="/opdrachten">
-                  <Button className="w-full sm:w-auto" size="sm" variant="outline">
+                  <Button
+                    className="w-full sm:w-auto"
+                    size="sm"
+                    type="button"
+                    variant="outline"
+                  >
                     Reset
                   </Button>
                 </Link>
