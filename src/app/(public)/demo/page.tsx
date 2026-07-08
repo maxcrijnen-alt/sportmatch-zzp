@@ -11,10 +11,12 @@ import {
   MessageSquare,
   MousePointerClick,
   Search,
+  ShieldCheck,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { BRAND } from "@/lib/branding";
 
 export const metadata: Metadata = {
   title: "Demo bekijken",
@@ -24,18 +26,18 @@ export const metadata: Metadata = {
 
 const demoSteps = [
   {
-    title: "Kies je kant",
-    text: "Start als sportschool als je invallers zoekt. Start als instructeur als je opdrachten wilt vinden.",
+    title: "Kies je rol",
+    text: "Start als sportschool als je instructeurs zoekt. Start als instructeur als je opdrachten wilt vinden.",
     icon: MousePointerClick,
   },
   {
     title: "Login staat klaar",
-    text: "De demo-link vult e-mail en wachtwoord automatisch in. Je hoeft zelf niets aan te maken.",
+    text: "De demo-link vult e-mail en wachtwoord automatisch in. Klik daarna op Log in met demo-account.",
     icon: LogIn,
   },
   {
-    title: "Doe drie echte acties",
-    text: "Bekijk dashboard, opdrachten en reacties zodat je direct voelt hoe het dagelijkse werk loopt.",
+    title: "Bekijk de echte route",
+    text: "Open dashboard, opdrachten, reacties en berichten zodat je voelt hoe het dagelijkse werk loopt.",
     icon: CheckCircle2,
   },
 ];
@@ -48,7 +50,13 @@ const demoAccounts = [
       "Je kijkt mee vanuit FitZone Utrecht. Deze kant draait om opdrachten plaatsen, reacties beoordelen en duidelijk krijgen wie je kunt inzetten.",
     href: "/login?demo=sportschool",
     icon: Building2,
-    primaryFocus: "Snel vervanging regelen zonder losse appjes en onduidelijke beschikbaarheid.",
+    primaryFocus:
+      "Snel vervanging regelen zonder losse appjes en onduidelijke beschikbaarheid.",
+    preview: {
+      title: "Spinning-inval vanavond",
+      meta: "Utrecht · 19:00 · € 55-€ 70 · 3 reacties",
+      text: "Bekijk hoe een opdracht concreet wordt en hoe je kandidaten opvolgt voordat je contactgegevens deelt.",
+    },
     highlights: ["Opdracht plaatsen", "Reacties vergelijken", "Team en vestigingen"],
     route: [
       {
@@ -64,7 +72,7 @@ const demoAccounts = [
         text: "Ga naar kandidaten en berichten om te zien hoe opvolging richting instructeurs werkt.",
       },
     ],
-    cta: "Start sportschool-demo",
+    cta: "Bekijk demo als sportschool",
   },
   {
     title: "Demo voor instructeurs",
@@ -73,7 +81,13 @@ const demoAccounts = [
       "Je kijkt vanuit een instructeursprofiel met historie en badges. Deze kant draait om passende opdrachten vinden, reageren en opvolging bewaren.",
     href: "/login?demo=instructeur",
     icon: Dumbbell,
-    primaryFocus: "Snel zien welke opdrachten bij je sport, agenda, tarief en reisafstand passen.",
+    primaryFocus:
+      "Snel zien welke opdrachten bij je sport, agenda, tarief en reisafstand passen.",
+    preview: {
+      title: "Yoga-reeks voor 6 weken",
+      meta: "Den Haag · dinsdag · 94% match · € 60 per les",
+      text: "Bekijk hoe filters, matchscore, vergoeding en berichten helpen om gericht te reageren.",
+    },
     highlights: ["Matches zoeken", "Gericht reageren", "Reviews en badges"],
     route: [
       {
@@ -89,8 +103,15 @@ const demoAccounts = [
         text: "Check berichten, reviews en documentbadges om te zien hoe vertrouwen wordt opgebouwd.",
       },
     ],
-    cta: "Start instructeur-demo",
+    cta: "Bekijk demo als instructeur",
   },
+];
+
+const trustNotes = [
+  "30 dagen gratis starten voordat je betaalt.",
+  "Daarna € 5 per maand excl. btw voor instructeurs.",
+  "Voor sportorganisaties € 5 per vestiging per maand excl. btw.",
+  "Geen commissie op de afgesproken opdrachtvergoeding.",
 ];
 
 export default function DemoPage() {
@@ -106,19 +127,20 @@ export default function DemoPage() {
           </h1>
           <p className="text-lg leading-8 text-muted-foreground">
             Kies sportschool als je instructeurs wilt vinden. Kies instructeur
-            als je opdrachten wilt aannemen. Je krijgt meteen een gevulde login,
-            zodat je eerst kunt rondkijken voordat je een eigen account maakt.
+            als je opdrachten wilt aannemen. Je krijgt meteen gevulde
+            inloggegevens, zodat je eerst kunt rondkijken voordat je een eigen
+            account maakt.
           </p>
           <div className="flex flex-col gap-3 sm:flex-row">
             <Link href="/login?demo=sportschool">
               <Button className="w-full sm:w-auto">
-                Demo als sportschool
+                Bekijk demo als sportschool
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </Link>
             <Link href="/login?demo=instructeur">
               <Button className="w-full sm:w-auto" variant="outline">
-                Demo als instructeur
+                Bekijk demo als instructeur
               </Button>
             </Link>
           </div>
@@ -171,6 +193,16 @@ export default function DemoPage() {
                 <p className="text-sm leading-6 text-muted-foreground">
                   {account.description}
                 </p>
+                <div className="rounded-lg border border-border bg-background p-4">
+                  <p className="text-sm font-medium">Voorbeeld in deze demo</p>
+                  <h2 className="mt-2 font-semibold">{account.preview.title}</h2>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {account.preview.meta}
+                  </p>
+                  <p className="mt-3 text-sm leading-6 text-muted-foreground">
+                    {account.preview.text}
+                  </p>
+                </div>
                 <div className="rounded-lg border border-border bg-muted/30 p-3">
                   <p className="text-sm font-medium">Waar deze demo om draait</p>
                   <p className="mt-1 text-sm leading-6 text-muted-foreground">
@@ -217,20 +249,52 @@ export default function DemoPage() {
         })}
       </div>
 
-      <div className="mt-8 flex flex-col gap-4 rounded-lg border border-border bg-muted/40 p-5 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="font-semibold">Daarna pas echt starten</p>
-          <p className="mt-1 text-sm leading-6 text-muted-foreground">
-            De twee demo-accounts gebruiken hetzelfde wachtwoord:
-            SportMatch2026! Bevalt het platform, dan maak je daarna gratis je
-            eigen account aan.
+      <div className="mt-8 grid gap-4 lg:grid-cols-[1fr_0.85fr]">
+        <div className="rounded-lg border border-border bg-muted/40 p-5">
+          <div className="flex items-start gap-3">
+            <div className="rounded-md bg-background p-2 text-primary">
+              <LogIn className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="font-semibold">Daarna pas echt starten</p>
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                De twee demo-accounts gebruiken hetzelfde wachtwoord:
+                SportMatch2026! Bevalt het platform, dan maak je daarna gratis
+                je eigen account aan en rond je profiel of organisatie af.
+              </p>
+              <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+                <Link href="/registreren?rol=organisatie">
+                  <Button className="w-full sm:w-auto" variant="outline">
+                    Start 30 dagen gratis als sportschool
+                  </Button>
+                </Link>
+                <Link href="/registreren?rol=instructeur">
+                  <Button className="w-full sm:w-auto" variant="outline">
+                    Start 30 dagen gratis als instructeur
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="rounded-lg border border-border bg-card p-5">
+          <div className="mb-3 flex items-center gap-2 text-sm font-medium text-primary">
+            <ShieldCheck className="h-4 w-4" /> Vertrouwen en kosten
+          </div>
+          <div className="space-y-2">
+            {trustNotes.map((note) => (
+              <p className="flex gap-2 text-sm leading-6" key={note}>
+                <CheckCircle2 className="mt-1 h-4 w-4 shrink-0 text-primary" />
+                <span>{note}</span>
+              </p>
+            ))}
+          </div>
+          <p className="mt-4 text-xs leading-5 text-muted-foreground">
+            De opdrachtvergoeding loopt rechtstreeks tussen sportschool en
+            instructeur. {BRAND.name} is een matchingplatform en geen juridisch
+            of fiscaal adviseur.
           </p>
         </div>
-        <Link href="/registreren">
-          <Button className="w-full sm:w-auto" variant="outline">
-            Eigen account starten
-          </Button>
-        </Link>
       </div>
     </div>
   );
