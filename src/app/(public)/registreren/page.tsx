@@ -79,8 +79,8 @@ export default async function RegistrerenPage({
                 <ArrowRight className="h-4 w-4 shrink-0 text-primary transition-transform group-hover:translate-x-0.5" />
               </div>
               <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                Bekijk het platform als sportschool, instructeur, planner of admin
-                voordat je zelf een account aanmaakt.
+                Bekijk het platform als sportschool of instructeur voordat je
+                zelf een account aanmaakt.
               </p>
             </div>
           </div>
