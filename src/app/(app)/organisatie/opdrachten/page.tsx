@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Plus } from "lucide-react";
+import { CheckCircle2, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -39,6 +39,12 @@ const statusVariant: Record<
   cancelled: "destructive",
   closed: "outline",
 };
+
+const organizationJobFlow = [
+  "Plaats eerst één concrete opdracht met duidelijke vergoeding en tijden.",
+  "Bekijk reacties per opdracht en vergelijk kandidaten op beschikbaarheid en vertrouwen.",
+  "Sluit de opdracht zodra iemand bevestigd is, zodat planners hetzelfde overzicht zien.",
+];
 
 export default async function OrganisatieOpdrachtenPage() {
   const profile = await getSessionProfile();
@@ -82,13 +88,39 @@ export default async function OrganisatieOpdrachtenPage() {
         </Link>
       </div>
 
+      <Card className="border-primary/30 bg-primary/5">
+        <CardContent className="pt-5">
+          <p className="text-sm font-medium text-primary">
+            Startflow voor sportscholen
+          </p>
+          <p className="mt-1 text-sm leading-6 text-muted-foreground">
+            Dit overzicht laat zien wat openstaat, hoeveel reacties er zijn en
+            welke opdracht opvolging nodig heeft.
+          </p>
+          <div className="mt-4 grid gap-2 md:grid-cols-3">
+            {organizationJobFlow.map((item) => (
+              <p
+                className="flex gap-2 rounded-md border border-border bg-background p-3 text-sm leading-6"
+                key={item}
+              >
+                <CheckCircle2 className="mt-1 h-4 w-4 shrink-0 text-primary" />
+                <span>{item}</span>
+              </p>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
       {jobs.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center gap-4 py-12 text-center">
-            <p className="text-sm text-muted-foreground">
-              Nog geen opdrachten geplaatst. Plaats je eerste opdracht en bereik
-              direct passende instructeurs.
-            </p>
+            <div>
+              <p className="font-medium">Plaats je eerste opdracht</p>
+              <p className="mt-2 max-w-md text-sm leading-6 text-muted-foreground">
+                Begin met een concrete invaldienst, lessenreeks of vacature. Je
+                kunt daarna reacties vergelijken vanuit dit overzicht.
+              </p>
+            </div>
             <Link href="/organisatie/opdrachten/nieuw">
               <Button>Eerste opdracht plaatsen</Button>
             </Link>
