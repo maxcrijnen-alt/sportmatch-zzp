@@ -199,3 +199,53 @@ export async function adminCloseJobAction(jobId: string): Promise<void> {
 
   revalidatePath("/admin/opdrachten");
 }
+
+const complaintStatusSchema = z.enum([
+  "new",
+  "in_progress",
+  "resolved",
+  "rejected",
+]);
+
+export async function updateComplaintAction(
+  complaintId: string,
+  formData: FormData,
+): Promise<void> {
+  const context = await requireAdmin();
+  if (!context) return;
+
+  const status = complaintStatusSchema.safeParse(formData.get("status"));
+  if (!status.success) return;
+  const note = String(formData.get("resolutionNote") ?? "").slice(0, 5000);
+
+  await context.supabase
+    .from("complaints")
+    .update({
+      status: status.data,
+      resolution_note: note,
+      assigned_to: context.profile.id,
+      resolved_at:
+        status.data === "resolved" || status.data === "rejected"
+          ? new Date().toISOString()
+          : null,
+    })
+    .eq("id", complaintId);
+
+  revalidatePath("/admin/klachten");
+}
+
+export async function reviewForceMajeureAction(
+  cancellationId: string,
+  approve: boolean,
+  formData: FormData,
+): Promise<void> {
+  const context = await requireAdmin();
+  if (!context) return;
+
+  await context.supabase.rpc("admin_review_force_majeure", {
+    p_cancellation: cancellationId,
+    p_approve: approve,
+    p_note: String(formData.get("note") ?? "").slice(0, 2000),
+  });
+  revalidatePath("/admin/klachten");
+}

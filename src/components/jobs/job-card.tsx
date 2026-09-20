@@ -6,6 +6,19 @@ import { formatDate, formatTime, jobTypeLabels } from "@/lib/labels";
 import { describePay, type JobWithRelations } from "@/lib/jobs/queries";
 import type { OpenJobMatch } from "@/types/database";
 
+function minutesBetween(start: string, end: string) {
+  const [startHour, startMinute] = start.slice(0, 5).split(":").map(Number);
+  const [endHour, endMinute] = end.slice(0, 5).split(":").map(Number);
+  return Math.max(0, endHour * 60 + endMinute - startHour * 60 - startMinute);
+}
+
+function formatDuration(minutes: number) {
+  const hours = Math.floor(minutes / 60);
+  const remainder = minutes % 60;
+  if (!hours) return `${remainder} min`;
+  return remainder ? `${hours} u ${remainder} min` : `${hours} u`;
+}
+
 export function JobCard({
   job,
   match,
@@ -20,6 +33,15 @@ export function JobCard({
     match &&
     (match.within_travel_distance === false ||
       match.missing_qualifications.length > 0);
+  const durationMinutes = job.segments?.length
+    ? job.segments.reduce(
+        (total, segment) =>
+          total + minutesBetween(segment.start_time, segment.end_time),
+        0,
+      )
+    : minutesBetween(job.start_time, job.end_time);
+  const lessonLabel =
+    job.custom_lesson_type || job.lesson_type?.name || "Lesvorm niet opgegeven";
 
   return (
     <Link className="block" href={href}>
@@ -36,6 +58,7 @@ export function JobCard({
               )}
             </Badge>
             {job.sport ? <Badge variant="muted">{job.sport.name}</Badge> : null}
+            <Badge variant="outline">{lessonLabel}</Badge>
             {match?.match_score != null ? (
               <Badge variant="accent">Match {Math.round(match.match_score)}%</Badge>
             ) : null}
@@ -43,7 +66,7 @@ export function JobCard({
           <h3 className="mt-1 font-semibold leading-snug">{job.title}</h3>
         </CardHeader>
         <CardContent className="space-y-2 text-sm text-muted-foreground">
-          <div className="flex flex-wrap gap-x-4 gap-y-1">
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
             <span className="inline-flex items-center gap-1.5">
               <CalendarDays className="h-3.5 w-3.5" />
               {formatDate(job.starts_on)}
@@ -55,9 +78,22 @@ export function JobCard({
             <span className="inline-flex items-center gap-1.5">
               <MapPin className="h-3.5 w-3.5" />
               {job.location?.city?.name ?? "Onbekend"}
-              {match?.distance_km != null ? ` · ${match.distance_km} km` : ""}
+              {match
+                ? match.distance_km != null
+                  ? ` · ${match.distance_km} km`
+                  : " · Afstand onbekend"
+                : ""}
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <Clock className="h-3.5 w-3.5" />
+              {job.segments?.length > 1
+                ? `${job.segments.length} lessen · ${formatDuration(durationMinutes)}`
+                : formatDuration(durationMinutes)}
             </span>
           </div>
+          <p>
+            {job.organization?.name ?? "Sportschool"} · {job.location?.name ?? "Vestiging onbekend"}
+          </p>
           <p className="font-medium text-foreground">{describePay(job)}</p>
           {hasWarnings ? (
             <p className="inline-flex items-center gap-1.5 text-warning">

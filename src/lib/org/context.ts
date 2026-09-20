@@ -27,17 +27,29 @@ export const getOrgContext = cache(async (): Promise<OrgContext | null> => {
 
   const { data: membership } = await supabase
     .from("organization_members")
-    .select("member_role, organization:organizations(*)")
+    .select("member_role, organization_id")
     .eq("user_id", profile.id)
     .eq("state", "active")
     .limit(1)
     .maybeSingle();
 
-  if (!membership?.organization) {
+  if (!membership?.organization_id) {
     return null;
   }
 
-  const organization = membership.organization as unknown as Organization;
+  // Privé-organisatievelden (contact, KvK en billing) zijn alleen via deze
+  // lidmaatschap-gecontroleerde RPC beschikbaar.
+  const { data: organizationData } = await supabase
+    .rpc("get_organization_private", {
+      p_organization: membership.organization_id,
+    })
+    .maybeSingle();
+
+  if (!organizationData) {
+    return null;
+  }
+
+  const organization = organizationData as unknown as Organization;
 
   const { data: locations } = await supabase
     .from("organization_locations")

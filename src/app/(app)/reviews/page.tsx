@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -26,7 +28,13 @@ export default async function ReviewsPage() {
     redirect("/login");
   }
 
-  const [receivedResult, givenResult, statsResult] = await Promise.all([
+  const [
+    receivedResult,
+    givenResult,
+    statsResult,
+    completedResult,
+    completedSegmentsResult,
+  ] = await Promise.all([
     supabase
       .from("reviews")
       .select("*, job:jobs (title)")
@@ -39,6 +47,18 @@ export default async function ReviewsPage() {
       .eq("reviewer_id", profile.id)
       .order("created_at", { ascending: false }),
     supabase.rpc("instructor_public_stats", { target: profile.id }),
+    supabase
+      .from("job_confirmations")
+      .select("job_id, job:jobs!inner(id,title,starts_on,status)")
+      .eq("instructor_id", profile.id)
+      .eq("job.status", "completed"),
+    supabase
+      .from("job_segment_confirmations")
+      .select("job_id, job:jobs!inner(id,title,starts_on,status)")
+      .eq("instructor_id", profile.id)
+      .eq("job.status", "completed")
+      .not("confirmed_at", "is", null)
+      .is("cancelled_at", null),
   ]);
 
   const received =
@@ -49,6 +69,26 @@ export default async function ReviewsPage() {
     [];
   const stats =
     ((statsResult.data as InstructorPublicStats[] | null) ?? [])[0] ?? null;
+  const givenJobIds = new Set(given.map((review) => review.job_id));
+  const completedAssignments = [
+    ...((completedResult.data as unknown as {
+      job_id: string;
+      job: { id: string; title: string; starts_on: string } | null;
+    }[] | null) ?? []),
+    ...((completedSegmentsResult.data as unknown as {
+      job_id: string;
+      job: { id: string; title: string; starts_on: string } | null;
+    }[] | null) ?? []),
+  ];
+  const uniqueCompletedAssignments = Array.from(
+    new Map(completedAssignments.map((item) => [item.job_id, item])).values(),
+  );
+  const pendingReviews = uniqueCompletedAssignments.filter(
+    (item) => !givenJobIds.has(item.job_id),
+  ) as {
+    job_id: string;
+    job: { id: string; title: string; starts_on: string } | null;
+  }[];
 
   const StarRow = ({ rating }: { rating: number }) => (
     <span className="text-warning">
@@ -65,6 +105,25 @@ export default async function ReviewsPage() {
           Jouw beoordelingen en betrouwbaarheidsscore.
         </p>
       </div>
+
+      {pendingReviews.length > 0 ? (
+        <Card className="border-warning/50 bg-warning/10">
+          <CardHeader>
+            <CardTitle>Je hebt nog een beoordeling openstaan</CardTitle>
+            <CardDescription>
+              Rond deze verplichte beoordeling af om weer op nieuwe opdrachten te reageren.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {pendingReviews.map((item) => (
+              <div className="flex items-center justify-between gap-3 rounded-md bg-background p-3" key={item.job_id}>
+                <span className="text-sm font-medium">{item.job?.title}</span>
+                <Link href={`/opdrachten/${item.job_id}`}><Button size="sm">Nu beoordelen</Button></Link>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      ) : null}
 
       {stats ? (
         <div className="grid gap-4 sm:grid-cols-4">
@@ -126,6 +185,7 @@ export default async function ReviewsPage() {
                   <p className="text-xs text-muted-foreground">
                     {review.job?.title} · {formatDate(review.created_at)}
                   </p>
+                  {review.comment ? <p className="mt-1 text-sm">“{review.comment}”</p> : null}
                 </div>
                 <Badge variant="muted">
                   {review.side === "instructor" ? "Instructeur" : "Organisatie"}
@@ -156,6 +216,7 @@ export default async function ReviewsPage() {
                   <p className="text-xs text-muted-foreground">
                     {review.job?.title} · {formatDate(review.created_at)}
                   </p>
+                  {review.comment ? <p className="mt-1 text-sm">“{review.comment}”</p> : null}
                 </div>
                 {!review.released_at ? (
                   <Badge variant="secondary">Wacht op tegenpartij</Badge>

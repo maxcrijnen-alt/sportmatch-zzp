@@ -4,6 +4,10 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { getSessionProfile } from "@/lib/auth/session";
+import {
+  CUSTOM_CITY_MAX_LENGTH,
+  CUSTOM_CITY_OPTION_VALUE,
+} from "@/lib/profile/location";
 import { createClient } from "@/lib/supabase/server";
 
 export interface OnboardingActionState {
@@ -13,7 +17,11 @@ export interface OnboardingActionState {
 const instructorSchema = z
   .object({
     phone: z.string().min(8, "Vul een geldig telefoonnummer in."),
-    cityId: z.string().uuid("Kies je woonplaats."),
+    cityId: z.union([
+      z.string().uuid("Kies je woonplaats."),
+      z.literal(CUSTOM_CITY_OPTION_VALUE),
+    ]),
+    customCity: z.string().trim().max(CUSTOM_CITY_MAX_LENGTH).default(""),
     birthDate: z.string().min(1, "Vul je geboortedatum in."),
     yearsExperience: z.coerce.number().int().min(0).max(60),
     workExperience: z.string().max(2000).default(""),
@@ -37,6 +45,16 @@ const instructorSchema = z
         path: ["kvkNumber"],
       });
     }
+    if (
+      value.cityId === CUSTOM_CITY_OPTION_VALUE &&
+      value.customCity.length < 2
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Vul je woonplaats in.",
+        path: ["customCity"],
+      });
+    }
   });
 
 export async function completeInstructorOnboarding(
@@ -53,6 +71,7 @@ export async function completeInstructorOnboarding(
   const parsed = instructorSchema.safeParse({
     phone: formData.get("phone"),
     cityId: formData.get("cityId"),
+    customCity: formData.get("customCity") ?? "",
     birthDate: formData.get("birthDate"),
     yearsExperience: formData.get("yearsExperience"),
     workExperience: formData.get("workExperience") ?? "",
@@ -69,12 +88,14 @@ export async function completeInstructorOnboarding(
   }
 
   const input = parsed.data;
+  const usesCustomCity = input.cityId === CUSTOM_CITY_OPTION_VALUE;
 
   const { error: profileError } = await supabase
     .from("profiles")
     .update({
       phone: input.phone,
-      city_id: input.cityId,
+      city_id: usesCustomCity ? null : input.cityId,
+      custom_city: usesCustomCity ? input.customCity : null,
       onboarding_completed: true,
     })
     .eq("id", profile.id);

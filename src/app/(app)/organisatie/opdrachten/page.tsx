@@ -16,6 +16,7 @@ import {
 import { getSessionProfile } from "@/lib/auth/session";
 import { formatDate, formatTime, jobStatusLabels, jobTypeLabels } from "@/lib/labels";
 import { getOrgContext } from "@/lib/org/context";
+import { resolveLocationFilter } from "@/lib/org/location-filter";
 import { createClient } from "@/lib/supabase/server";
 import type { Job, JobStatus } from "@/types/database";
 
@@ -46,7 +47,11 @@ const organizationJobFlow = [
   "Sluit de opdracht zodra iemand bevestigd is, zodat planners hetzelfde overzicht zien.",
 ];
 
-export default async function OrganisatieOpdrachtenPage() {
+export default async function OrganisatieOpdrachtenPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ location?: string }>;
+}) {
   const profile = await getSessionProfile();
   const orgContext = await getOrgContext();
   const supabase = await createClient();
@@ -59,7 +64,15 @@ export default async function OrganisatieOpdrachtenPage() {
     redirect("/dashboard");
   }
 
-  const { data } = await supabase
+  const params = await searchParams;
+  const selectedLocationId = await resolveLocationFilter(
+    orgContext.locations,
+    params.location,
+  );
+  const selectedLocation = orgContext.locations.find(
+    (location) => location.id === selectedLocationId,
+  );
+  let query = supabase
     .from("jobs")
     .select(
       `*,
@@ -70,6 +83,12 @@ export default async function OrganisatieOpdrachtenPage() {
     .eq("organization_id", orgContext.organization.id)
     .order("created_at", { ascending: false });
 
+  if (selectedLocationId) {
+    query = query.eq("location_id", selectedLocationId);
+  }
+
+  const { data } = await query;
+
   const jobs = (data as unknown as JobRow[] | null) ?? [];
 
   return (
@@ -78,7 +97,9 @@ export default async function OrganisatieOpdrachtenPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Opdrachten</h1>
           <p className="text-sm text-muted-foreground">
-            Alle opdrachten en vacatures van {orgContext.organization.name}.
+            {selectedLocation
+              ? `Opdrachten en vacatures van ${selectedLocation.name}.`
+              : `Alle opdrachten en vacatures van ${orgContext.organization.name}.`}
           </p>
         </div>
         <Link href="/organisatie/opdrachten/nieuw">

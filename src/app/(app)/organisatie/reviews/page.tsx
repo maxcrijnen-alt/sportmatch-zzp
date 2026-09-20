@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -36,12 +38,43 @@ export default async function OrganisatieReviewsPage() {
     redirect("/dashboard");
   }
 
-  const { data } = await supabase
-    .from("reviews")
-    .select("*, job:jobs!inner (title, organization_id)")
-    .eq("job.organization_id", orgContext.organization.id)
-    .not("released_at", "is", null)
-    .order("created_at", { ascending: false });
+  const [
+    { data },
+    { data: completedJobs },
+    { data: myReviews },
+    { data: wholeConfirmations },
+    { data: segmentConfirmations },
+  ] = await Promise.all([
+    supabase
+      .from("reviews")
+      .select("*, job:jobs!inner (title, organization_id)")
+      .eq("job.organization_id", orgContext.organization.id)
+      .not("released_at", "is", null)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("jobs")
+      .select("id,title,starts_on")
+      .eq("organization_id", orgContext.organization.id)
+      .eq("status", "completed"),
+    supabase
+      .from("reviews")
+      .select("job_id, reviewee_id")
+      .eq("reviewer_id", profile.id)
+      .eq("side", "organization"),
+    supabase
+      .from("job_confirmations")
+      .select("job_id, instructor_id, job:jobs!inner(organization_id,status)")
+      .eq("job.organization_id", orgContext.organization.id)
+      .eq("job.status", "completed")
+      .not("confirmed_at", "is", null),
+    supabase
+      .from("job_segment_confirmations")
+      .select("job_id, instructor_id, job:jobs!inner(organization_id,status)")
+      .eq("job.organization_id", orgContext.organization.id)
+      .eq("job.status", "completed")
+      .not("confirmed_at", "is", null)
+      .is("cancelled_at", null),
+  ]);
 
   const reviews = (data as unknown as ReviewRow[] | null) ?? [];
   const receivedReviews = reviews.filter(
@@ -54,6 +87,28 @@ export default async function OrganisatieReviewsPage() {
           receivedReviews.length
         ).toFixed(1)
       : null;
+  const reviewedPairs = new Set(
+    myReviews?.map(
+      (review) => `${review.job_id as string}:${review.reviewee_id as string}`,
+    ) ?? [],
+  );
+  const expectedReviewees = new Map<string, Set<string>>();
+  for (const confirmation of [
+    ...(wholeConfirmations ?? []),
+    ...(segmentConfirmations ?? []),
+  ]) {
+    const jobId = confirmation.job_id as string;
+    const values = expectedReviewees.get(jobId) ?? new Set<string>();
+    values.add(confirmation.instructor_id as string);
+    expectedReviewees.set(jobId, values);
+  }
+  const pendingReviews = (completedJobs ?? []).filter(
+    (job) =>
+      Array.from(expectedReviewees.get(job.id as string) ?? []).some(
+        (instructorId) =>
+          !reviewedPairs.has(`${job.id as string}:${instructorId}`),
+      ),
+  );
 
   return (
     <div className="mx-auto w-full max-w-3xl space-y-6 px-4 py-8">
@@ -64,6 +119,25 @@ export default async function OrganisatieReviewsPage() {
           hebben beoordeeld).
         </p>
       </div>
+
+      {pendingReviews.length > 0 ? (
+        <Card className="border-warning/50 bg-warning/10">
+          <CardHeader>
+            <CardTitle>Je hebt nog een beoordeling openstaan</CardTitle>
+            <CardDescription>
+              Rond deze beoordeling af voordat je een nieuwe opdracht plaatst of kandidaat kiest.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {pendingReviews.map((job) => (
+              <div className="flex items-center justify-between gap-3 rounded-md bg-background p-3" key={job.id as string}>
+                <span className="text-sm font-medium">{job.title as string}</span>
+                <Link href={`/organisatie/opdrachten/${job.id}`}><Button size="sm">Nu beoordelen</Button></Link>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      ) : null}
 
       <div className="grid gap-4 sm:grid-cols-2">
         <Card>
@@ -108,6 +182,7 @@ export default async function OrganisatieReviewsPage() {
                   <p className="text-xs text-muted-foreground">
                     {review.job?.title} · {formatDate(review.created_at)}
                   </p>
+                  {review.comment ? <p className="mt-1 text-sm">“{review.comment}”</p> : null}
                 </div>
                 <Badge variant="muted">
                   {review.side === "instructor"

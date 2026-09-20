@@ -1,11 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Bell, LogOut, Settings, User } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { Bell, LogOut, Settings, Star, User } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { Logo } from "@/components/brand/logo";
+import {
+  LocationSelector,
+  type LocationOption,
+} from "@/components/app/location-selector";
 import { navLinksForRole } from "@/components/app/nav-links";
 import { signOutAction } from "@/lib/auth/actions";
+import { LOCATION_FILTER_COOKIE } from "@/lib/org/location-filter-constants";
 import { cn } from "@/lib/utils";
 import type { UserRole } from "@/types/database";
 
@@ -13,12 +19,89 @@ interface AppShellProps {
   role: UserRole;
   fullName: string;
   unreadCount: number;
+  hasPendingReview?: boolean;
+  locations?: LocationOption[];
+  initialLocationId?: string | null;
   children: React.ReactNode;
 }
 
-export function AppShell({ role, fullName, unreadCount, children }: AppShellProps) {
+export function AppShell({
+  role,
+  fullName,
+  unreadCount,
+  hasPendingReview = false,
+  locations = [],
+  initialLocationId = null,
+  children,
+}: AppShellProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const links = navLinksForRole(role);
+  const validLocationIds = useMemo(
+    () => new Set(locations.map((location) => location.id)),
+    [locations],
+  );
+  const [locationId, setLocationId] = useState(
+    initialLocationId && validLocationIds.has(initialLocationId)
+      ? initialLocationId
+      : "",
+  );
+
+  useEffect(() => {
+    if (role !== "organization" || locations.length === 0) {
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const requested = params.get("location");
+    const stored = window.localStorage.getItem(LOCATION_FILTER_COOKIE);
+    const nextLocation =
+      requested && validLocationIds.has(requested)
+        ? requested
+        : initialLocationId && validLocationIds.has(initialLocationId)
+          ? initialLocationId
+          : stored && validLocationIds.has(stored)
+            ? stored
+            : "";
+
+    const frame = window.requestAnimationFrame(() => {
+      setLocationId(nextLocation);
+    });
+    if (nextLocation) {
+      window.localStorage.setItem(LOCATION_FILTER_COOKIE, nextLocation);
+      document.cookie = `${LOCATION_FILTER_COOKIE}=${encodeURIComponent(nextLocation)}; Path=/; Max-Age=31536000; SameSite=Lax${window.location.protocol === "https:" ? "; Secure" : ""}`;
+    }
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [initialLocationId, locations.length, role, validLocationIds]);
+
+  const updateLocation = (nextLocation: string) => {
+    const safeLocation = validLocationIds.has(nextLocation) ? nextLocation : "";
+    setLocationId(safeLocation);
+
+    if (safeLocation) {
+      window.localStorage.setItem(LOCATION_FILTER_COOKIE, safeLocation);
+      document.cookie = `${LOCATION_FILTER_COOKIE}=${encodeURIComponent(safeLocation)}; Path=/; Max-Age=31536000; SameSite=Lax${window.location.protocol === "https:" ? "; Secure" : ""}`;
+    } else {
+      window.localStorage.removeItem(LOCATION_FILTER_COOKIE);
+      document.cookie = `${LOCATION_FILTER_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax`;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    if (safeLocation) {
+      params.set("location", safeLocation);
+    } else {
+      params.delete("location");
+    }
+    const query = params.toString();
+    router.push(query ? `${pathname}?${query}` : pathname);
+    router.refresh();
+  };
+
+  const withLocation = (href: string) =>
+    role === "organization" && locationId
+      ? `${href}${href.includes("?") ? "&" : "?"}location=${encodeURIComponent(locationId)}`
+      : href;
 
   const isActive = (href: string) =>
     href === "/dashboard" || href === "/admin" || href === "/organisatie"
@@ -43,7 +126,7 @@ export function AppShell({ role, fullName, unreadCount, children }: AppShellProp
                   ? "bg-primary/10 text-primary"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground",
               )}
-              href={link.href}
+              href={withLocation(link.href)}
               key={link.href}
             >
               <link.icon className="h-4 w-4" />
@@ -70,9 +153,16 @@ export function AppShell({ role, fullName, unreadCount, children }: AppShellProp
           <Link className="lg:hidden" href="/dashboard">
             <Logo />
           </Link>
-          <div className="hidden text-sm text-muted-foreground lg:block">
+          <div className="hidden text-sm text-muted-foreground xl:block">
             Welkom, <span className="font-medium text-foreground">{fullName}</span>
           </div>
+          {role === "organization" && locations.length > 0 ? (
+            <LocationSelector
+              locations={locations}
+              onChange={updateLocation}
+              value={locationId}
+            />
+          ) : null}
           <div className="flex items-center gap-1">
             <Link
               aria-label="Meldingen"
@@ -103,7 +193,25 @@ export function AppShell({ role, fullName, unreadCount, children }: AppShellProp
           </div>
         </header>
 
-        <main className="flex-1 pb-24 lg:pb-8">{children}</main>
+        <main className="flex-1 pb-24 lg:pb-8">
+          {hasPendingReview ? (
+            <div className="border-b border-warning/30 bg-warning/10 px-4 py-3">
+              <div className="mx-auto flex max-w-7xl flex-col gap-2 text-sm sm:flex-row sm:items-center sm:justify-between">
+                <p className="flex items-center gap-2 font-medium">
+                  <Star className="h-4 w-4 text-warning" />
+                  Je hebt nog een beoordeling openstaan
+                </p>
+                <Link
+                  className="font-semibold text-primary hover:underline"
+                  href={role === "organization" ? "/organisatie/reviews" : "/reviews"}
+                >
+                  Beoordeling afronden
+                </Link>
+              </div>
+            </div>
+          ) : null}
+          {children}
+        </main>
 
         {/* Bottom nav (mobiel): eerste vijf links */}
         <nav className="fixed inset-x-0 bottom-0 z-30 flex border-t border-border bg-card lg:hidden">
@@ -113,7 +221,7 @@ export function AppShell({ role, fullName, unreadCount, children }: AppShellProp
                 "flex flex-1 flex-col items-center gap-1 py-2.5 text-[0.65rem] font-medium",
                 isActive(link.href) ? "text-primary" : "text-muted-foreground",
               )}
-              href={link.href}
+              href={withLocation(link.href)}
               key={link.href}
             >
               <link.icon className="h-5 w-5" />

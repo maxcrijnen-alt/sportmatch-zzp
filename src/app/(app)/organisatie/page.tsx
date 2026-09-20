@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Building2, Users } from "lucide-react";
+import { Building2 } from "lucide-react";
 import { ConversionFeeForm, OrganizationForm } from "@/components/org/org-forms";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -84,7 +84,7 @@ export default async function OrganisatiePage() {
         </p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4">
         <Card>
           <CardHeader>
             <Building2 className="mb-1 h-6 w-6 text-primary" />
@@ -96,20 +96,6 @@ export default async function OrganisatiePage() {
           <CardContent>
             <Link href="/organisatie/vestigingen">
               <Button variant="outline">Vestigingen beheren</Button>
-            </Link>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <Users className="mb-1 h-6 w-6 text-primary" />
-            <CardTitle>Medewerkers</CardTitle>
-            <CardDescription>
-              Eigen logins voor planners en vestigingsmanagers.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Link href="/organisatie/medewerkers">
-              <Button variant="outline">Medewerkers beheren</Button>
             </Link>
           </CardContent>
         </Card>

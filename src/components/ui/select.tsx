@@ -1,7 +1,7 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
-/** Native select met shadcn-styling; voldoende voor de MVP. */
+/** Native select met consistente SportMatch-styling. */
 const Select = React.forwardRef<
   HTMLSelectElement,
   React.SelectHTMLAttributes<HTMLSelectElement>

@@ -67,7 +67,7 @@ const instructorSteps = [
 const organizationValueChecklist = [
   "Minimaal nodig: organisatiegegevens, contactpersoon en eerste vestiging.",
   "Daarna: eerste opdracht plaatsen met sport, datum, tijd, locatie en vergoeding.",
-  "Meer vertrouwen: teamleden, extra vestigingen en duidelijke contactafspraken later aanvullen.",
+  "Meer vertrouwen: extra vestigingen en duidelijke contactafspraken later aanvullen.",
 ];
 
 const instructorValueChecklist = [
@@ -178,7 +178,7 @@ export default async function OnboardingPage() {
           </p>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">
             Deze onboarding zet alleen de basis goed. Details zoals extra
-            vestigingen, documenten, beschikbaarheid en teamleden kun je daarna
+            vestigingen, documenten en beschikbaarheid kun je daarna
             rustig aanvullen vanuit je dashboard.
           </p>
         </div>

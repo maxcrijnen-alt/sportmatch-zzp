@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { redirect } from "next/navigation";
-import { BellOff } from "lucide-react";
+import { ArrowUpRight, BellOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { getSessionProfile } from "@/lib/auth/session";
 import { formatDateTime } from "@/lib/labels";
-import { markAllNotificationsRead } from "@/lib/notifications/actions";
+import {
+  markAllNotificationsRead,
+  openNotificationAction,
+} from "@/lib/notifications/actions";
 import { createClient } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
 import type { Notification } from "@/types/database";
@@ -74,9 +76,14 @@ export default async function MeldingenPage() {
               >
                 <div className="flex items-start justify-between gap-3">
                   <p className="text-sm font-medium">{notification.title}</p>
-                  <time className="shrink-0 text-xs text-muted-foreground">
-                    {formatDateTime(notification.created_at)}
-                  </time>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <time className="text-xs text-muted-foreground">
+                      {formatDateTime(notification.created_at)}
+                    </time>
+                    {notification.href ? (
+                      <ArrowUpRight className="h-4 w-4 text-primary" />
+                    ) : null}
+                  </div>
                 </div>
                 {notification.body ? (
                   <p className="mt-1 text-sm text-muted-foreground">
@@ -87,9 +94,17 @@ export default async function MeldingenPage() {
             );
 
             return notification.href ? (
-              <Link className="block" href={notification.href} key={notification.id}>
-                {inner}
-              </Link>
+              <form
+                action={openNotificationAction.bind(null, notification.id)}
+                key={notification.id}
+              >
+                <button
+                  className="block w-full rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  type="submit"
+                >
+                  {inner}
+                </button>
+              </form>
             ) : (
               <div key={notification.id}>{inner}</div>
             );

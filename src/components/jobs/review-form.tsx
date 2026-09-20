@@ -4,12 +4,20 @@ import { useActionState, useState } from "react";
 import { Star } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { submitReviewAction, type JobActionState } from "@/lib/jobs/actions";
 import { cn } from "@/lib/utils";
 
 const initialState: JobActionState = { error: null, success: null };
 
-export function ReviewForm({ jobId }: { jobId: string }) {
+export function ReviewForm({
+  jobId,
+  revieweeId,
+}: {
+  jobId: string;
+  revieweeId?: string;
+}) {
   const [state, formAction, isPending] = useActionState(
     submitReviewAction,
     initialState,
@@ -33,6 +41,9 @@ export function ReviewForm({ jobId }: { jobId: string }) {
       ) : null}
 
       <input name="jobId" type="hidden" value={jobId} />
+      {revieweeId ? (
+        <input name="revieweeId" type="hidden" value={revieweeId} />
+      ) : null}
       <input name="rating" type="hidden" value={rating} />
 
       <div className="flex items-center gap-1">
@@ -58,6 +69,33 @@ export function ReviewForm({ jobId }: { jobId: string }) {
         Je beoordeling wordt pas zichtbaar nadat beide partijen hebben
         beoordeeld.
       </p>
+
+      <div className="space-y-2">
+        <Label htmlFor={`review-comment-${jobId}-${revieweeId ?? "party"}`}>
+          Toelichting (optioneel)
+        </Label>
+        <Textarea
+          id={`review-comment-${jobId}-${revieweeId ?? "party"}`}
+          maxLength={2000}
+          name="comment"
+          rows={3}
+        />
+      </div>
+
+      {rating > 0 && rating <= 2 ? (
+        <div className="space-y-3 rounded-lg border border-warning/40 bg-warning/10 p-3">
+          <label className="flex items-center gap-2 text-sm font-medium">
+            <input name="alsoReport" type="checkbox" />
+            Ik wil dit ook melden bij SportMatch
+          </label>
+          <div className="space-y-2">
+            <Label htmlFor={`report-details-${jobId}-${revieweeId ?? "party"}`}>
+              Toelichting voor SportMatch
+            </Label>
+            <Textarea id={`report-details-${jobId}-${revieweeId ?? "party"}`} name="reportDetails" placeholder="Beschrijf wat er is gebeurd. De melding blijft los van je review." rows={3} />
+          </div>
+        </div>
+      ) : null}
 
       <Button disabled={isPending || rating === 0} type="submit">
         {isPending ? "Versturen…" : "Beoordeling versturen"}

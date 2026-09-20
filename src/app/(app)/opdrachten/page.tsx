@@ -205,6 +205,9 @@ export default async function OpdrachtenPage({
                 name="datum"
                 type="date"
               />
+              <p className="text-[11px] leading-4 text-muted-foreground">
+                Laat leeg om alle datums te bekijken.
+              </p>
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs" htmlFor="maxkm">
@@ -298,7 +301,7 @@ export default async function OpdrachtenPage({
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-4">
           {filtered.map((job) => (
             <JobCard
               href={`/opdrachten/${job.id}`}

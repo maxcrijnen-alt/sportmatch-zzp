@@ -3,6 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getSessionProfile } from "@/lib/auth/session";
+import {
+  CUSTOM_CITY_MAX_LENGTH,
+  CUSTOM_CITY_OPTION_VALUE,
+} from "@/lib/profile/location";
 import { createClient } from "@/lib/supabase/server";
 
 export interface ProfileActionState {
@@ -10,11 +14,29 @@ export interface ProfileActionState {
   success: string | null;
 }
 
-const profileSchema = z.object({
-  fullName: z.string().min(2, "Vul je naam in."),
-  phone: z.string().min(8, "Vul een geldig telefoonnummer in."),
-  cityId: z.string().uuid().nullable().or(z.literal("")),
-});
+const profileSchema = z
+  .object({
+    fullName: z.string().min(2, "Vul je naam in."),
+    phone: z.string().min(8, "Vul een geldig telefoonnummer in."),
+    cityId: z.union([
+      z.string().uuid("Kies een geldige woonplaats."),
+      z.literal(""),
+      z.literal(CUSTOM_CITY_OPTION_VALUE),
+    ]),
+    customCity: z.string().trim().max(CUSTOM_CITY_MAX_LENGTH).default(""),
+  })
+  .superRefine((value, ctx) => {
+    if (
+      value.cityId === CUSTOM_CITY_OPTION_VALUE &&
+      value.customCity.length < 2
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Vul je woonplaats in.",
+        path: ["customCity"],
+      });
+    }
+  });
 
 export async function updateProfileAction(
   _previous: ProfileActionState,
@@ -31,6 +53,7 @@ export async function updateProfileAction(
     fullName: formData.get("fullName"),
     phone: formData.get("phone"),
     cityId: formData.get("cityId") ?? "",
+    customCity: formData.get("customCity") ?? "",
   });
 
   if (!parsed.success) {
@@ -40,12 +63,15 @@ export async function updateProfileAction(
     };
   }
 
+  const usesCustomCity = parsed.data.cityId === CUSTOM_CITY_OPTION_VALUE;
+
   const { error } = await supabase
     .from("profiles")
     .update({
       full_name: parsed.data.fullName,
       phone: parsed.data.phone,
-      city_id: parsed.data.cityId || null,
+      city_id: usesCustomCity ? null : parsed.data.cityId || null,
+      custom_city: usesCustomCity ? parsed.data.customCity : null,
     })
     .eq("id", profile.id);
 

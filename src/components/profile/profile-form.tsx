@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,7 @@ import {
   updateProfileAction,
   type ProfileActionState,
 } from "@/lib/profile/actions";
+import { CUSTOM_CITY_OPTION_VALUE } from "@/lib/profile/location";
 import type { City, Profile } from "@/types/database";
 
 const initialState: ProfileActionState = { error: null, success: null };
@@ -24,6 +25,9 @@ export function ProfileForm({
   const [state, formAction, isPending] = useActionState(
     updateProfileAction,
     initialState,
+  );
+  const [cityId, setCityId] = useState(
+    profile.custom_city ? CUSTOM_CITY_OPTION_VALUE : (profile.city_id ?? ""),
   );
 
   return (
@@ -60,15 +64,32 @@ export function ProfileForm({
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="cityId">Plaats</Label>
-          <Select defaultValue={profile.city_id ?? ""} id="cityId" name="cityId">
+          <Label htmlFor="cityId">Woonplaats</Label>
+          <Select
+            id="cityId"
+            name="cityId"
+            onChange={(event) => setCityId(event.target.value)}
+            value={cityId}
+          >
             <option value="">Geen plaats gekozen</option>
             {cities.map((city) => (
               <option key={city.id} value={city.id}>
                 {city.name}
               </option>
             ))}
+            <option value={CUSTOM_CITY_OPTION_VALUE}>Anders, namelijk…</option>
           </Select>
+          {cityId === CUSTOM_CITY_OPTION_VALUE ? (
+            <Input
+              autoComplete="address-level2"
+              defaultValue={profile.custom_city ?? ""}
+              id="customCity"
+              maxLength={100}
+              name="customCity"
+              placeholder="Vul je woonplaats in"
+              required
+            />
+          ) : null}
         </div>
         <div className="space-y-2">
           <Label htmlFor="email">E-mailadres</Label>

@@ -12,6 +12,7 @@ import {
   completeInstructorOnboarding,
   type OnboardingActionState,
 } from "@/lib/onboarding/actions";
+import { CUSTOM_CITY_OPTION_VALUE } from "@/lib/profile/location";
 import { cn } from "@/lib/utils";
 import type { City, InstructorStatus, Sport } from "@/types/database";
 
@@ -34,6 +35,7 @@ export function InstructorOnboardingForm({
     initialState,
   );
   const [statuses, setStatuses] = useState<InstructorStatus[]>([]);
+  const [cityId, setCityId] = useState("");
   const isZzp = statuses.includes("zzp");
 
   const toggleStatus = (status: InstructorStatus) => {
@@ -73,7 +75,13 @@ export function InstructorOnboardingForm({
         </div>
         <div className="space-y-2">
           <Label htmlFor="cityId">Woonplaats</Label>
-          <Select defaultValue="" id="cityId" name="cityId" required>
+          <Select
+            id="cityId"
+            name="cityId"
+            onChange={(event) => setCityId(event.target.value)}
+            required
+            value={cityId}
+          >
             <option disabled value="">
               Kies je woonplaats
             </option>
@@ -82,7 +90,18 @@ export function InstructorOnboardingForm({
                 {city.name}
               </option>
             ))}
+            <option value={CUSTOM_CITY_OPTION_VALUE}>Anders, namelijk…</option>
           </Select>
+          {cityId === CUSTOM_CITY_OPTION_VALUE ? (
+            <Input
+              autoComplete="address-level2"
+              id="customCity"
+              maxLength={100}
+              name="customCity"
+              placeholder="Vul je woonplaats in"
+              required
+            />
+          ) : null}
           <p className="text-xs text-muted-foreground">
             Andere gebruikers zien alleen je plaats, nooit je adres.
           </p>

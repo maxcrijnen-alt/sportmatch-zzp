@@ -18,7 +18,7 @@ export const metadata: Metadata = {
 
 interface OrgRow extends Organization {
   created_at: string;
-  locations: { count: number }[];
+  locationCount: number;
 }
 
 export default async function AdminOrganisatiesPage() {
@@ -28,13 +28,29 @@ export default async function AdminOrganisatiesPage() {
     return null;
   }
 
-  const { data } = await supabase
-    .from("organizations")
-    .select("*, locations:organization_locations (count)")
-    .order("created_at", { ascending: false })
-    .limit(200);
+  const [{ data }, { data: locationRows }] = await Promise.all([
+    supabase
+      .rpc("admin_list_organizations")
+      .order("created_at", { ascending: false })
+      .limit(200),
+    supabase.from("organization_locations").select("organization_id"),
+  ]);
 
-  const organizations = (data as unknown as OrgRow[] | null) ?? [];
+  const locationCounts = new Map<string, number>();
+  for (const location of locationRows ?? []) {
+    const organizationId = location.organization_id as string;
+    locationCounts.set(
+      organizationId,
+      (locationCounts.get(organizationId) ?? 0) + 1,
+    );
+  }
+
+  const organizations = ((data as unknown as Organization[] | null) ?? []).map(
+    (organization) => ({
+      ...organization,
+      locationCount: locationCounts.get(organization.id) ?? 0,
+    }),
+  ) as OrgRow[];
 
   return (
     <div className="space-y-6">
@@ -64,7 +80,7 @@ export default async function AdminOrganisatiesPage() {
                 <TableCell className="text-sm text-muted-foreground">
                   {organization.contact_email}
                 </TableCell>
-                <TableCell>{organization.locations?.[0]?.count ?? 0}</TableCell>
+                <TableCell>{organization.locationCount}</TableCell>
                 <TableCell className="text-muted-foreground">
                   {formatDate(organization.created_at)}
                 </TableCell>

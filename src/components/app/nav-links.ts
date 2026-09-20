@@ -1,7 +1,9 @@
 import {
+  BarChart3,
   Bell,
   Briefcase,
   Building2,
+  CalendarDays,
   CalendarRange,
   CreditCard,
   FileCheck2,
@@ -12,6 +14,7 @@ import {
   Settings,
   ShieldCheck,
   Star,
+  TriangleAlert,
   Users,
 } from "lucide-react";
 import type { UserRole } from "@/types/database";
@@ -26,6 +29,7 @@ const instructorLinks: NavLink[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/opdrachten", label: "Opdrachten", icon: Search },
   { href: "/mijn-reacties", label: "Mijn reacties", icon: Inbox },
+  { href: "/agenda", label: "Agenda", icon: CalendarDays },
   { href: "/berichten", label: "Berichten", icon: MessageSquare },
   { href: "/beschikbaarheid", label: "Beschikbaarheid", icon: CalendarRange },
   { href: "/documenten", label: "Documenten", icon: FileCheck2 },
@@ -37,7 +41,9 @@ const organizationLinks: NavLink[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/organisatie/opdrachten", label: "Opdrachten", icon: Briefcase },
   { href: "/organisatie/kandidaten", label: "Kandidaten", icon: Users },
+  { href: "/agenda", label: "Agenda", icon: CalendarDays },
   { href: "/berichten", label: "Berichten", icon: MessageSquare },
+  { href: "/organisatie/statistieken", label: "Statistieken", icon: BarChart3 },
   { href: "/organisatie", label: "Organisatie", icon: Building2 },
   { href: "/organisatie/reviews", label: "Reviews", icon: Star },
   { href: "/abonnement", label: "Abonnement", icon: CreditCard },
@@ -47,6 +53,7 @@ const adminLinks: NavLink[] = [
   { href: "/admin", label: "Admin", icon: ShieldCheck },
   { href: "/admin/gebruikers", label: "Gebruikers", icon: Users },
   { href: "/admin/documenten", label: "Documenten", icon: FileCheck2 },
+  { href: "/admin/klachten", label: "Klachten", icon: TriangleAlert },
   { href: "/admin/opdrachten", label: "Opdrachten", icon: Briefcase },
   { href: "/admin/billing", label: "Billing", icon: CreditCard },
   { href: "/admin/statistieken", label: "Statistieken", icon: LayoutDashboard },

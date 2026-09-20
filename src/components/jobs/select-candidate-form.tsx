@@ -16,10 +16,12 @@ export function SelectCandidateForm({
   applicationId,
   jobId,
   candidateName,
+  segmentIds = [],
 }: {
   applicationId: string;
   jobId: string;
   candidateName: string;
+  segmentIds?: string[];
 }) {
   const [open, setOpen] = useState(false);
   const [state, formAction, isPending] = useActionState(
@@ -56,11 +58,17 @@ export function SelectCandidateForm({
 
       <input name="applicationId" type="hidden" value={applicationId} />
       <input name="jobId" type="hidden" value={jobId} />
+      {segmentIds.map((segmentId) => (
+        <input key={segmentId} name="segmentIds" type="hidden" value={segmentId} />
+      ))}
 
       <p className="text-sm">
         Je kiest <strong>{candidateName}</strong>. Hiermee ga je als organisatie
         digitaal akkoord met de opdrachtvoorwaarden. De opdracht is definitief
         zodra de instructeur ook bevestigt.
+        {segmentIds.length > 0
+          ? ` De kandidaat wordt gekozen voor ${segmentIds.length} lesonderdeel${segmentIds.length === 1 ? "" : "en"}.`
+          : ""}
       </p>
 
       <div className="space-y-1.5">

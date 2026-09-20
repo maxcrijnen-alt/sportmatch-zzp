@@ -162,13 +162,13 @@ export default async function AbonnementPage() {
       </div>
 
       <Alert>
-        <AlertTitle>Testfase: geen echte betalingen</AlertTitle>
+        <AlertTitle>Betalingen worden nog niet automatisch verwerkt</AlertTitle>
         <AlertDescription>
-          Tijdens de MVP-fase worden betalingen gesimuleerd. “Activeren” zet je
-          abonnement direct op actief zonder echte transactie. Bij een verlopen
+          “Activeren” registreert de abonnementsstatus zonder echte transactie.
+          Bij een verlopen
           abonnement blijven bestaande afspraken zichtbaar, maar zijn reageren,
           chatten, plaatsen en bevestigen geblokkeerd. Bij een mislukte betaling
-          geldt straks een hersteltermijn van 14 dagen.
+          geldt een hersteltermijn van 14 dagen.
         </AlertDescription>
       </Alert>
 

@@ -23,7 +23,7 @@ export const metadata: Metadata = {
 };
 
 interface DocumentRow extends DocumentUpload {
-  owner: { full_name: string; email: string } | null;
+  owner: { full_name: string } | null;
 }
 
 const SIGNED_URL_SECONDS = 60 * 10;
@@ -37,7 +37,7 @@ export default async function AdminDocumentenPage() {
 
   const { data } = await supabase
     .from("document_uploads")
-    .select("*, owner:profiles!document_uploads_user_id_fkey (full_name, email)")
+    .select("*, owner:profiles!document_uploads_user_id_fkey (full_name)")
     .order("created_at", { ascending: false })
     .limit(100);
 

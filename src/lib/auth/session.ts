@@ -21,11 +21,11 @@ export const getSessionProfile = cache(async (): Promise<Profile | null> => {
     return null;
   }
 
+  // Contactgegevens zijn niet rechtstreeks leesbaar uit public.profiles.
+  // Deze RPC geeft uitsluitend de rij van de ingelogde gebruiker terug.
   const { data: profile } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .single();
+    .rpc("get_my_profile")
+    .maybeSingle();
 
   return (profile as Profile | null) ?? null;
 });

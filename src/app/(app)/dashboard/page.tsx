@@ -9,7 +9,6 @@ import {
   Inbox,
   MessageSquare,
   Search,
-  Users,
 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -23,6 +22,7 @@ import {
 import { getSessionProfile } from "@/lib/auth/session";
 import { subscriptionGrantsAccess } from "@/lib/billing/access";
 import { getOrgContext } from "@/lib/org/context";
+import { resolveLocationFilter } from "@/lib/org/location-filter";
 import { createClient } from "@/lib/supabase/server";
 import type { Subscription } from "@/types/database";
 
@@ -44,10 +44,10 @@ const organizationNextActions = [
     cta: "Kandidaten bekijken",
   },
   {
-    title: "Zet vestiging en team klaar",
-    text: "Controleer je vestigingen en nodig planners uit zodat vervolgvragen en berichten snel worden opgepakt.",
-    href: "/organisatie/vestigingen",
-    cta: "Vestigingen beheren",
+    title: "Houd je planning actueel",
+    text: "Bekijk voorlopige en bevestigde lessen per vestiging in je centrale agenda.",
+    href: "/agenda",
+    cta: "Agenda bekijken",
   },
 ];
 
@@ -72,7 +72,11 @@ const instructorNextActions = [
   },
 ];
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ location?: string }>;
+}) {
   const profile = await getSessionProfile();
   const supabase = await createClient();
 
@@ -95,25 +99,46 @@ export default async function DashboardPage() {
       redirect("/onboarding");
     }
 
-    const locationIds = orgContext.locations.map((location) => location.id);
+    const params = await searchParams;
+    const selectedLocationId = await resolveLocationFilter(
+      orgContext.locations,
+      params.location,
+    );
+    const locationIds = selectedLocationId
+      ? [selectedLocationId]
+      : orgContext.locations.map((location) => location.id);
+    const selectedLocation = orgContext.locations.find(
+      (location) => location.id === selectedLocationId,
+    );
+
+    let jobsQuery = supabase
+      .from("jobs")
+      .select("id, status", { count: "exact" })
+      .eq("organization_id", orgContext.organization.id)
+      .eq("status", "open");
+    let applicationsQuery = supabase
+      .from("job_applications")
+      .select("id, job:jobs!inner(organization_id, location_id)", {
+        count: "exact",
+        head: true,
+      })
+      .eq("job.organization_id", orgContext.organization.id)
+      .eq("status", "pending");
+
+    if (selectedLocationId) {
+      jobsQuery = jobsQuery.eq("location_id", selectedLocationId);
+      applicationsQuery = applicationsQuery.eq(
+        "job.location_id",
+        selectedLocationId,
+      );
+    }
 
     const [jobsResult, subsResult, applicationsResult] = await Promise.all([
-      supabase
-        .from("jobs")
-        .select("id, status", { count: "exact" })
-        .eq("organization_id", orgContext.organization.id)
-        .eq("status", "open"),
+      jobsQuery,
       locationIds.length > 0
         ? supabase.from("subscriptions").select("*").in("location_id", locationIds)
         : Promise.resolve({ data: [] as Subscription[] }),
-      supabase
-        .from("job_applications")
-        .select("id, job:jobs!inner(organization_id)", {
-          count: "exact",
-          head: true,
-        })
-        .eq("job.organization_id", orgContext.organization.id)
-        .eq("status", "pending"),
+      applicationsQuery,
     ]);
 
     const subscriptions = (subsResult.data as Subscription[] | null) ?? [];
@@ -130,8 +155,9 @@ export default async function DashboardPage() {
             {orgContext.organization.name}
           </h1>
           <p className="text-sm text-muted-foreground">
-            Je startpunt voor opdrachten, kandidaten en opvolging. Begin bij je
-            eerste opdracht of pak nieuwe reacties direct op.
+            {selectedLocation
+              ? `Je startpunt voor opdrachten, kandidaten en planning van ${selectedLocation.name}.`
+              : "Je startpunt voor opdrachten, kandidaten en planning van alle vestigingen."}
           </p>
         </div>
 
@@ -277,15 +303,15 @@ export default async function DashboardPage() {
           </Card>
           <Card>
             <CardHeader>
-              <Users className="mb-1 h-6 w-6 text-primary" />
-              <CardTitle>Beheer je team</CardTitle>
+              <CalendarCheck className="mb-1 h-6 w-6 text-primary" />
+              <CardTitle>Bekijk je agenda</CardTitle>
               <CardDescription>
-                Nodig planners en vestigingsmanagers uit met een eigen login.
+                Houd voorlopige en definitief bevestigde lessen bij elkaar.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Link href="/organisatie/medewerkers">
-                <Button variant="outline">Medewerkers</Button>
+              <Link href="/agenda">
+                <Button variant="outline">Agenda openen</Button>
               </Link>
             </CardContent>
           </Card>

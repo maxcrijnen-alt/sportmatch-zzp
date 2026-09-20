@@ -1,9 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { DEMO_SESSION_COOKIE } from "@/lib/demo/constants";
+import { cleanupDemoSession } from "@/lib/demo/factory";
 
 const credentialsSchema = z.object({
   email: z.string().email("Vul een geldig e-mailadres in."),
@@ -92,10 +95,26 @@ export async function registerAction(
 }
 
 export async function signOutAction(): Promise<void> {
+  const cookieStore = await cookies();
+  const demoSessionId = cookieStore.get(DEMO_SESSION_COOKIE)?.value;
   const supabase = await createClient();
 
+  if (supabase && demoSessionId) {
+    const { data: currentProfile } = await supabase
+      .rpc("get_my_profile")
+      .maybeSingle();
+    const ownedDemoSessionId = (
+      currentProfile as { demo_session_id?: string | null } | null
+    )?.demo_session_id;
+    if (ownedDemoSessionId === demoSessionId) {
+      await cleanupDemoSession(demoSessionId).catch(() => undefined);
+    }
+  }
   if (supabase) {
     await supabase.auth.signOut();
+  }
+  if (demoSessionId) {
+    cookieStore.delete(DEMO_SESSION_COOKIE);
   }
 
   revalidatePath("/", "layout");

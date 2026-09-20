@@ -3,6 +3,15 @@ import type { Job, OpenJobMatch } from "@/types/database";
 
 export interface JobWithRelations extends Job {
   sport: { id: string; name: string } | null;
+  lesson_type: { id: string; name: string } | null;
+  segments: Array<{
+    id: string;
+    position: number;
+    start_time: string;
+    end_time: string;
+    custom_lesson_type: string | null;
+    lesson_type: { id: string; name: string } | null;
+  }>;
   location: {
     id: string;
     name: string;
@@ -14,6 +23,15 @@ export interface JobWithRelations extends Job {
 export const JOB_RELATIONS_SELECT = `
   *,
   sport:sports (id, name),
+  lesson_type:lesson_types (id, name),
+  segments:job_segments (
+    id,
+    position,
+    start_time,
+    end_time,
+    custom_lesson_type,
+    lesson_type:lesson_types (id, name)
+  ),
   location:organization_locations (id, name, city:cities (id, name)),
   organization:organizations (id, name, org_type)
 `;

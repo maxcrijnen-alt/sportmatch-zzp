@@ -37,8 +37,7 @@ export default async function AdminGebruikersPage({
   }
 
   let query = supabase
-    .from("profiles")
-    .select("*")
+    .rpc("admin_list_profiles")
     .order("created_at", { ascending: false })
     .limit(200);
 

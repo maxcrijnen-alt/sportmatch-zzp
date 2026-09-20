@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { cancelJobAction, type JobActionState } from "@/lib/jobs/actions";
@@ -15,6 +16,7 @@ export function CancelForm({ jobId }: { jobId: string }) {
     cancelJobAction,
     initialState,
   );
+  const [forceMajeure, setForceMajeure] = useState(false);
 
   if (state.success) {
     return (
@@ -43,16 +45,35 @@ export function CancelForm({ jobId }: { jobId: string }) {
       <input name="jobId" type="hidden" value={jobId} />
 
       <p className="text-sm">
-        Let op: bij annulering korter dan 12 uur voor aanvang geldt de
-        annuleringsregeling (25% – 100% van de afgesproken vergoeding,
-        afhankelijk van het moment). Overweeg eerst een vervanger voor te
-        stellen.
+        Bij een normale annulering wordt 150% van de totale afgesproken
+        vergoeding geregistreerd. Er vindt nog geen automatische betaling
+        plaats. Overweeg eerst een vervanger voor te stellen.
       </p>
 
       <div className="space-y-1.5">
         <Label htmlFor="cancel-reason">Reden</Label>
         <Textarea id="cancel-reason" name="reason" required rows={2} />
       </div>
+
+      <label className="flex items-start gap-2 text-sm">
+        <input
+          className="mt-1"
+          name="forceMajeure"
+          onChange={(event) => setForceMajeure(event.target.checked)}
+          type="checkbox"
+        />
+        <span>
+          Dit is aantoonbare overmacht of een noodsituatie. SportMatch beoordeelt
+          de motivatie en het eventuele bewijs.
+        </span>
+      </label>
+
+      {forceMajeure ? (
+        <div className="space-y-1.5">
+          <Label htmlFor={`cancel-evidence-${jobId}`}>Bewijs (optioneel, privé)</Label>
+          <Input accept="image/*,application/pdf" id={`cancel-evidence-${jobId}`} name="evidence" type="file" />
+        </div>
+      ) : null}
 
       <div className="flex gap-2">
         <Button disabled={isPending} type="submit" variant="destructive">

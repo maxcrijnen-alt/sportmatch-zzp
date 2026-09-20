@@ -15,6 +15,7 @@ import { ApplyForm } from "@/components/jobs/apply-form";
 import { CancelForm } from "@/components/jobs/cancel-form";
 import { ConfirmJobForm } from "@/components/jobs/confirm-job-form";
 import { CounterofferForm } from "@/components/jobs/counteroffer-form";
+import { ProblemReportForm } from "@/components/jobs/problem-report-form";
 import { ReplacementForm } from "@/components/jobs/replacement-form";
 import { ReviewForm } from "@/components/jobs/review-form";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -43,10 +44,12 @@ import {
 import { describePay, fetchJobWithRelations } from "@/lib/jobs/queries";
 import { createClient } from "@/lib/supabase/server";
 import type {
+  Cancellation,
   JobApplication,
   JobConfirmation,
   JobCounteroffer,
   JobInvitation,
+  JobSegment,
   Review,
 } from "@/types/database";
 
@@ -93,6 +96,11 @@ export default async function OpdrachtDetailPage({
     contactResult,
     reviewsResult,
     myReviewResult,
+    validVogResult,
+    pendingReviewResult,
+    segmentsResult,
+    segmentConfirmationsResult,
+    cancellationResult,
   ] = await Promise.all([
     supabase
       .from("job_applications")
@@ -127,6 +135,25 @@ export default async function OpdrachtDetailPage({
       .eq("job_id", job.id)
       .eq("reviewer_id", profile.id)
       .maybeSingle(),
+    supabase.rpc("has_valid_vog", { target_user: profile.id }),
+    supabase.rpc("has_pending_review", { target_user: profile.id }),
+    supabase
+      .from("job_segments")
+      .select("*, lesson_type:lesson_types(name)")
+      .eq("job_id", job.id)
+      .order("position"),
+    supabase
+      .from("job_segment_confirmations")
+      .select("id, segment_id, confirmed_at, organization_agreed_at, cancelled_at")
+      .eq("job_id", job.id)
+      .eq("instructor_id", profile.id),
+    supabase
+      .from("cancellations")
+      .select("*")
+      .eq("job_id", job.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ]);
 
   const application = applicationResult.data as JobApplication | null;
@@ -134,6 +161,24 @@ export default async function OpdrachtDetailPage({
   const confirmation = confirmationResult.data as JobConfirmation | null;
   const releasedReviews = (reviewsResult.data as Review[] | null) ?? [];
   const hasReviewed = Boolean(myReviewResult.data);
+  const hasValidVog = validVogResult.data === true;
+  const hasPendingReview = pendingReviewResult.data === true;
+  const segments =
+    (segmentsResult.data as (JobSegment & {
+      lesson_type: { name: string } | null;
+    })[] | null) ?? [];
+  const segmentConfirmations =
+    (segmentConfirmationsResult.data as {
+      id: string;
+      segment_id: string;
+      confirmed_at: string | null;
+      organization_agreed_at: string;
+      cancelled_at: string | null;
+    }[] | null) ?? [];
+  const activeSegmentConfirmations = segmentConfirmations.filter(
+    (item) => !item.cancelled_at,
+  );
+  const cancellation = cancellationResult.data as Cancellation | null;
   const contact =
     ((contactResult.data as ContactDetails[] | null) ?? [])[0] ?? null;
 
@@ -146,11 +191,13 @@ export default async function OpdrachtDetailPage({
       | null) ?? [];
 
   const isSelected =
-    confirmation?.instructor_id === profile.id &&
-    confirmation.organization_agreed_at &&
-    !confirmation.confirmed_at;
+    (confirmation?.instructor_id === profile.id &&
+      confirmation.organization_agreed_at &&
+      !confirmation.confirmed_at) ||
+    activeSegmentConfirmations.some((item) => !item.confirmed_at);
   const isConfirmedForMe =
-    confirmation?.instructor_id === profile.id && confirmation.confirmed_at;
+    (confirmation?.instructor_id === profile.id && confirmation.confirmed_at) ||
+    activeSegmentConfirmations.some((item) => item.confirmed_at);
 
   let counteroffers: JobCounteroffer[] = [];
   if (application) {
@@ -162,7 +209,7 @@ export default async function OpdrachtDetailPage({
     counteroffers = (data as JobCounteroffer[] | null) ?? [];
   }
 
-  // Kandidaten voor vervanging (eenvoudige lijst voor de MVP)
+  // Kandidaten die voor vervanging in aanmerking komen.
   let replacementCandidates: { id: string; name: string }[] = [];
   if (isConfirmedForMe && job.status === "confirmed") {
     const { data } = await supabase
@@ -196,6 +243,11 @@ export default async function OpdrachtDetailPage({
             {jobTypeLabels[job.job_type]}
           </Badge>
           {job.sport ? <Badge variant="muted">{job.sport.name}</Badge> : null}
+          <Badge variant="outline">
+            {job.custom_lesson_type ||
+              job.lesson_type?.name ||
+              "Lesvorm niet opgegeven"}
+          </Badge>
           <Badge variant="outline">{jobStatusLabels[job.status]}</Badge>
         </div>
         <h1 className="text-2xl font-bold tracking-tight">{job.title}</h1>
@@ -271,6 +323,39 @@ export default async function OpdrachtDetailPage({
         </CardContent>
       </Card>
 
+      {job.status === "confirmed" || job.status === "completed" || isConfirmedForMe ? (
+        <ProblemReportForm jobId={job.id} />
+      ) : null}
+
+      {cancellation ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Annuleringsregistratie</CardTitle>
+            <CardDescription>
+              {cancellation.force_majeure_claimed
+                ? cancellation.force_majeure_status === "pending_review"
+                  ? "Het overmachtsverzoek wordt door SportMatch beoordeeld."
+                  : cancellation.force_majeure_status === "approved"
+                    ? "Overmacht is goedgekeurd; de vergoeding is aangepast."
+                    : "Het overmachtsverzoek is afgewezen."
+                : "De normale annuleringsregeling is geregistreerd."}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm">
+            <p>{cancellation.reason}</p>
+            <p className="font-medium">
+              Vergoeding: {formatEuro(cancellation.compensation_amount_cents ?? 0)}
+              {cancellation.force_majeure_status !== "approved"
+                ? " (150% van de afgesproken dienst)"
+                : ""}
+            </p>
+            <p className="text-muted-foreground">
+              Dit is een registratie; SportMatch voert nog geen automatische betaling uit.
+            </p>
+          </CardContent>
+        </Card>
+      ) : null}
+
       {job.job_type === "permanent" ? (
         <Alert>
           <AlertTitle>Vaste vacature</AlertTitle>
@@ -282,7 +367,7 @@ export default async function OpdrachtDetailPage({
       ) : null}
 
       {/* Uitnodiging */}
-      {invitation?.status === "pending" ? (
+      {invitation?.status === "pending" && hasValidVog && !hasPendingReview ? (
         <Card className="border-primary">
           <CardHeader>
             <CardTitle>Je bent uitgenodigd!</CardTitle>
@@ -301,6 +386,28 @@ export default async function OpdrachtDetailPage({
             </form>
           </CardContent>
         </Card>
+      ) : null}
+
+      {!hasValidVog ? (
+        <Alert variant="warning">
+          <AlertTitle>Goedgekeurde VOG nodig</AlertTitle>
+          <AlertDescription>
+            Je kunt opdrachten bekijken, maar pas reageren of een uitnodiging
+            accepteren nadat SportMatch je geldige VOG heeft goedgekeurd. {" "}
+            <Link className="font-medium underline" href="/documenten">Open Documenten</Link>.
+          </AlertDescription>
+        </Alert>
+      ) : null}
+
+      {hasPendingReview ? (
+        <Alert variant="warning">
+          <AlertTitle>Je hebt nog een beoordeling openstaan</AlertTitle>
+          <AlertDescription>
+            Rond eerst je verplichte beoordeling af. Je kunt intussen deze
+            opdracht en je berichten blijven bekijken. {" "}
+            <Link className="font-medium underline" href="/reviews">Naar beoordelingen</Link>.
+          </AlertDescription>
+        </Alert>
       ) : null}
 
       {/* Bevestiging gevraagd */}
@@ -326,6 +433,22 @@ export default async function OpdrachtDetailPage({
                   Locatie: {job.location?.name}, {job.location?.city?.name}
                 </li>
                 <li>Vergoeding: {describePay(job)}</li>
+                {activeSegmentConfirmations.length > 0 ? (
+                  <li>
+                    Gekozen lessen:{" "}
+                    {activeSegmentConfirmations
+                      .map((item) => {
+                        const segment = segments.find(
+                          (candidate) => candidate.id === item.segment_id,
+                        );
+                        return segment
+                          ? `${formatTime(segment.start_time)}–${formatTime(segment.end_time)}`
+                          : null;
+                      })
+                      .filter(Boolean)
+                      .join(", ")}
+                  </li>
+                ) : null}
                 {typeof confirmation?.terms === "object" &&
                 confirmation?.terms !== null &&
                 "note" in confirmation.terms &&
@@ -372,17 +495,20 @@ export default async function OpdrachtDetailPage({
                 </Button>
               </Link>
             ) : null}
-            {job.status === "confirmed" ? (
+            {job.status === "confirmed" ||
+            (job.status === "open" && activeSegmentConfirmations.some((item) => item.confirmed_at)) ? (
               <div className="space-y-4 border-t border-border pt-4">
-                <div>
-                  <p className="mb-2 text-sm font-medium">
-                    Kun je onverwacht niet? Stel een vervanger voor
-                  </p>
-                  <ReplacementForm
-                    candidates={replacementCandidates}
-                    jobId={job.id}
-                  />
-                </div>
+                {segments.length === 0 ? (
+                  <div>
+                    <p className="mb-2 text-sm font-medium">
+                      Kun je onverwacht niet? Stel een vervanger voor
+                    </p>
+                    <ReplacementForm
+                      candidates={replacementCandidates}
+                      jobId={job.id}
+                    />
+                  </div>
+                ) : null}
                 <CancelForm jobId={job.id} />
               </div>
             ) : null}
@@ -422,13 +548,22 @@ export default async function OpdrachtDetailPage({
       ) : null}
 
       {/* Reageren */}
-      {job.status === "open" && !application && !isSelected ? (
+      {job.status === "open" && !application && !isSelected && hasValidVog && !hasPendingReview ? (
         <Card>
           <CardHeader>
             <CardTitle>Reageren op deze opdracht</CardTitle>
           </CardHeader>
           <CardContent>
-            <ApplyForm jobId={job.id} />
+            <ApplyForm
+              jobId={job.id}
+              partialAllowed={job.partial_block_allowed}
+              segments={segments.map((segment) => ({
+                id: segment.id,
+                label: segment.custom_lesson_type || segment.lesson_type?.name || "Les",
+                startTime: segment.start_time,
+                endTime: segment.end_time,
+              }))}
+            />
           </CardContent>
         </Card>
       ) : null}
