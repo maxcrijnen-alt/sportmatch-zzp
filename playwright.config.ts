@@ -32,7 +32,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "npm run start",
+    command: "node node_modules/next/dist/bin/next start",
     url: "http://localhost:3000",
     reuseExistingServer: true,
     timeout: 60_000,

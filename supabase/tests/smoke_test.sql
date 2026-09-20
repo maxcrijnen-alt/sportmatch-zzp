@@ -48,6 +48,23 @@ values (auth.uid(), 5, 4500, 30, 'Vijf jaar groepslessen');
 insert into public.instructor_statuses values (auth.uid(), 'zzp');
 insert into public.instructor_sports
   select auth.uid(), id from public.sports where slug in ('fitness', 'spinning');
+insert into public.instructor_lesson_types (user_id, lesson_type_id)
+  select auth.uid(), lt.id
+  from public.lesson_types lt
+  join public.sports s on s.id = lt.sport_id
+  where s.slug = 'spinning' and lt.name = 'Spinning';
+
+do $$
+begin
+  if not exists (
+    select 1
+    from public.instructor_lesson_types ilt
+    join public.lesson_types lt on lt.id = ilt.lesson_type_id
+    where ilt.user_id = auth.uid() and lt.name = 'Spinning'
+  ) then
+    raise exception 'FAIL: lesvormspecialisatie is niet opgeslagen';
+  end if;
+end $$;
 
 -- Vervanger heeft ook een instructeursprofiel nodig
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000003', false);
