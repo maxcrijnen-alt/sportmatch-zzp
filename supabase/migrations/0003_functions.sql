@@ -1,4 +1,4 @@
--- SportMatch ZZP — 0003: RPC's voor alle kernmutaties
+-- SportMatch — 0003: RPC's voor alle kernmutaties
 -- Alle schrijfacties op het matchingsproces lopen via deze functies zodat
 -- toegangscontrole, statusovergangen, systeemberichten en notificaties
 -- consistent en atomair zijn.

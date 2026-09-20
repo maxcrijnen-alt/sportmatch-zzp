@@ -1,4 +1,4 @@
-// Handmatige databasetypes voor de MVP. Bij schemawijzigingen bijwerken,
+// Handmatige databasetypes. Bij schemawijzigingen bijwerken,
 // of later vervangen door gegenereerde Supabase-types.
 
 export type UserRole = "instructor" | "organization" | "admin";
@@ -104,6 +104,8 @@ export interface Profile {
   phone: string;
   avatar_url: string | null;
   city_id: string | null;
+  custom_city: string | null;
+  demo_session_id: string | null;
   onboarding_completed: boolean;
   created_at: string;
 }
@@ -130,6 +132,7 @@ export interface Organization {
   billing_email: string;
   billing_reference: string;
   created_by: string;
+  demo_session_id: string | null;
 }
 
 export interface OrganizationLocation {
@@ -158,6 +161,8 @@ export interface Job {
   created_by: string;
   job_type: JobType;
   sport_id: string;
+  lesson_type_id: string | null;
+  custom_lesson_type: string | null;
   title: string;
   description: string;
   starts_on: string;
@@ -172,6 +177,40 @@ export interface Job {
   expected_participants: number | null;
   contact_name: string;
   status: JobStatus;
+  closed_reason: string | null;
+  closed_note: string;
+  closed_at: string | null;
+  closed_by: string | null;
+  partial_block_allowed: boolean;
+  demo_session_id: string | null;
+  created_at: string;
+}
+
+export interface LessonType {
+  id: string;
+  sport_id: string;
+  name: string;
+  is_active: boolean;
+  sort_order: number;
+}
+
+export interface JobSegment {
+  id: string;
+  job_id: string;
+  position: number;
+  start_time: string;
+  end_time: string;
+  lesson_type_id: string | null;
+  custom_lesson_type: string | null;
+  level: string;
+}
+
+export interface JobTemplate {
+  id: string;
+  organization_id: string;
+  created_by: string;
+  name: string;
+  template_data: Record<string, unknown>;
   created_at: string;
 }
 
@@ -235,10 +274,20 @@ export interface Cancellation {
   job_id: string;
   cancelled_by: string;
   side: PartySide;
+  instructor_id: string | null;
+  segment_ids: string[];
   reason: string;
   hours_before_start: number | null;
   compensation_pct: number;
+  compensation_amount_cents: number | null;
   compensation_note: string;
+  force_majeure_claimed: boolean;
+  force_majeure_status:
+    | "not_requested"
+    | "pending_review"
+    | "approved"
+    | "rejected";
+  evidence_path: string | null;
   admin_adjusted: boolean;
   admin_note: string;
   created_at: string;
@@ -292,7 +341,21 @@ export interface Review {
   reviewee_id: string;
   side: PartySide;
   rating: number;
+  comment: string;
   released_at: string | null;
+  created_at: string;
+}
+
+export interface Complaint {
+  id: string;
+  job_id: string;
+  reported_by: string;
+  category: "safety" | "conduct" | "agreement" | "no_show" | "payment" | "other";
+  details: string;
+  evidence_path: string | null;
+  status: "new" | "in_progress" | "resolved" | "rejected";
+  review_id: string | null;
+  resolution_note: string;
   created_at: string;
 }
 

@@ -1,8 +1,8 @@
--- SportMatch ZZP — lookup-seed
+-- SportMatch — lookup-seed
 -- Draai dit na de migrations. Demo-accounts en demo-content worden aangemaakt
 -- met `npm run seed:demo` (heeft de service-role key nodig).
 
--- Steden in en rond de Randstad (globale coördinaten voor afstandsberekening)
+-- Startset van plaatsen met globale coördinaten voor afstandsberekening.
 insert into public.cities (name, province, lat, lng) values
   ('Amsterdam', 'Noord-Holland', 52.3676, 4.9041),
   ('Rotterdam', 'Zuid-Holland', 51.9244, 4.4777),
@@ -50,6 +50,39 @@ insert into public.sports (name, slug) values
   ('Hockey', 'hockey')
 on conflict (slug) do nothing;
 
+insert into public.lesson_types (sport_id, name, sort_order)
+select s.id, preset.name, preset.sort_order
+from public.sports s
+cross join lateral (
+  select * from (values
+    ('fitness', 'Fitnessbegeleiding', 10), ('fitness', 'Circuittraining', 20),
+    ('fitness', 'Krachttraining', 30), ('groepsles', 'Bodypump', 10),
+    ('groepsles', 'HIIT', 20), ('groepsles', 'Core training', 30),
+    ('yoga', 'Vinyasa yoga', 10), ('yoga', 'Yin yoga', 20),
+    ('yoga', 'Hatha yoga', 30), ('pilates', 'Mat pilates', 10),
+    ('pilates', 'Reformer pilates', 20), ('tennis', 'Tennisles jeugd', 10),
+    ('tennis', 'Tennisles volwassenen', 20), ('tennis', 'Tennisclinic', 30),
+    ('padel', 'Padelles beginners', 10), ('padel', 'Padelles gevorderden', 20),
+    ('padel', 'Padelclinic', 30), ('zwemmen', 'Zwem-ABC', 10),
+    ('zwemmen', 'Aquafitness', 20), ('zwemmen', 'Toezicht', 30),
+    ('personal-training', 'Personal training', 10),
+    ('personal-training', 'Duo training', 20), ('spinning', 'Spinning', 10),
+    ('spinning', 'Indoor cycling beginners', 20), ('bootcamp', 'Bootcamp', 10),
+    ('bootcamp', 'Bedrijfsbootcamp', 20),
+    ('kickboksen', 'Kickboksen beginners', 10),
+    ('kickboksen', 'Kickboksen gevorderden', 20),
+    ('kickboksen', 'Techniektraining', 30), ('crossfit', 'CrossFit WOD', 10),
+    ('crossfit', 'CrossFit fundamentals', 20), ('dans', 'Streetdance', 10),
+    ('dans', 'Ballet', 20), ('dans', 'Hip-hop', 30), ('dans', 'Zumba', 40),
+    ('dans', 'Modern', 50), ('voetbal', 'Voetbaltraining jeugd', 10),
+    ('voetbal', 'Voetbaltraining senioren', 20), ('voetbal', 'Clinic', 30),
+    ('hockey', 'Hockeytraining jeugd', 10),
+    ('hockey', 'Hockeytraining senioren', 20), ('hockey', 'Clinic', 30)
+  ) as values_for_sport(sport_slug, name, sort_order)
+  where values_for_sport.sport_slug = s.slug
+) preset
+on conflict (sport_id, name) do nothing;
+
 -- Diploma's en certificaten
 insert into public.qualifications (name, description) values
   ('Fitness Trainer A', 'Basisdiploma fitnesstrainer'),
@@ -76,12 +109,9 @@ insert into public.settings (key, value) values
     'currency', 'EUR'
   )),
   ('cancellation_policy', jsonb_build_object(
-    'tiers', jsonb_build_array(
-      jsonb_build_object('max_hours_before', 2, 'pct', 100),
-      jsonb_build_object('max_hours_before', 6, 'pct', 50),
-      jsonb_build_object('max_hours_before', 12, 'pct', 25)
-    ),
-    'note', 'Registratie van de annuleringsregeling; inning verloopt buiten het platform.'
+    'percentage', 150,
+    'force_majeure_review', true,
+    'note', '150% van de totale afgesproken vergoeding; registratie zonder automatische betaling.'
   )),
   ('conversion_fee', jsonb_build_object(
     'amount_cents', 5000,

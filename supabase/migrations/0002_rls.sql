@@ -1,4 +1,4 @@
--- SportMatch ZZP — 0002: grants, RLS-helpers en policies
+-- SportMatch — 0002: grants, RLS-helpers en policies
 
 set check_function_bodies = off;
 

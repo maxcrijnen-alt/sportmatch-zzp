@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { cleanupExpiredDemoSessions } from "@/lib/demo/factory";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
@@ -17,7 +18,7 @@ interface UpcomingConfirmation {
 }
 
 /**
- * Periodiek onderhoud (Vercel Cron, elk uur):
+ * Periodiek onderhoud (Vercel Cron, dagelijks om 03:00 Europe/Amsterdam):
  * - herinneringen 24 uur en 2 uur voor aanvang van bevestigde opdrachten;
  * - goedgekeurde documenten met een verstreken vervaldatum op "verlopen" zetten.
  *
@@ -26,7 +27,14 @@ interface UpcomingConfirmation {
 export async function GET(request: NextRequest) {
   const secret = process.env.CRON_SECRET;
 
-  if (secret && request.headers.get("authorization") !== `Bearer ${secret}`) {
+  if (!secret) {
+    return NextResponse.json(
+      { error: "cron is niet geconfigureerd" },
+      { status: 503 },
+    );
+  }
+
+  if (request.headers.get("authorization") !== `Bearer ${secret}`) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
@@ -41,7 +49,14 @@ export async function GET(request: NextRequest) {
   }
 
   const now = Date.now();
-  const results = { reminders24h: 0, reminders2h: 0, expiredDocuments: 0 };
+  const results = {
+    reminders24h: 0,
+    reminders2h: 0,
+    expiredDocuments: 0,
+    expiredDemoSessions: 0,
+  };
+
+  results.expiredDemoSessions = await cleanupExpiredDemoSessions();
 
   // ---- Documenten verlopen markeren
   const { data: expired } = await supabase

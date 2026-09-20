@@ -1,4 +1,4 @@
--- SportMatch ZZP — 0001: basisschema
+-- SportMatch — 0001: basisschema
 -- Tabellen, enums, triggers. RLS en grants staan in 0002; RPC's in 0003.
 
 set check_function_bodies = off;
@@ -453,7 +453,7 @@ create table public.reviews (
 create index reviews_reviewee_idx on public.reviews (reviewee_id);
 
 -- ---------------------------------------------------------------------------
--- Abonnementen en billing (mock in MVP)
+-- Abonnementen en billing (gesimuleerde betaalstatus)
 -- ---------------------------------------------------------------------------
 
 create table public.subscriptions (

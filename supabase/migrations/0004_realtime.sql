@@ -1,4 +1,4 @@
--- SportMatch ZZP — 0004: realtime voor chat en notificaties
+-- SportMatch — 0004: realtime voor chat en notificaties
 -- Voegt de tabellen toe aan de realtime-publicatie zodat de browser direct
 -- nieuwe berichten en meldingen ontvangt. RLS blijft gelden voor wie wat ziet.
 

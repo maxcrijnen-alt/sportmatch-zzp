@@ -18,6 +18,9 @@ for f in \
   supabase/migrations/0001_schema.sql \
   supabase/migrations/0002_rls.sql \
   supabase/migrations/0003_functions.sql \
+  supabase/migrations/0004_realtime.sql \
+  supabase/migrations/20260919171944_harden_function_and_contact_access.sql \
+  supabase/migrations/20260919172021_product_workflows.sql \
   supabase/seed.sql
 do
   echo "== $f"

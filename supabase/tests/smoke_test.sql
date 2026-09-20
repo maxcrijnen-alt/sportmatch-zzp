@@ -18,7 +18,12 @@ update public.profiles set role = 'admin'
 
 do $$
 begin
-  if (select count(*) from public.profiles) <> 4 then
+  if (select count(*) from public.profiles where id in (
+    '00000000-0000-0000-0000-000000000001',
+    '00000000-0000-0000-0000-000000000002',
+    '00000000-0000-0000-0000-000000000003',
+    '00000000-0000-0000-0000-000000000009'
+  )) <> 4 then
     raise exception 'FAIL: profielen niet automatisch aangemaakt';
   end if;
   if (select role from public.profiles where id = '00000000-0000-0000-0000-000000000001') <> 'instructor' then
@@ -50,10 +55,23 @@ select set_config('request.jwt.claim.email', 'vervanger@test.nl', false);
 insert into public.instructor_profiles (user_id) values (auth.uid());
 
 reset role;
+-- Definitief reageren, bevestigen en vervangen vereist een goedgekeurde VOG.
+insert into public.document_uploads
+  (user_id, doc_type, storage_path, original_filename, status, expires_at)
+values
+  ('00000000-0000-0000-0000-000000000001', 'vog',
+   'tests/instructeur-vog.pdf', 'instructeur-vog.pdf', 'approved', current_date + 365),
+  ('00000000-0000-0000-0000-000000000003', 'vog',
+   'tests/vervanger-vog.pdf', 'vervanger-vog.pdf', 'approved', current_date + 365);
+
 do $$
 begin
   -- trigger moet proefabonnementen hebben aangemaakt
-  if (select count(*) from public.subscriptions where instructor_id is not null) <> 2 then
+  if (select count(*) from public.subscriptions
+      where instructor_id in (
+        '00000000-0000-0000-0000-000000000001',
+        '00000000-0000-0000-0000-000000000003'
+      )) <> 2 then
     raise exception 'FAIL: instructeurstrial niet aangemaakt';
   end if;
   if not public.instructor_has_access('00000000-0000-0000-0000-000000000001') then
@@ -112,6 +130,34 @@ begin
   end if;
 end $$;
 
+-- Een verlopen VOG blokkeert reageren server-side, ook bij directe RPC-aanroep.
+reset role;
+update public.document_uploads
+set expires_at = current_date - 1
+where user_id = '00000000-0000-0000-0000-000000000001' and doc_type = 'vog';
+set role authenticated;
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000001', false);
+select set_config('request.jwt.claim.email', 'instructeur@test.nl', false);
+do $$
+begin
+  begin
+    perform public.apply_to_job(
+      '30000000-0000-0000-0000-000000000001', 'Mag niet lukken', ''
+    );
+    raise exception 'FAIL: reageren met verlopen VOG had geblokkeerd moeten zijn';
+  exception
+    when others then
+      if sqlerrm like 'FAIL:%' then raise; end if;
+  end;
+end $$;
+reset role;
+update public.document_uploads
+set expires_at = current_date + 365
+where user_id = '00000000-0000-0000-0000-000000000001' and doc_type = 'vog';
+set role authenticated;
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000001', false);
+select set_config('request.jwt.claim.email', 'instructeur@test.nl', false);
+
 select public.apply_to_job('30000000-0000-0000-0000-000000000001',
   'Ik kan vanavond invallen!', 'Hele avond beschikbaar');
 
@@ -135,7 +181,11 @@ declare
   v_offer uuid;
   v_app uuid;
 begin
-  select id into v_offer from public.job_counteroffers order by created_at desc limit 1;
+  select co.id into v_offer
+  from public.job_counteroffers co
+  join public.job_applications a on a.id = co.application_id
+  where a.job_id = '30000000-0000-0000-0000-000000000001'
+  order by co.created_at desc limit 1;
   perform public.respond_counteroffer(v_offer, true);
 
   select id into v_app from public.job_applications
@@ -195,7 +245,9 @@ do $$
 declare
   v_rep uuid;
 begin
-  select id into v_rep from public.replacements order by created_at desc limit 1;
+  select id into v_rep from public.replacements
+  where job_id = '30000000-0000-0000-0000-000000000001'
+  order by created_at desc limit 1;
   perform public.decide_replacement(v_rep, true);
 
   if (select instructor_id from public.job_confirmations
@@ -220,9 +272,54 @@ begin
   end if;
 end $$;
 
+-- Maak een tweede open opdracht om de verplichte reviewblokkade als echte
+-- commerciële RPC te testen. De organisatie heeft haar review al afgerond.
+insert into public.jobs
+  (id, organization_id, location_id, created_by, job_type, sport_id, title,
+   starts_on, start_time, end_time, pay_type, pay_hourly_rate_cents)
+values
+  ('30000000-0000-0000-0000-000000000004', '10000000-0000-0000-0000-000000000001',
+   '20000000-0000-0000-0000-000000000001', auth.uid(), 'one_time',
+   (select id from public.sports where slug = 'fitness'),
+   'Reviewblokkade test', current_date + 10, '12:00', '13:00', 'hourly', 4500);
+
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000003', false);
 select set_config('request.jwt.claim.email', 'vervanger@test.nl', false);
+do $$
+begin
+  if not public.has_pending_review(auth.uid()) then
+    raise exception 'FAIL: vervanger hoort een openstaande review te hebben';
+  end if;
+  begin
+    perform public.apply_to_job(
+      '30000000-0000-0000-0000-000000000004', 'Eerst review afronden', ''
+    );
+    raise exception 'FAIL: openstaande review had reageren moeten blokkeren';
+  exception
+    when others then
+      if sqlerrm like 'FAIL:%' then raise; end if;
+  end;
+end $$;
+
 select public.submit_review('30000000-0000-0000-0000-000000000001', 4);
+
+do $$
+begin
+  if public.has_pending_review(auth.uid()) then
+    raise exception 'FAIL: reviewblokkade bleef actief na beoordeling';
+  end if;
+end $$;
+
+select public.apply_to_job(
+  '30000000-0000-0000-0000-000000000004', 'Review afgerond, nu beschikbaar', ''
+);
+
+-- Klachten blijven aparte, private objecten naast reviews.
+insert into public.complaints (job_id, reported_by, category, details)
+values (
+  '30000000-0000-0000-0000-000000000001', auth.uid(), 'conduct',
+  'De samenwerking moet door SportMatch afzonderlijk worden beoordeeld.'
+);
 
 do $$
 begin
@@ -278,6 +375,190 @@ end $$;
 
 select public.apply_to_job('30000000-0000-0000-0000-000000000002', 'Ik wil wel!');
 
+-- ===== Lessenblokken: aansluitend, gedeeltelijk, volledig en dubbelbezetting =====
+reset role;
+insert into public.jobs
+  (id, organization_id, location_id, created_by, job_type, sport_id, title,
+   starts_on, start_time, end_time, pay_type, pay_hourly_rate_cents,
+   partial_block_allowed)
+values
+  ('30000000-0000-0000-0000-000000000005', '10000000-0000-0000-0000-000000000001',
+   '20000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002',
+   'temporary', (select id from public.sports where slug = 'kickboksen'),
+   'Drie aansluitende kickbokslessen', current_date + 20, '18:00', '21:00',
+   'hourly', 4000, true),
+  ('30000000-0000-0000-0000-000000000006', '10000000-0000-0000-0000-000000000001',
+   '20000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002',
+   'temporary', (select id from public.sports where slug = 'kickboksen'),
+   'Volledig avondblok', current_date + 21, '18:00', '20:00',
+   'fixed', null, false);
+
+update public.jobs set pay_amount_cents = 10000
+where id = '30000000-0000-0000-0000-000000000006';
+
+insert into public.job_segments (id, job_id, position, start_time, end_time, custom_lesson_type)
+values
+  ('50000000-0000-0000-0000-000000000001', '30000000-0000-0000-0000-000000000005', 1, '18:00', '19:00', 'Beginners'),
+  ('50000000-0000-0000-0000-000000000002', '30000000-0000-0000-0000-000000000005', 2, '19:00', '20:00', 'Gevorderden'),
+  ('50000000-0000-0000-0000-000000000003', '30000000-0000-0000-0000-000000000005', 3, '20:00', '21:00', 'Techniek'),
+  ('50000000-0000-0000-0000-000000000004', '30000000-0000-0000-0000-000000000006', 1, '18:00', '19:00', 'Beginners'),
+  ('50000000-0000-0000-0000-000000000005', '30000000-0000-0000-0000-000000000006', 2, '19:00', '20:00', 'Gevorderden');
+
+set role authenticated;
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000001', false);
+select set_config('request.jwt.claim.email', 'instructeur@test.nl', false);
+do $$
+begin
+  begin
+    perform public.apply_to_job(
+      '30000000-0000-0000-0000-000000000005', 'Niet aansluitend', '',
+      array[
+        '50000000-0000-0000-0000-000000000001',
+        '50000000-0000-0000-0000-000000000003'
+      ]::uuid[]
+    );
+    raise exception 'FAIL: niet-aansluitende blokselectie had moeten mislukken';
+  exception
+    when others then
+      if sqlerrm like 'FAIL:%' then raise; end if;
+  end;
+end $$;
+
+select public.apply_to_job(
+  '30000000-0000-0000-0000-000000000005', 'Ik neem de eerste twee lessen', '',
+  array[
+    '50000000-0000-0000-0000-000000000001',
+    '50000000-0000-0000-0000-000000000002'
+  ]::uuid[]
+);
+
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000002', false);
+select set_config('request.jwt.claim.email', 'sportschool@test.nl', false);
+do $$
+declare v_app uuid;
+begin
+  select id into v_app from public.job_applications
+  where job_id = '30000000-0000-0000-0000-000000000005'
+    and instructor_id = '00000000-0000-0000-0000-000000000001';
+  if public.select_candidate_segments(
+    v_app,
+    array[
+      '50000000-0000-0000-0000-000000000001',
+      '50000000-0000-0000-0000-000000000002'
+    ]::uuid[],
+    '{"tarief": "40 euro per uur"}'::jsonb
+  ) <> 2 then
+    raise exception 'FAIL: gedeeltelijke blokselectie is niet opgeslagen';
+  end if;
+end $$;
+
+-- De actieve unieke index voorkomt toewijzing van hetzelfde lesonderdeel aan
+-- een tweede instructeur, ook buiten de normale RPC om.
+reset role;
+do $$
+declare v_other_app uuid;
+begin
+  insert into public.job_applications (job_id, instructor_id, message)
+  values (
+    '30000000-0000-0000-0000-000000000005',
+    '00000000-0000-0000-0000-000000000003', 'Tweede kandidaat'
+  ) returning id into v_other_app;
+  begin
+    insert into public.job_segment_confirmations (
+      job_id, segment_id, application_id, instructor_id, organization_agreed_by
+    ) values (
+      '30000000-0000-0000-0000-000000000005',
+      '50000000-0000-0000-0000-000000000001', v_other_app,
+      '00000000-0000-0000-0000-000000000003',
+      '00000000-0000-0000-0000-000000000002'
+    );
+    raise exception 'FAIL: dubbel bezet segment had moeten mislukken';
+  exception
+    when unique_violation then null;
+  end;
+end $$;
+
+set role authenticated;
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000001', false);
+select set_config('request.jwt.claim.email', 'instructeur@test.nl', false);
+do $$
+begin
+  if public.confirm_job_segments('30000000-0000-0000-0000-000000000005') <> 2 then
+    raise exception 'FAIL: gedeeltelijke blokbevestiging telde niet twee lessen';
+  end if;
+  if (select status from public.jobs where id = '30000000-0000-0000-0000-000000000005') <> 'open' then
+    raise exception 'FAIL: blok met onbezet segment moet open blijven';
+  end if;
+end $$;
+
+select public.cancel_confirmed_job(
+  '30000000-0000-0000-0000-000000000005', 'Onverwachte verhindering'
+);
+do $$
+begin
+  if not exists (
+    select 1 from public.cancellations
+    where job_id = '30000000-0000-0000-0000-000000000005'
+      and compensation_pct = 150
+      and compensation_amount_cents = 12000
+      and cardinality(segment_ids) = 2
+  ) then
+    raise exception 'FAIL: gedeeltelijke blokannulering is onjuist berekend';
+  end if;
+end $$;
+
+-- Een volledig blok accepteert geen gedeeltelijke reactie.
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000003', false);
+select set_config('request.jwt.claim.email', 'vervanger@test.nl', false);
+do $$
+begin
+  begin
+    perform public.apply_to_job(
+      '30000000-0000-0000-0000-000000000006', 'Slechts één les', '',
+      array['50000000-0000-0000-0000-000000000004']::uuid[]
+    );
+    raise exception 'FAIL: gedeeltelijke reactie op volledig blok had moeten mislukken';
+  exception
+    when others then
+      if sqlerrm like 'FAIL:%' then raise; end if;
+  end;
+end $$;
+
+select public.apply_to_job(
+  '30000000-0000-0000-0000-000000000006', 'Ik neem het hele blok', '',
+  array[
+    '50000000-0000-0000-0000-000000000004',
+    '50000000-0000-0000-0000-000000000005'
+  ]::uuid[]
+);
+
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000002', false);
+select set_config('request.jwt.claim.email', 'sportschool@test.nl', false);
+do $$
+declare v_app uuid;
+begin
+  select id into v_app from public.job_applications
+  where job_id = '30000000-0000-0000-0000-000000000006'
+    and instructor_id = '00000000-0000-0000-0000-000000000003';
+  perform public.select_candidate_segments(
+    v_app,
+    array[
+      '50000000-0000-0000-0000-000000000004',
+      '50000000-0000-0000-0000-000000000005'
+    ]::uuid[]
+  );
+end $$;
+
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000003', false);
+select set_config('request.jwt.claim.email', 'vervanger@test.nl', false);
+select public.confirm_job_segments('30000000-0000-0000-0000-000000000006');
+do $$
+begin
+  if (select status from public.jobs where id = '30000000-0000-0000-0000-000000000006') <> 'confirmed' then
+    raise exception 'FAIL: volledig bevestigd blok is niet definitief';
+  end if;
+end $$;
+
 -- ===== RLS-isolatie: vreemde gebruiker ziet geen chats/documenten =====
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000003', false);
 select set_config('request.jwt.claim.email', 'vervanger@test.nl', false);
@@ -319,16 +600,63 @@ set role authenticated;
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000001', false);
 select set_config('request.jwt.claim.email', 'instructeur@test.nl', false);
 
-select public.cancel_confirmed_job('30000000-0000-0000-0000-000000000003', 'Ziek');
+select public.cancel_confirmed_job(
+  '30000000-0000-0000-0000-000000000003', 'Acute ziekte', true,
+  'private/tests/noodsituatie.pdf'
+);
 
 do $$
 declare
   v_pct integer;
+  v_amount integer;
 begin
-  select compensation_pct into v_pct from public.cancellations
+  select compensation_pct, compensation_amount_cents into v_pct, v_amount
+  from public.cancellations
   where job_id = '30000000-0000-0000-0000-000000000003';
-  if v_pct <> 100 then
-    raise exception 'FAIL: verwacht 100%% bij annulering <2 uur, kreeg %', v_pct;
+  if v_pct <> 150 then
+    raise exception 'FAIL: verwacht 150%% annuleringsregistratie, kreeg %', v_pct;
+  end if;
+  if v_amount <> 9000 then
+    raise exception 'FAIL: verwacht 9000 cent vergoeding, kreeg %', v_amount;
+  end if;
+  if (select force_majeure_status from public.cancellations
+      where job_id = '30000000-0000-0000-0000-000000000003') <> 'pending_review' then
+    raise exception 'FAIL: overmachtsverzoek staat niet open voor adminbeoordeling';
+  end if;
+end $$;
+
+-- Admin kan aantoonbare overmacht beoordelen zonder automatische betaling.
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000009', false);
+select set_config('request.jwt.claim.email', 'admin@test.nl', false);
+do $$
+declare v_cancellation uuid;
+begin
+  select id into v_cancellation from public.cancellations
+  where job_id = '30000000-0000-0000-0000-000000000003';
+  perform public.admin_review_force_majeure(
+    v_cancellation, true, 'Bewijs gecontroleerd en overmacht goedgekeurd.'
+  );
+  if exists (
+    select 1 from public.cancellations
+    where id = v_cancellation
+      and (force_majeure_status <> 'approved' or compensation_amount_cents <> 0)
+  ) then
+    raise exception 'FAIL: goedgekeurde overmacht is niet correct verwerkt';
+  end if;
+end $$;
+
+-- Interne SECURITY DEFINER-helpers en muterende RPC's zijn niet voor anon.
+reset role;
+do $$
+begin
+  if has_function_privilege('anon', 'public.internal_notify(uuid,text,text,text,text)', 'EXECUTE') then
+    raise exception 'FAIL: anon kan interne notificatiehelper uitvoeren';
+  end if;
+  if has_function_privilege('anon', 'public.apply_to_job(uuid,text,text,uuid[])', 'EXECUTE') then
+    raise exception 'FAIL: anon kan apply_to_job uitvoeren';
+  end if;
+  if not has_function_privilege('authenticated', 'public.apply_to_job(uuid,text,text,uuid[])', 'EXECUTE') then
+    raise exception 'FAIL: authenticated mist execute op apply_to_job';
   end if;
 end $$;
 
