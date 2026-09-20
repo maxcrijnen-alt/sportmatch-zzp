@@ -1,213 +1,164 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Browser, type Page } from "@playwright/test";
 
 /**
- * End-to-end-flows tegen een geconfigureerde Supabase-omgeving met demo-data
- * (npm run seed:demo). Deze tests worden overgeslagen zonder Supabase-config.
+ * Deze suite gebruikt uitsluitend tijdelijke, per-browser demosessies. Er
+ * staan bewust geen vaste gebruikersnamen, wachtwoorden of productie-fixtures
+ * in de tests. Zet RUN_DEMO_E2E=true in een geïsoleerde testomgeving met de
+ * vereiste Supabase servervariabelen om de suite uit te voeren.
  */
+const demoReady = process.env.RUN_DEMO_E2E === "true";
 
-const hasSupabase = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL);
-const PASSWORD = process.env.DEMO_PASSWORD ?? "SportMatch2026!";
+test.skip(!demoReady, "Tijdelijke demo-E2E is niet ingeschakeld");
 
-test.skip(!hasSupabase, "Supabase is niet geconfigureerd");
-
-async function login(page: Page, email: string) {
-  await page.goto("/login");
-  await page.getByLabel("E-mailadres").fill(email);
-  await page.getByLabel("Wachtwoord").fill(PASSWORD);
-  await page.getByRole("main").getByRole("button", { name: "Inloggen" }).click();
-  await page.waitForURL("**/dashboard", { timeout: 20_000 });
+async function startDemo(
+  page: Page,
+  role: "sportschool" | "instructeur",
+) {
+  await page.goto("/demo");
+  await page
+    .getByRole("button", { name: `Start demo als ${role}` })
+    .click();
+  await page.waitForURL("**/dashboard", { timeout: 45_000 });
 }
 
-test.describe("instructeur", () => {
-  test("kan inloggen en het dashboard zien", async ({ page }) => {
-    await login(page, "instructeur@sportmatch.test");
-    await expect(page.getByRole("heading", { name: /Hoi / })).toBeVisible();
-  });
+async function createSimpleJob(page: Page, title: string) {
+  await page.goto("/organisatie/opdrachten/nieuw");
+  await page.getByLabel("Soort plaatsing").selectOption("one_time");
+  await page.getByLabel("Vestiging").selectOption({ index: 1 });
+  await page.getByLabel("Sport").selectOption({ index: 1 });
+  await page.getByLabel("Soort les").selectOption({ index: 1 });
+  await page.getByLabel("Titel").fill(title);
+  await page
+    .getByLabel("Beschrijving")
+    .fill("Tijdelijke opdracht voor de geïsoleerde Playwright-demosessie.");
+  const nextWeek = new Date(Date.now() + 7 * 86_400_000)
+    .toISOString()
+    .slice(0, 10);
+  await page.getByLabel("Datum").fill(nextWeek);
+  await page.getByLabel("Begintijd").fill("10:00");
+  await page.getByLabel("Eindtijd").fill("11:00");
+  await page.getByLabel("Uurtarief (€)").fill("45");
+  await page.getByRole("button", { name: "Opdracht plaatsen" }).click();
+  await page.waitForURL("**/organisatie/opdrachten/**", { timeout: 30_000 });
+  await expect(page.getByRole("heading", { name: title })).toBeVisible();
+}
 
-  test("ziet passende opdrachten met matchscore en kan filteren", async ({
-    page,
-  }) => {
-    await login(page, "instructeur@sportmatch.test");
-    await page.goto("/opdrachten");
-    await expect(page.getByText(/Match \d+%/).first()).toBeVisible();
+async function closeDemo(page: Page) {
+  await page.getByRole("button", { name: /uitloggen/i }).click();
+  await page.waitForURL(/\/$/, { timeout: 30_000 });
+}
 
-    // Filter op spoed
-    await page.getByLabel("Soort").selectOption("urgent_substitute");
-    await page.getByRole("button", { name: "Filteren" }).click();
-    await expect(page.getByText("Spoed-inval").first()).toBeVisible();
-  });
+test("twee gelijktijdige demosessies zien elkaars wijzigingen niet", async ({
+  browser,
+}: {
+  browser: Browser;
+}) => {
+  const contextA = await browser.newContext();
+  const contextB = await browser.newContext();
+  const pageA = await contextA.newPage();
+  const pageB = await contextB.newPage();
+  const uniqueTitle = `Alleen sessie A ${Date.now()}`;
 
-  test("kan een opdrachtdetail openen en het reactieformulier zien", async ({
-    page,
-  }) => {
-    await login(page, "instructeur@sportmatch.test");
-    await page.goto("/opdrachten");
-    await page
-      .locator("a[href^='/opdrachten/']")
-      .first()
-      .click();
-    await expect(page.getByText("Vergoeding")).toBeVisible();
-  });
+  try {
+    await Promise.all([
+      startDemo(pageA, "sportschool"),
+      startDemo(pageB, "sportschool"),
+    ]);
+    await createSimpleJob(pageA, uniqueTitle);
 
-  test("ziet reacties en tegenvoorstellen onder mijn-reacties", async ({
-    page,
-  }) => {
-    await login(page, "instructeur2@sportmatch.test");
-    await page.goto("/mijn-reacties");
-    await expect(page.getByText("Reacties")).toBeVisible();
-  });
+    await pageB.goto("/organisatie/opdrachten");
+    await expect(pageB.getByText(uniqueTitle, { exact: true })).toHaveCount(0);
 
-  test("kan beschikbaarheid beheren", async ({ page }) => {
-    await login(page, "instructeur@sportmatch.test");
-    await page.goto("/beschikbaarheid");
-    await expect(
-      page.getByRole("heading", { name: "Beschikbaarheid" }),
-    ).toBeVisible();
-    await expect(page.getByText("Dinsdag").first()).toBeVisible();
-  });
-
-  test("ziet documentstatussen en badges", async ({ page }) => {
-    await login(page, "instructeur@sportmatch.test");
-    await page.goto("/documenten");
-    await expect(page.getByText("Goedgekeurd").first()).toBeVisible();
-    await expect(page.getByText("In afwachting").first()).toBeVisible();
-  });
-
-  test("ziet reviews en betrouwbaarheidsscore", async ({ page }) => {
-    await login(page, "instructeur@sportmatch.test");
-    await page.goto("/reviews");
-    await expect(page.getByText("Betrouwbaarheid")).toBeVisible();
-    await expect(page.getByText("Ontvangen beoordelingen")).toBeVisible();
-  });
-
-  test("kan chatten in een bestaand gesprek", async ({ page }) => {
-    await login(page, "instructeur@sportmatch.test");
-    await page.goto("/berichten");
-    await page.locator("a[href^='/berichten/']").first().click();
-    const message = `Testbericht ${Date.now()}`;
-    await page.getByPlaceholder("Typ een bericht…").fill(message);
-    await page.getByRole("button", { name: "Versturen" }).click();
-    await expect(page.getByText(message)).toBeVisible({ timeout: 15_000 });
-  });
+    await pageA.goto("/organisatie/opdrachten");
+    await expect(pageA.getByText(uniqueTitle, { exact: true })).toBeVisible();
+  } finally {
+    await Promise.allSettled([closeDemo(pageA), closeDemo(pageB)]);
+    await Promise.all([contextA.close(), contextB.close()]);
+  }
 });
 
-test.describe("organisatie", () => {
-  test("kan inloggen en opdrachten beheren", async ({ page }) => {
-    await login(page, "sportschool@sportmatch.test");
-    await page.goto("/organisatie/opdrachten");
-    await expect(page.getByRole("heading", { name: "Opdrachten" })).toBeVisible();
-    await expect(page.getByText("Spoed-inval").first()).toBeVisible();
-  });
+test("uitloggen en opnieuw starten levert een schone demo op", async ({ page }) => {
+  const uniqueTitle = `Verdwijnt bij reset ${Date.now()}`;
+  await startDemo(page, "sportschool");
+  await createSimpleJob(page, uniqueTitle);
+  await closeDemo(page);
 
-  test("kan een nieuwe opdracht plaatsen", async ({ page }) => {
-    await login(page, "sportschool@sportmatch.test");
-    await page.goto("/organisatie/opdrachten/nieuw");
-
-    await page.getByLabel("Soort plaatsing").selectOption("one_time");
-    await page.getByLabel("Sport / soort les").selectOption({ index: 1 });
-    await page.getByLabel("Vestiging").selectOption({ index: 1 });
-    await page.getByLabel("Titel").fill("E2E-test opdracht");
-    await page
-      .getByLabel("Beschrijving")
-      .fill("Automatisch aangemaakt door de E2E-test.");
-
-    const nextWeek = new Date(Date.now() + 7 * 24 * 3600 * 1000)
-      .toISOString()
-      .slice(0, 10);
-    await page.getByLabel(/Datum/).fill(nextWeek);
-    await page.getByLabel("Begintijd").fill("10:00");
-    await page.getByLabel("Eindtijd").fill("11:00");
-    await page.getByLabel("Uurtarief (€)").fill("45");
-
-    await page.getByRole("button", { name: "Opdracht plaatsen" }).click();
-    await page.waitForURL("**/organisatie/opdrachten/**", { timeout: 20_000 });
-    await expect(page.getByText("E2E-test opdracht")).toBeVisible();
-  });
-
-  test("ziet kandidaten met betrouwbaarheidsstatistieken", async ({ page }) => {
-    await login(page, "sportschool@sportmatch.test");
-    await page.goto("/organisatie/kandidaten");
-    await expect(page.getByRole("heading", { name: "Kandidaten" })).toBeVisible();
-  });
-
-  test("planner heeft toegang tot de organisatie", async ({ page }) => {
-    await login(page, "planner@sportmatch.test");
-    await page.goto("/organisatie");
-    await expect(page.getByText("FitZone Utrecht").first()).toBeVisible();
-  });
-
-  test("ziet vestigingen met abonnementsstatus", async ({ page }) => {
-    await login(page, "sportschool@sportmatch.test");
-    await page.goto("/organisatie/vestigingen");
-    await expect(page.getByText("Proefperiode").first()).toBeVisible();
-  });
+  await startDemo(page, "sportschool");
+  await page.goto("/organisatie/opdrachten");
+  await expect(page.getByText(uniqueTitle, { exact: true })).toHaveCount(0);
+  await closeDemo(page);
 });
 
-test.describe("rolgebaseerde toegang", () => {
-  test("instructeur wordt weggestuurd van organisatiepagina's", async ({
-    page,
-  }) => {
-    await login(page, "instructeur@sportmatch.test");
-    await page.goto("/organisatie/opdrachten/nieuw");
-    await page.waitForURL("**/dashboard");
-  });
+test("sportschooldemo bevat kandidaten, agenda en alle berichtfilters", async ({
+  page,
+}) => {
+  await startDemo(page, "sportschool");
 
-  test("niet-admin wordt weggestuurd van admin", async ({ page }) => {
-    await login(page, "instructeur@sportmatch.test");
-    await page.goto("/admin");
-    await page.waitForURL("**/dashboard");
-  });
+  await page.goto("/organisatie/kandidaten");
+  await expect(page.getByText("Eerste klus").first()).toBeVisible();
+  await expect(page.getByText(/Eerder mee samengewerkt/i)).toBeVisible();
+
+  await page.goto("/agenda");
+  await expect(page.getByRole("heading", { name: "Agenda" })).toBeVisible();
+  await expect(page.getByText(/Bevestigde training/i).first()).toBeVisible();
+
+  await page.goto("/berichten");
+  for (const tab of ["Binnengekomen", "Verzonden", "Uitnodigingen", "Afgerond"]) {
+    await expect(page.getByRole("link", { name: new RegExp(tab) })).toBeVisible();
+  }
+  await closeDemo(page);
 });
 
-test.describe("admin", () => {
-  test("ziet statistieken", async ({ page }) => {
-    await login(page, "admin@sportmatch.test");
-    await page.waitForURL("**/admin");
-    await expect(page.getByText("Instructeurs")).toBeVisible();
-    await expect(page.getByText("Actieve abonnementen")).toBeVisible();
-  });
+test("opdracht ondersteunt eigen lesvorm, herhaling, blok en sjabloon", async ({
+  page,
+}) => {
+  await startDemo(page, "sportschool");
+  await page.goto("/organisatie/opdrachten/nieuw");
 
-  test("kan documenten beoordelen", async ({ page }) => {
-    await login(page, "admin@sportmatch.test");
-    await page.goto("/admin/documenten");
-    await expect(
-      page.getByRole("heading", { name: "Documentcontrole" }),
-    ).toBeVisible();
+  await page.getByLabel("Soort plaatsing").selectOption("recurring");
+  await page.getByLabel("Vestiging").selectOption({ index: 1 });
+  await page.getByLabel("Sport").selectOption({ index: 1 });
+  await page.getByLabel("Soort les").selectOption("custom");
+  await page.getByLabel("Eigen lesvorm").fill("Mobiliteitstraining");
+  await page.getByLabel("Titel").fill("Terugkerend lessenblok");
+  await page
+    .getByLabel("Beschrijving")
+    .fill("Een reproduceerbare opdracht met twee direct aansluitende lessen.");
+  const nextWeek = new Date(Date.now() + 7 * 86_400_000)
+    .toISOString()
+    .slice(0, 10);
+  await page.getByLabel("Eerste datum").fill(nextWeek);
+  await page.getByLabel("Begintijd").fill("18:00");
+  await page.getByLabel("Eindtijd").fill("20:00");
+  await page.getByLabel("Omschrijving herhaling").fill("Iedere dinsdagavond");
+  await page.getByLabel("Uurtarief (€)").fill("50");
+  await page.getByLabel("Meerdere aansluitende lessen plaatsen").check();
+  await page.getByLabel("Lesvorm les 1").selectOption({ index: 1 });
+  await page.getByLabel("Lesvorm les 2").selectOption({ index: 1 });
+  await page.getByLabel("Gedeeltelijk overnemen toegestaan").check();
+  await page.getByLabel("Deze keuzes ook als sjabloon opslaan").check();
+  await page.getByPlaceholder("Naam van het sjabloon (optioneel)").fill(
+    "Avondblok",
+  );
 
-    const pendingSection = page.getByText(/Te beoordelen \(\d+\)/);
-    await expect(pendingSection).toBeVisible();
-
-    const approveButton = page.getByRole("button", { name: "Goedkeuren" }).first();
-    if (await approveButton.isVisible().catch(() => false)) {
-      await approveButton.click();
-      await expect(page.getByText("Goedgekeurd").first()).toBeVisible({
-        timeout: 15_000,
-      });
-    }
-  });
-
-  test("kan billingstatus wijzigen", async ({ page }) => {
-    await login(page, "admin@sportmatch.test");
-    await page.goto("/admin/billing");
-    await expect(page.getByText("Abonnementen")).toBeVisible();
-    await expect(page.getByText("Conversievergoedingen")).toBeVisible();
-  });
+  await page.getByRole("button", { name: "Opdracht plaatsen" }).click();
+  await page.waitForURL("**/organisatie/opdrachten/**", { timeout: 30_000 });
+  await expect(page.getByText("Terugkerend lessenblok")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Opslaan als sjabloon" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Opdracht dupliceren" })).toBeVisible();
+  await closeDemo(page);
 });
 
-test.describe("registratie", () => {
-  test("nieuwe instructeur kan registreren en komt in onboarding", async ({
-    page,
-  }) => {
-    const email = `e2e-${Date.now()}@sportmatch.test`;
-    await page.goto("/registreren");
-    await page.getByRole("button", { name: "Ik ben instructeur" }).click();
-    await page.getByLabel(/naam/i).fill("E2E Tester");
-    await page.getByLabel("E-mailadres").fill(email);
-    await page.getByLabel("Wachtwoord").fill(PASSWORD);
-    await page
-      .getByRole("button", { name: "Gratis account aanmaken" })
-      .click();
-    await page.waitForURL("**/onboarding", { timeout: 20_000 });
-    await expect(page.getByText("instructeursprofiel", { exact: false })).toBeVisible();
-  });
+test("instructeursdemo toont verticale opdrachten, reviews en geldige VOG", async ({
+  page,
+}) => {
+  await startDemo(page, "instructeur");
+  await page.goto("/opdrachten");
+  await expect(page.getByText(/Afstand onbekend|km/).first()).toBeVisible();
+  await expect(page.getByText("Goedgekeurde VOG nodig")).toHaveCount(0);
+
+  await page.goto("/reviews");
+  await expect(page.getByText("Ontvangen beoordelingen")).toBeVisible();
+  await expect(page.getByText("Betrouwbaarheid")).toBeVisible();
+  await closeDemo(page);
 });

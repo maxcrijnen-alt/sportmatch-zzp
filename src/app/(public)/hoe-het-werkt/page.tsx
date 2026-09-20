@@ -37,9 +37,9 @@ export default function HoeHetWerktPage() {
         daarvan regelen jullie rechtstreeks met elkaar.
       </p>
 
-      <h2 className="mt-10 text-xl font-semibold">Voor instructeurs</h2>
+      <h2 className="mt-10 text-xl font-semibold">Voor sportorganisaties</h2>
       <ol className="mt-4 space-y-3">
-        {instructorSteps.map((step, index) => (
+        {organizationSteps.map((step, index) => (
           <li className="flex gap-3" key={step}>
             <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
               {index + 1}
@@ -49,9 +49,9 @@ export default function HoeHetWerktPage() {
         ))}
       </ol>
 
-      <h2 className="mt-10 text-xl font-semibold">Voor sportorganisaties</h2>
+      <h2 className="mt-10 text-xl font-semibold">Voor instructeurs</h2>
       <ol className="mt-4 space-y-3">
-        {organizationSteps.map((step, index) => (
+        {instructorSteps.map((step, index) => (
           <li className="flex gap-3" key={step}>
             <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-secondary text-sm font-semibold text-secondary-foreground">
               {index + 1}
@@ -76,12 +76,12 @@ export default function HoeHetWerktPage() {
         </p>
         <p>
           <strong className="text-foreground">Annuleringsregeling.</strong>{" "}
-          Wordt er kort van tevoren geannuleerd zonder goedgekeurde vervanger,
-          dan geldt een oplopende annuleringsvergoeding (25% – 100% van de
-          afgesproken vergoeding, afhankelijk van het moment van afzeggen). Het
-          platform registreert dit; de verrekening verloopt rechtstreeks tussen
-          partijen. Dit werkt twee kanten op: ook als de organisatie te laat
-          annuleert, geldt een vergelijkbare regeling richting de instructeur.
+          Wordt een bevestigde opdracht geannuleerd zonder goedgekeurde
+          vervanger of goedgekeurde overmacht, dan geldt een vergoeding van
+          150% van het totaal afgesproken bedrag. Dit werkt wederzijds. Een
+          beroep op overmacht vraagt afgeschermd bewijs en beoordeling door een
+          beheerder. De verrekening verloopt rechtstreeks tussen partijen en
+          niet via SportMatch.
         </p>
       </div>
 

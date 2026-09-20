@@ -57,7 +57,7 @@ export default async function RegistrerenPage({
         <div className="space-y-3">
           <p className="text-sm font-medium text-primary">30 dagen gratis starten</p>
           <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
-            Kies hoe je SportMatch ZZP wilt gebruiken.
+            Kies hoe je SportMatch wilt gebruiken.
           </h1>
           <p className="text-muted-foreground">
             Je kunt eerst met een demo-account rondkijken. Wil je daarna verder,

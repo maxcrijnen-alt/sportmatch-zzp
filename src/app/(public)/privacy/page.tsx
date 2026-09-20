@@ -12,13 +12,11 @@ export default function PrivacyPage() {
       <h1 className="text-3xl font-bold tracking-tight">Privacybeleid</h1>
 
       <Alert className="mt-6" variant="warning">
-        <AlertTitle>Concept — juridisch te toetsen vóór lancering</AlertTitle>
+        <AlertTitle>Juridische controle vereist</AlertTitle>
         <AlertDescription>
-          Dit is een placeholder-privacybeleid voor de testfase van{" "}
-          {BRAND.name}. Laat dit document door een jurist controleren en
-          aanvullen (o.a. AVG-grondslagen, bewaartermijnen,
-          verwerkersovereenkomsten en datalekprocedure) voordat het platform
-          publiek wordt gelanceerd.
+          Laat dit privacybeleid voor gebruik door een jurist controleren en
+          aanvullen, onder meer op AVG-grondslagen, bewaartermijnen,
+          verwerkersovereenkomsten en de datalekprocedure.
         </AlertDescription>
       </Alert>
 

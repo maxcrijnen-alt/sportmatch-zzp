@@ -115,9 +115,9 @@ export default function VoorInstructeursPage() {
           </h1>
           <p className="max-w-2xl text-lg leading-8 text-muted-foreground">
             Via {BRAND.name} vind je spoed-inval, losse lessen, terugkerende
-            reeksen, tijdelijke functies en vacatures bij sportorganisaties in
-            de {BRAND.region}. Je ziet snel wat past en reageert alleen wanneer
-            tijd, vergoeding en locatie kloppen.
+            reeksen, tijdelijke functies en vacatures bij sportorganisaties.
+            Je ziet snel wat past en reageert alleen wanneer tijd, vergoeding
+            en locatie kloppen.
           </p>
           <div className="flex flex-col gap-3 sm:flex-row">
             <Link href="/registreren?rol=instructeur">
@@ -126,8 +126,8 @@ export default function VoorInstructeursPage() {
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </Link>
-            <Link href="/login?demo=instructeur">
-              <Button className="w-full sm:w-auto" size="lg" variant="outline">
+            <Link href="/demo">
+              <Button className="w-full sm:w-auto" size="lg">
                 Bekijk demo als instructeur
               </Button>
             </Link>
@@ -168,8 +168,8 @@ export default function VoorInstructeursPage() {
               waarop je reageert.
             </p>
           </div>
-          <Link href="/login?demo=instructeur">
-            <Button className="w-full sm:w-auto" variant="outline">
+          <Link href="/demo">
+            <Button className="w-full sm:w-auto">
               Bekijk demo als instructeur
             </Button>
           </Link>
@@ -249,7 +249,7 @@ export default function VoorInstructeursPage() {
       </section>
 
       <Alert className="mt-12" variant="info">
-        <AlertTitle>Zzp'er? Dit blijft jouw verantwoordelijkheid</AlertTitle>
+        <AlertTitle>Zzp&apos;er? Dit blijft jouw verantwoordelijkheid</AlertTitle>
         <AlertDescription>
           Werk je als zelfstandige, dan blijf je zelf verantwoordelijk voor je
           KvK-inschrijving, btw en belastingaangifte, een passende
@@ -270,11 +270,11 @@ export default function VoorInstructeursPage() {
           </p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">
-          <Link href="/login?demo=instructeur">
+          <Link href="/demo">
             <Button className="w-full sm:w-auto">Bekijk demo als instructeur</Button>
           </Link>
           <Link href="/registreren?rol=instructeur">
-            <Button className="w-full sm:w-auto" variant="outline">
+            <Button className="w-full sm:w-auto">
               Start 30 dagen gratis
             </Button>
           </Link>

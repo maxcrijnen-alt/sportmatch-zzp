@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Check } from "lucide-react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -41,25 +40,6 @@ export default function TarievenPage() {
         <Card className="border-primary">
           <CardHeader>
             <Badge className="w-fit" variant="accent">30 dagen gratis proberen</Badge>
-            <CardTitle className="mt-2 text-2xl">Instructeurs</CardTitle>
-            <CardDescription>
-              <span className="text-3xl font-bold text-foreground">€ 5</span>{" "}
-              per maand, excl. btw
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-2 text-sm">
-            {included.map((feature) => (
-              <p className="flex items-start gap-2" key={feature}>
-                <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                {feature}
-              </p>
-            ))}
-          </CardContent>
-        </Card>
-
-        <Card className="border-primary">
-          <CardHeader>
-            <Badge className="w-fit" variant="accent">30 dagen gratis proberen</Badge>
             <CardTitle className="mt-2 text-2xl">Sportorganisaties</CardTitle>
             <CardDescription>
               <span className="text-3xl font-bold text-foreground">€ 5</span>{" "}
@@ -77,6 +57,25 @@ export default function TarievenPage() {
               <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
               Meerdere vestigingen en teamleden met eigen rollen
             </p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-primary">
+          <CardHeader>
+            <Badge className="w-fit" variant="accent">30 dagen gratis proberen</Badge>
+            <CardTitle className="mt-2 text-2xl">Instructeurs</CardTitle>
+            <CardDescription>
+              <span className="text-3xl font-bold text-foreground">€ 5</span>{" "}
+              per maand, excl. btw
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm">
+            {included.map((feature) => (
+              <p className="flex items-start gap-2" key={feature}>
+                <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                {feature}
+              </p>
+            ))}
           </CardContent>
         </Card>
       </div>
@@ -100,14 +99,11 @@ export default function TarievenPage() {
         </p>
       </div>
 
-      <Alert className="mt-10">
-        <AlertTitle>MVP-fase</AlertTitle>
-        <AlertDescription>
-          Tijdens de testfase van het platform worden betalingen nog niet
-          automatisch geïncasseerd. Abonnementstatussen worden gesimuleerd en
-          handmatig beheerd.
-        </AlertDescription>
-      </Alert>
+      <p className="mt-10 rounded-lg border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
+        Je ziet de actuele abonnementsstatus en eventuele hersteltermijn in je
+        account. Opdrachtvergoedingen betaal je altijd rechtstreeks aan de
+        andere partij; SportMatch houdt daarop geen commissie in.
+      </p>
 
       <div className="mt-10">
         <Link href="/registreren">

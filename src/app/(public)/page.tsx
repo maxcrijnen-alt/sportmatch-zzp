@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -20,6 +21,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BRAND } from "@/lib/branding";
+import { getPublicSportschoolPartners } from "@/lib/public-partners";
 
 const exampleJobs = [
   {
@@ -99,7 +101,7 @@ const trustItems = [
 
 const faqs = [
   {
-    q: "Voor wie is SportMatch ZZP?",
+    q: "Voor wie is SportMatch?",
     a: "Voor sportscholen, studio's en sportorganisaties die instructeurs zoeken, en voor instructeurs die losse opdrachten, invalwerk, terugkerende lessen of tijdelijke functies willen vinden.",
   },
   {
@@ -111,16 +113,18 @@ const faqs = [
     a: "Maak een instructeursprofiel, vul je sporten, regio, beschikbaarheid en documenten in en reageer op passende opdrachten.",
   },
   {
-    q: "Loopt betaling via SportMatch ZZP?",
+    q: "Loopt betaling via SportMatch?",
     a: "Nee. De opdrachtvergoeding spreek je samen af en wordt rechtstreeks tussen sportschool en instructeur betaald. Het platform rekent geen commissie over die vergoeding.",
   },
   {
     q: "Wat kost het na de gratis periode?",
-    a: "Na 30 dagen gratis proberen kost het € 5 per maand excl. btw voor instructeurs en € 5 per vestiging per maand excl. btw voor sportorganisaties. Maandelijks opzegbaar.",
+    a: "Na 30 dagen gratis proberen kost het € 5 per vestiging per maand excl. btw voor sportorganisaties en € 5 per maand excl. btw voor instructeurs. Maandelijks opzegbaar.",
   },
 ];
 
 export default function HomePage() {
+  const sportschoolPartners = getPublicSportschoolPartners();
+
   return (
     <>
       {/* Hero */}
@@ -128,7 +132,7 @@ export default function HomePage() {
         <div className="mx-auto grid w-full max-w-6xl gap-10 px-4 py-14 sm:py-20 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
           <div className="space-y-6">
             <Badge className="w-fit" variant="accent">
-              30 dagen gratis proberen in de {BRAND.region}
+              30 dagen gratis proberen
             </Badge>
             <div className="space-y-4">
               <h1 className="max-w-3xl text-4xl font-bold leading-tight tracking-tight sm:text-5xl lg:text-6xl">
@@ -149,20 +153,12 @@ export default function HomePage() {
                 </Button>
               </Link>
               <Link href="/registreren?rol=instructeur">
-                <Button
-                  className="w-full border-secondary-foreground/30 bg-transparent text-secondary-foreground hover:bg-secondary-foreground/10 sm:w-auto"
-                  size="lg"
-                  variant="outline"
-                >
+                <Button className="w-full sm:w-auto" size="lg">
                   Start als instructeur
                 </Button>
               </Link>
               <Link href="/demo">
-                <Button
-                  className="w-full border-secondary-foreground/30 bg-transparent text-secondary-foreground hover:bg-secondary-foreground/10 sm:w-auto"
-                  size="lg"
-                  variant="outline"
-                >
+                <Button className="w-full sm:w-auto" size="lg">
                   Bekijk eerst demo
                 </Button>
               </Link>
@@ -181,10 +177,6 @@ export default function HomePage() {
                 Chat en digitale bevestiging
               </p>
             </div>
-            <p className="text-sm text-secondary-foreground/65">
-              Daarna € 5 p/m excl. btw voor instructeurs en € 5 per vestiging
-              p/m excl. btw voor sportorganisaties. Maandelijks opzegbaar.
-            </p>
           </div>
 
           <div className="rounded-lg border border-secondary-foreground/15 bg-background p-4 text-foreground shadow-xl sm:p-5">
@@ -195,7 +187,7 @@ export default function HomePage() {
                   Dit kan vandaag op je bord staan
                 </p>
               </div>
-              <Badge variant="muted">Randstad</Badge>
+              <Badge variant="muted">Actuele voorbeelden</Badge>
             </div>
             <div className="mt-4 space-y-3">
               {exampleJobs.map((job) => (
@@ -226,6 +218,42 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {sportschoolPartners.length > 0 ? (
+        <section
+          aria-labelledby="sportschool-partners"
+          className="border-b border-border bg-background"
+        >
+          <div className="mx-auto w-full max-w-6xl px-4 py-10">
+            <h2
+              className="text-center text-sm font-semibold uppercase tracking-[0.18em] text-muted-foreground"
+              id="sportschool-partners"
+            >
+              Aangesloten sportscholen
+            </h2>
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-4 sm:gap-8">
+              {sportschoolPartners.map((partner) => (
+                <a
+                  aria-label={`Bezoek de website van ${partner.name}`}
+                  className="flex min-h-20 min-w-44 items-center justify-center rounded-lg border border-border bg-card px-5 py-3 transition-colors hover:border-primary"
+                  href={partner.site}
+                  key={partner.name}
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  <Image
+                    alt={partner.name}
+                    className="h-10 w-auto max-w-36 object-contain"
+                    height={48}
+                    src={partner.logo}
+                    width={160}
+                  />
+                </a>
+              ))}
+            </div>
+          </div>
+        </section>
+      ) : null}
 
       {/* Voor wie */}
       <section className="mx-auto w-full max-w-6xl px-4 py-14 sm:py-16">
@@ -281,7 +309,7 @@ export default function HomePage() {
         <div className="mx-auto w-full max-w-6xl px-4 py-14 sm:py-16">
           <div className="max-w-2xl">
             <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
-              Concrete opdrachten waarvoor je SportMatch ZZP gebruikt
+              Concrete opdrachten waarvoor je SportMatch gebruikt
             </h2>
             <p className="mt-3 text-muted-foreground">
               Niet alleen voor nood. Ook handig voor terugkerende lessen,
@@ -463,9 +491,9 @@ export default function HomePage() {
               Daarna simpel: € 5 per maand excl. btw
             </h2>
             <p className="mt-3 max-w-2xl text-muted-foreground">
-              Voor instructeurs geldt € 5 p/m excl. btw. Voor sportorganisaties
-              geldt € 5 per vestiging p/m excl. btw. Geen commissie over de
-              afgesproken opdrachtvergoeding.
+              Voor sportorganisaties geldt € 5 per vestiging p/m excl. btw.
+              Voor instructeurs geldt € 5 p/m excl. btw. Geen commissie over
+              de afgesproken opdrachtvergoeding.
             </p>
           </div>
           <div className="flex flex-col gap-3 sm:flex-row lg:shrink-0">
@@ -511,40 +539,29 @@ export default function HomePage() {
       </section>
 
       {/* CTA */}
-      <section className="bg-primary text-primary-foreground">
+      <section className="bg-secondary text-secondary-foreground">
         <div className="mx-auto flex w-full max-w-6xl flex-col items-center gap-5 px-4 py-14 text-center sm:py-16">
           <Clock3 className="h-9 w-9" />
           <h2 className="max-w-2xl text-2xl font-bold sm:text-3xl">
-            Maak vandaag je profiel aan en probeer SportMatch ZZP 30 dagen gratis.
+            Maak vandaag je profiel aan en probeer SportMatch 30 dagen gratis.
           </h2>
-          <p className="max-w-2xl text-primary-foreground/85">
+          <p className="max-w-2xl text-secondary-foreground/85">
             Kies je rol, vul de basis in en start met plaatsen of reageren zodra
             je profiel klaar is. Eerst rondkijken kan ook met de demo.
           </p>
           <div className="flex w-full flex-col justify-center gap-3 sm:w-auto sm:flex-row sm:flex-wrap">
             <Link href="/registreren?rol=organisatie">
-              <Button
-                className="w-full bg-secondary text-secondary-foreground hover:bg-secondary/90 sm:w-auto"
-                size="lg"
-              >
+              <Button className="w-full sm:w-auto" size="lg">
                 Ik zoek instructeurs
               </Button>
             </Link>
             <Link href="/registreren?rol=instructeur">
-              <Button
-                className="w-full border-primary-foreground/40 bg-transparent text-primary-foreground hover:bg-primary-foreground/10 sm:w-auto"
-                size="lg"
-                variant="outline"
-              >
+              <Button className="w-full sm:w-auto" size="lg">
                 Ik zoek opdrachten
               </Button>
             </Link>
             <Link href="/demo">
-              <Button
-                className="w-full border-primary-foreground/40 bg-transparent text-primary-foreground hover:bg-primary-foreground/10 sm:w-auto"
-                size="lg"
-                variant="outline"
-              >
+              <Button className="w-full sm:w-auto" size="lg">
                 Eerst demo bekijken
               </Button>
             </Link>

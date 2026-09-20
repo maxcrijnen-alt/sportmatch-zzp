@@ -28,7 +28,7 @@ for (const [path, heading] of [
   ["/hoe-het-werkt", "Hoe het werkt"],
   ["/voor-instructeurs", "Vind opdrachten"],
   ["/voor-sportscholen", "Vul je rooster"],
-  ["/demo", "Bekijk SportMatch ZZP"],
+  ["/demo", "Bekijk SportMatch"],
   ["/tarieven", "Tarieven"],
   ["/faq", "Veelgestelde vragen"],
   ["/privacy", "Privacybeleid"],
@@ -45,10 +45,10 @@ for (const [path, heading] of [
 test("demo-pagina toont alleen sportschool en instructeur demo", async ({ page }) => {
   await page.goto("/demo");
   await expect(
-    page.getByRole("link", { name: /Bekijk demo als sportschool/i }).first(),
+    page.getByRole("button", { name: /Start demo als sportschool/i }).first(),
   ).toBeVisible();
   await expect(
-    page.getByRole("link", { name: /Bekijk demo als instructeur/i }).first(),
+    page.getByRole("button", { name: /Start demo als instructeur/i }).first(),
   ).toBeVisible();
   await expect(page.getByText("planner-demo", { exact: false })).toHaveCount(0);
   await expect(page.getByText("admin-demo", { exact: false })).toHaveCount(0);
@@ -69,17 +69,13 @@ test("loginpagina toont formulier", async ({ page }) => {
   ).toBeVisible();
 });
 
-test("demo-login vult sportschool account vooraf in", async ({ page }) => {
+test("login en demo lekken geen gedeelde inloggegevens", async ({ page }) => {
   await page.goto("/login?demo=sportschool");
-  await expect(page.getByLabel("E-mailadres")).toHaveValue(
-    "sportschool@sportmatch.test",
-  );
-  await expect(page.getByLabel("Wachtwoord")).toHaveValue("SportMatch2026!");
-  await expect(
-    page.getByRole("main").getByRole("button", {
-      name: "Log in met demo-account",
-    }),
-  ).toBeVisible();
+  await expect(page.getByLabel("E-mailadres")).toHaveValue("");
+  await expect(page.getByLabel("Wachtwoord")).toHaveValue("");
+  await expect(page.getByText(/@sportmatch\.test/i)).toHaveCount(0);
+  await page.goto("/demo");
+  await expect(page.getByText(/wachtwoord/i)).toHaveCount(0);
 });
 
 test("registratiepagina toont rolkeuze", async ({ page }) => {

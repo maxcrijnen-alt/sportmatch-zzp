@@ -7,7 +7,7 @@ export const metadata: Metadata = {
 
 const faqs = [
   {
-    q: "Wat is SportMatch ZZP precies?",
+    q: "Wat is SportMatch precies?",
     a: `${BRAND.name} is een matchingplatform dat sportorganisaties en sportinstructeurs bij elkaar brengt voor spoed-inval, eenmalige opdrachten, terugkerende lessen, tijdelijke functies en vaste vacatures. Het platform faciliteert het vinden, afstemmen en digitaal bevestigen van opdrachten.`,
   },
   {
@@ -32,11 +32,11 @@ const faqs = [
   },
   {
     q: "Wat gebeurt er als een instructeur kort van tevoren afzegt?",
-    a: "De instructeur mag zelf een vervanger voorstellen, die de organisatie altijd eerst goedkeurt. Komt er geen goedgekeurde vervanger, dan geldt een oplopende annuleringsregeling (25%, 50% of 100% van de afgesproken vergoeding, afhankelijk van het moment van afzeggen). Het platform registreert dit; de verrekening loopt rechtstreeks tussen partijen. Andersom geldt een vergelijkbare regeling als de organisatie te laat annuleert.",
+    a: "De instructeur mag zelf een vervanger voorstellen, die de organisatie altijd eerst goedkeurt. Komt er geen goedgekeurde vervanger en is er geen goedgekeurde overmacht, dan bedraagt de annuleringsvergoeding 150% van het totaal afgesproken bedrag. Dezelfde regel geldt wanneer de organisatie annuleert. Bewijs voor overmacht wordt afgeschermd beoordeeld; verrekening loopt rechtstreeks tussen partijen.",
   },
   {
     q: "Wat kost het platform?",
-    a: "€ 5 per maand (excl. btw) voor instructeurs en € 5 per vestiging per maand voor organisaties, na 30 dagen gratis proberen. Maandelijks opzegbaar.",
+    a: "€ 5 per vestiging per maand (excl. btw) voor organisaties en € 5 per maand voor instructeurs, na 30 dagen gratis proberen. Maandelijks opzegbaar.",
   },
   {
     q: "Wat is de conversievergoeding?",
@@ -47,8 +47,8 @@ const faqs = [
     a: "Na een afgeronde opdracht geven beide partijen elkaar 1 tot 5 sterren. Beoordelingen worden pas zichtbaar nadat beide partijen hebben beoordeeld, zodat ze elkaar niet beïnvloeden.",
   },
   {
-    q: "In welke regio werkt het platform?",
-    a: "We starten in de Randstad. Andere regio's volgen later.",
+    q: "Kan ik SportMatch door heel Nederland gebruiken?",
+    a: "Ja. SportMatch legt geen regionale beperking op. Het actuele aanbod hangt af van de sportscholen en instructeurs die in jouw omgeving actief zijn.",
   },
 ];
 

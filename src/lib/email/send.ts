@@ -13,6 +13,12 @@ export async function sendEmail(message: EmailMessage): Promise<void> {
   const provider = process.env.EMAIL_PROVIDER ?? "log";
 
   if (provider === "resend" && process.env.RESEND_API_KEY) {
+    const from = process.env.EMAIL_FROM;
+
+    if (!from) {
+      throw new Error("EMAIL_FROM is verplicht wanneer EMAIL_PROVIDER=resend.");
+    }
+
     await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
@@ -20,7 +26,7 @@ export async function sendEmail(message: EmailMessage): Promise<void> {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "SportMatch ZZP <noreply@sportmatch.test>",
+        from,
         to: message.to,
         subject: message.subject,
         text: message.text,

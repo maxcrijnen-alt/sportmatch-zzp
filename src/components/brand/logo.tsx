@@ -29,22 +29,15 @@ function LogoMark({ className }: { className?: string }) {
 function Logo({
   className,
   markClassName,
-  withTag = true,
 }: {
   className?: string;
   markClassName?: string;
-  withTag?: boolean;
 }) {
   return (
     <span className={cn("inline-flex items-center gap-2", className)}>
       <LogoMark className={markClassName} />
       <span className="flex items-baseline gap-1.5 font-semibold tracking-tight">
         <span>{BRAND.shortName}</span>
-        {withTag ? (
-          <span className="rounded bg-accent px-1.5 py-0.5 text-[0.65rem] font-bold uppercase leading-none text-accent-foreground">
-            ZZP
-          </span>
-        ) : null}
       </span>
     </span>
   );

@@ -14,12 +14,11 @@ export default function VoorwaardenPage() {
       </h1>
 
       <Alert className="mt-6" variant="warning">
-        <AlertTitle>Concept — juridisch te toetsen vóór lancering</AlertTitle>
+        <AlertTitle>Juridische controle vereist</AlertTitle>
         <AlertDescription>
-          Dit zijn placeholder-voorwaarden voor de testfase van {BRAND.name}.
-          Laat deze voorwaarden — inclusief de annulerings-/vervangingsregeling
-          en de conversievergoeding — door een jurist controleren voordat het
-          platform publiek wordt gelanceerd.
+          Laat deze voorwaarden, inclusief de annulerings-, overmacht- en
+          vervangingsregeling en de conversievergoeding, door een jurist
+          controleren voordat je ze gebruikt.
         </AlertDescription>
       </Alert>
 
@@ -68,12 +67,11 @@ export default function VoorwaardenPage() {
           </h2>
           <p>
             Bij annulering van een bevestigde opdracht zonder goedgekeurde
-            vervanger geldt een oplopende vergoeding van 25% (annulering binnen
-            12 uur voor aanvang), 50% (binnen 6 uur) of 100% (binnen 2 uur) van
-            de afgesproken opdrachtvergoeding. Deze regeling geldt wederzijds.
-            Het platform registreert de regeling; verrekening vindt rechtstreeks
-            tussen partijen plaats. In uitzonderlijke gevallen kan de beheerder
-            een registratie corrigeren.
+            vervanger of goedgekeurde overmacht geldt een vergoeding van 150%
+            van het totaal afgesproken bedrag. Deze regeling geldt wederzijds.
+            Een beroep op overmacht vraagt om afgeschermd bewijs en beoordeling
+            door een beheerder. Het platform registreert de uitkomst; verrekening
+            vindt rechtstreeks tussen partijen plaats en niet via SportMatch.
           </p>
         </section>
         <section>
