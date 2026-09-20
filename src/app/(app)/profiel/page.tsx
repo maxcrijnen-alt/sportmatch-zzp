@@ -19,6 +19,7 @@ import type {
   City,
   InstructorProfile,
   InstructorStatus,
+  LessonType,
   Sport,
 } from "@/types/database";
 
@@ -45,8 +46,14 @@ export default async function ProfielPage() {
   let instructorSection: React.ReactNode = null;
 
   if (profile.role === "instructor") {
-    const [detailsResult, sportsResult, statusesResult, instructorSportsResult] =
-      await Promise.all([
+    const [
+      detailsResult,
+      sportsResult,
+      lessonTypesResult,
+      statusesResult,
+      instructorSportsResult,
+      instructorLessonTypesResult,
+    ] = await Promise.all([
         supabase
           .from("instructor_profiles")
           .select("*")
@@ -54,12 +61,21 @@ export default async function ProfielPage() {
           .maybeSingle(),
         supabase.from("sports").select("*").eq("is_active", true).order("name"),
         supabase
+          .from("lesson_types")
+          .select("*")
+          .eq("is_active", true)
+          .order("sort_order"),
+        supabase
           .from("instructor_statuses")
           .select("status")
           .eq("user_id", profile.id),
         supabase
           .from("instructor_sports")
           .select("sport_id")
+          .eq("user_id", profile.id),
+        supabase
+          .from("instructor_lesson_types")
+          .select("lesson_type_id")
           .eq("user_id", profile.id),
       ]);
 
@@ -78,6 +94,12 @@ export default async function ProfielPage() {
           <CardContent>
             <InstructorDetailsForm
               details={details}
+              lessonTypes={(lessonTypesResult.data as LessonType[]) ?? []}
+              selectedLessonTypeIds={
+                instructorLessonTypesResult.data?.map(
+                  (row) => row.lesson_type_id as string,
+                ) ?? []
+              }
               selectedSportIds={
                 instructorSportsResult.data?.map((row) => row.sport_id as string) ??
                 []

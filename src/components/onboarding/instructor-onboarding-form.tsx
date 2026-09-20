@@ -14,7 +14,12 @@ import {
 } from "@/lib/onboarding/actions";
 import { CUSTOM_CITY_OPTION_VALUE } from "@/lib/profile/location";
 import { cn } from "@/lib/utils";
-import type { City, InstructorStatus, Sport } from "@/types/database";
+import type {
+  City,
+  InstructorStatus,
+  LessonType,
+  Sport,
+} from "@/types/database";
 
 const initialState: OnboardingActionState = { error: null };
 
@@ -25,9 +30,11 @@ const statusOptions = Object.entries(instructorStatusLabels) as [
 
 export function InstructorOnboardingForm({
   cities,
+  lessonTypes,
   sports,
 }: {
   cities: City[];
+  lessonTypes: LessonType[];
   sports: Sport[];
 }) {
   const [state, formAction, isPending] = useActionState(
@@ -36,13 +43,25 @@ export function InstructorOnboardingForm({
   );
   const [statuses, setStatuses] = useState<InstructorStatus[]>([]);
   const [cityId, setCityId] = useState("");
+  const [selectedSportIds, setSelectedSportIds] = useState<string[]>([]);
   const isZzp = statuses.includes("zzp");
+  const visibleLessonTypes = lessonTypes.filter((lessonType) =>
+    selectedSportIds.includes(lessonType.sport_id),
+  );
 
   const toggleStatus = (status: InstructorStatus) => {
     setStatuses((current) =>
       current.includes(status)
         ? current.filter((item) => item !== status)
         : [...current, status],
+    );
+  };
+
+  const toggleSport = (sportId: string) => {
+    setSelectedSportIds((current) =>
+      current.includes(sportId)
+        ? current.filter((item) => item !== sportId)
+        : [...current, sportId],
     );
   };
 
@@ -202,8 +221,10 @@ export function InstructorOnboardingForm({
               key={sport.id}
             >
               <input
+                checked={selectedSportIds.includes(sport.id)}
                 className="sr-only"
                 name="sportIds"
+                onChange={() => toggleSport(sport.id)}
                 type="checkbox"
                 value={sport.id}
               />
@@ -212,6 +233,32 @@ export function InstructorOnboardingForm({
           ))}
         </div>
       </div>
+
+      {visibleLessonTypes.length > 0 ? (
+        <div className="space-y-2">
+          <Label>Lesvormen waarin je inzetbaar bent (optioneel)</Label>
+          <p className="text-xs text-muted-foreground">
+            Dit helpt sportscholen je gerichter uit te nodigen. Zonder keuze
+            blijf je als algemene specialist voor de sport vindbaar.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {visibleLessonTypes.map((lessonType) => (
+              <label
+                className="cursor-pointer rounded-full border border-border px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted has-checked:border-primary has-checked:bg-primary/10 has-checked:font-medium has-checked:text-primary"
+                key={lessonType.id}
+              >
+                <input
+                  className="sr-only"
+                  name="lessonTypeIds"
+                  type="checkbox"
+                  value={lessonType.id}
+                />
+                {lessonType.name}
+              </label>
+            ))}
+          </div>
+        </div>
+      ) : null}
 
       <div className="space-y-2">
         <Label htmlFor="workExperience">Werkervaring</Label>

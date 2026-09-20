@@ -64,6 +64,16 @@ create table public.lesson_types (
   constraint lesson_type_name_not_blank check (btrim(name) <> '')
 );
 
+create table public.instructor_lesson_types (
+  user_id uuid not null references public.instructor_profiles (user_id) on delete cascade,
+  lesson_type_id uuid not null references public.lesson_types (id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (user_id, lesson_type_id)
+);
+
+create index instructor_lesson_types_lesson_idx
+  on public.instructor_lesson_types (lesson_type_id, user_id);
+
 alter table public.jobs
   add column lesson_type_id uuid references public.lesson_types (id),
   add column custom_lesson_type text,
@@ -289,6 +299,7 @@ create index complaints_job_idx on public.complaints (job_id);
 alter table public.demo_sessions enable row level security;
 alter table public.partner_schools enable row level security;
 alter table public.lesson_types enable row level security;
+alter table public.instructor_lesson_types enable row level security;
 alter table public.job_templates enable row level security;
 alter table public.job_recurrence_rules enable row level security;
 alter table public.job_segments enable row level security;
@@ -299,6 +310,7 @@ alter table public.complaints enable row level security;
 revoke all on public.demo_sessions from anon, authenticated;
 revoke all on public.partner_schools from anon, authenticated;
 revoke all on public.lesson_types from anon, authenticated;
+revoke all on public.instructor_lesson_types from anon, authenticated;
 revoke all on public.job_templates from anon, authenticated;
 revoke all on public.job_recurrence_rules from anon, authenticated;
 revoke all on public.job_segments from anon, authenticated;
@@ -310,6 +322,7 @@ grant select on public.partner_schools to anon, authenticated;
 grant insert, update, delete on public.partner_schools to authenticated;
 grant select on public.lesson_types to authenticated;
 grant insert, update, delete on public.lesson_types to authenticated;
+grant select, insert, delete on public.instructor_lesson_types to authenticated;
 grant select, insert, update, delete on public.job_templates to authenticated;
 grant select, insert, update, delete on public.job_recurrence_rules to authenticated;
 grant select, insert, update, delete on public.job_segments to authenticated;
@@ -537,6 +550,24 @@ drop policy if exists "specialisaties zichtbaar" on public.instructor_sports;
 create policy "specialisaties zichtbaar binnen scope" on public.instructor_sports
   for select to authenticated
   using (private.profile_in_demo_scope(user_id));
+
+create policy "lesvormspecialisaties zichtbaar binnen scope"
+  on public.instructor_lesson_types
+  for select to authenticated
+  using (private.profile_in_demo_scope(user_id));
+
+create policy "eigen lesvormspecialisaties toevoegen"
+  on public.instructor_lesson_types
+  for insert to authenticated
+  with check (
+    user_id = auth.uid()
+    and private.profile_in_demo_scope(user_id)
+  );
+
+create policy "eigen lesvormspecialisaties verwijderen"
+  on public.instructor_lesson_types
+  for delete to authenticated
+  using (user_id = auth.uid());
 
 drop policy if exists "kwalificaties zichtbaar" on public.instructor_qualifications;
 create policy "kwalificaties zichtbaar binnen scope" on public.instructor_qualifications

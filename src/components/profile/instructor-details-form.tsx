@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import type {
   InstructorProfile,
   InstructorStatus,
+  LessonType,
   Sport,
 } from "@/types/database";
 
@@ -27,12 +28,16 @@ const statusOptions = Object.entries(instructorStatusLabels) as [
 
 export function InstructorDetailsForm({
   details,
+  lessonTypes,
   sports,
+  selectedLessonTypeIds,
   selectedStatuses,
   selectedSportIds,
 }: {
   details: InstructorProfile;
+  lessonTypes: LessonType[];
   sports: Sport[];
+  selectedLessonTypeIds: string[];
   selectedStatuses: InstructorStatus[];
   selectedSportIds: string[];
 }) {
@@ -41,13 +46,45 @@ export function InstructorDetailsForm({
     initialState,
   );
   const [statuses, setStatuses] = useState<InstructorStatus[]>(selectedStatuses);
+  const [sportIds, setSportIds] = useState<string[]>(selectedSportIds);
+  const [lessonTypeIds, setLessonTypeIds] = useState<string[]>(
+    selectedLessonTypeIds,
+  );
   const isZzp = statuses.includes("zzp");
+  const visibleLessonTypes = lessonTypes.filter((lessonType) =>
+    sportIds.includes(lessonType.sport_id),
+  );
 
   const toggleStatus = (status: InstructorStatus) => {
     setStatuses((current) =>
       current.includes(status)
         ? current.filter((item) => item !== status)
         : [...current, status],
+    );
+  };
+
+  const toggleSport = (sportId: string) => {
+    if (sportIds.includes(sportId)) {
+      const lessonIdsForSport = new Set(
+        lessonTypes
+          .filter((lessonType) => lessonType.sport_id === sportId)
+          .map((lessonType) => lessonType.id),
+      );
+      setLessonTypeIds((selected) =>
+        selected.filter((lessonTypeId) => !lessonIdsForSport.has(lessonTypeId)),
+      );
+      setSportIds((current) => current.filter((item) => item !== sportId));
+      return;
+    }
+
+    setSportIds((current) => [...current, sportId]);
+  };
+
+  const toggleLessonType = (lessonTypeId: string) => {
+    setLessonTypeIds((current) =>
+      current.includes(lessonTypeId)
+        ? current.filter((item) => item !== lessonTypeId)
+        : [...current, lessonTypeId],
     );
   };
 
@@ -165,9 +202,10 @@ export function InstructorDetailsForm({
               key={sport.id}
             >
               <input
+                checked={sportIds.includes(sport.id)}
                 className="sr-only"
-                defaultChecked={selectedSportIds.includes(sport.id)}
                 name="sportIds"
+                onChange={() => toggleSport(sport.id)}
                 type="checkbox"
                 value={sport.id}
               />
@@ -176,6 +214,34 @@ export function InstructorDetailsForm({
           ))}
         </div>
       </div>
+
+      {visibleLessonTypes.length > 0 ? (
+        <div className="space-y-2">
+          <Label>Lesvormen</Label>
+          <p className="text-xs text-muted-foreground">
+            Optioneel. Kies de lesvormen waarvoor sportscholen je gericht mogen
+            uitnodigen.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {visibleLessonTypes.map((lessonType) => (
+              <label
+                className="cursor-pointer rounded-full border border-border px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted has-checked:border-primary has-checked:bg-primary/10 has-checked:font-medium has-checked:text-primary"
+                key={lessonType.id}
+              >
+                <input
+                  checked={lessonTypeIds.includes(lessonType.id)}
+                  className="sr-only"
+                  name="lessonTypeIds"
+                  onChange={() => toggleLessonType(lessonType.id)}
+                  type="checkbox"
+                  value={lessonType.id}
+                />
+                {lessonType.name}
+              </label>
+            ))}
+          </div>
+        </div>
+      ) : null}
 
       <div className="space-y-2">
         <Label htmlFor="workExperience">Werkervaring</Label>

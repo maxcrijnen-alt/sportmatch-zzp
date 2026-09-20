@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/card";
 import { getSessionProfile } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
-import type { City, Sport } from "@/types/database";
+import type { City, LessonType, Sport } from "@/types/database";
 
 export const metadata: Metadata = {
   title: "Profiel afronden",
@@ -88,10 +88,20 @@ export default async function OnboardingPage() {
     redirect("/dashboard");
   }
 
-  const [{ data: cities }, { data: sports }, { data: pendingInvites }] =
+  const [
+    { data: cities },
+    { data: sports },
+    { data: lessonTypes },
+    { data: pendingInvites },
+  ] =
     await Promise.all([
       supabase.from("cities").select("*").order("name"),
       supabase.from("sports").select("*").eq("is_active", true).order("name"),
+      supabase
+        .from("lesson_types")
+        .select("*")
+        .eq("is_active", true)
+        .order("sort_order"),
       supabase
         .from("organization_members")
         .select("id, member_role, organization:organizations (name)")
@@ -232,6 +242,7 @@ export default async function OnboardingPage() {
             ) : (
               <InstructorOnboardingForm
                 cities={(cities as City[]) ?? []}
+                lessonTypes={(lessonTypes as LessonType[]) ?? []}
                 sports={(sports as Sport[]) ?? []}
               />
             )}

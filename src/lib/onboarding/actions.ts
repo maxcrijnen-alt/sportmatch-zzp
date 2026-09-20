@@ -34,6 +34,7 @@ const instructorSchema = z
       .array(z.enum(["zzp", "employee", "student", "job_seeker", "other"]))
       .min(1, "Kies minimaal één status."),
     sportIds: z.array(z.string().uuid()).min(1, "Kies minimaal één specialisatie."),
+    lessonTypeIds: z.array(z.string().uuid()).default([]),
     kvkNumber: z.string().default(""),
     btwNumber: z.string().default(""),
   })
@@ -79,6 +80,7 @@ export async function completeInstructorOnboarding(
     travelDistanceKm: formData.get("travelDistanceKm"),
     statuses: formData.getAll("statuses"),
     sportIds: formData.getAll("sportIds"),
+    lessonTypeIds: formData.getAll("lessonTypeIds"),
     kvkNumber: formData.get("kvkNumber") ?? "",
     btwNumber: formData.get("btwNumber") ?? "",
   });
@@ -89,6 +91,22 @@ export async function completeInstructorOnboarding(
 
   const input = parsed.data;
   const usesCustomCity = input.cityId === CUSTOM_CITY_OPTION_VALUE;
+
+  if (input.lessonTypeIds.length > 0) {
+    const { data: selectedLessonTypes, error: lessonTypeError } = await supabase
+      .from("lesson_types")
+      .select("id, sport_id")
+      .in("id", input.lessonTypeIds);
+    if (
+      lessonTypeError ||
+      selectedLessonTypes?.length !== input.lessonTypeIds.length ||
+      selectedLessonTypes.some(
+        (lessonType) => !input.sportIds.includes(lessonType.sport_id as string),
+      )
+    ) {
+      return { error: "Kies lesvormen die bij je specialisaties horen." };
+    }
+  }
 
   const { error: profileError } = await supabase
     .from("profiles")
@@ -137,6 +155,24 @@ export async function completeInstructorOnboarding(
 
   if (sportsError) {
     return { error: "Specialisaties opslaan is niet gelukt." };
+  }
+
+  await supabase
+    .from("instructor_lesson_types")
+    .delete()
+    .eq("user_id", profile.id);
+  if (input.lessonTypeIds.length > 0) {
+    const { error: lessonTypesError } = await supabase
+      .from("instructor_lesson_types")
+      .insert(
+        input.lessonTypeIds.map((lessonTypeId) => ({
+          user_id: profile.id,
+          lesson_type_id: lessonTypeId,
+        })),
+      );
+    if (lessonTypesError) {
+      return { error: "Lesvormspecialisaties opslaan is niet gelukt." };
+    }
   }
 
   revalidatePath("/", "layout");

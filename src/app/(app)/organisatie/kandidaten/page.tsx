@@ -21,6 +21,46 @@ interface ApplicationRow extends JobApplication {
   job: { id: string; title: string; starts_on: string; location_id: string } | null;
 }
 
+interface OpenJobRow {
+  id: string;
+  title: string;
+  sport_id: string;
+  lesson_type_id: string | null;
+  custom_lesson_type: string | null;
+  location_id: string;
+  starts_on: string;
+  start_time: string;
+  end_time: string;
+}
+
+interface CandidateMatch {
+  userId: string;
+  job: OpenJobRow;
+  score: number;
+  lessonTypeName: string;
+  distanceKm: number | null;
+  availability: "available" | "unknown";
+  yearsExperience: number;
+  requiredQualifications: number;
+  isFirstJob: boolean;
+}
+
+function distanceInKm(
+  from: { lat: number; lng: number } | null,
+  to: { lat: number; lng: number } | null,
+): number | null {
+  if (!from || !to) return null;
+  const radians = (degrees: number) => (degrees * Math.PI) / 180;
+  const latDelta = radians(to.lat - from.lat);
+  const lngDelta = radians(to.lng - from.lng);
+  const a =
+    Math.sin(latDelta / 2) ** 2 +
+    Math.cos(radians(from.lat)) *
+      Math.cos(radians(to.lat)) *
+      Math.sin(lngDelta / 2) ** 2;
+  return Math.round(6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)) * 10) / 10;
+}
+
 const candidateReviewTips = [
   "Vergelijk eerst beschikbaarheid, tarief en afstand voor de specifieke opdracht.",
   "Gebruik badges, betrouwbaarheid en berichttekst als extra vertrouwen voordat je bevestigt.",
@@ -75,7 +115,9 @@ export default async function KandidatenPage({
       .eq("job.status", "completed"),
     supabase
       .from("jobs")
-      .select("id,sport_id,location_id")
+      .select(
+        "id,title,sport_id,lesson_type_id,custom_lesson_type,location_id,starts_on,start_time,end_time",
+      )
       .eq("organization_id", orgContext.organization.id)
       .eq("status", "open"),
   ]);
@@ -89,7 +131,7 @@ export default async function KandidatenPage({
         .map((item) => item.instructor_id),
     ),
   );
-  const openJobs = ((openJobsResult.data as { id: string; sport_id: string; location_id: string }[] | null) ?? [])
+  const openJobs = ((openJobsResult.data as OpenJobRow[] | null) ?? [])
     .filter((job) => !selectedLocationId || job.location_id === selectedLocationId);
   const openSportIds = Array.from(new Set(openJobs.map((job) => job.sport_id)));
   const { data: matchingSports } = openSportIds.length
@@ -109,28 +151,39 @@ export default async function KandidatenPage({
       result: await supabase.rpc("has_valid_vog", { target_user: userId }),
     })),
   );
-  const eligibleMatchIds = vogChecks
+  const validVogIds = vogChecks
     .filter((item) => item.result.data === true)
-    .map((item) => item.userId)
-    .slice(0, 12);
+    .map((item) => item.userId);
   const instructorIds = Array.from(
     new Set([
       ...applications.map((application) => application.instructor_id),
       ...workedBeforeIds,
-      ...eligibleMatchIds,
+      ...validVogIds,
     ]),
   );
 
-  const namesById = new Map<string, { name: string; avatar: string | null }>();
+  const namesById = new Map<
+    string,
+    {
+      name: string;
+      avatar: string | null;
+      cityId: string | null;
+      onboardingCompleted: boolean;
+      createdAt: string;
+    }
+  >();
   if (instructorIds.length > 0) {
     const { data: instructorProfiles } = await supabase
       .from("profiles")
-      .select("id, full_name, avatar_url")
+      .select("id, full_name, avatar_url, city_id, onboarding_completed, created_at")
       .in("id", instructorIds);
     for (const row of instructorProfiles ?? []) {
       namesById.set(row.id as string, {
         name: row.full_name as string,
         avatar: row.avatar_url as string | null,
+        cityId: row.city_id as string | null,
+        onboardingCompleted: row.onboarding_completed as boolean,
+        createdAt: row.created_at as string,
       });
     }
   }
@@ -147,6 +200,258 @@ export default async function KandidatenPage({
     }),
   );
   const statsById = new Map(statsEntries);
+
+  const openJobIds = openJobs.map((job) => job.id);
+  const locationIds = Array.from(new Set(openJobs.map((job) => job.location_id)));
+  const candidateCityIds = Array.from(
+    new Set(
+      validVogIds
+        .map((userId) => namesById.get(userId)?.cityId)
+        .filter((cityId): cityId is string => Boolean(cityId)),
+    ),
+  );
+  const [
+    detailsResult,
+    qualificationsResult,
+    lessonSpecialtiesResult,
+    availabilityRulesResult,
+    availabilityExceptionsResult,
+    requirementsResult,
+    locationsResult,
+    citiesResult,
+    lessonTypesResult,
+  ] = await Promise.all([
+    validVogIds.length
+      ? supabase
+          .from("instructor_profiles")
+          .select(
+            "user_id, years_experience, travel_distance_km, work_experience, hourly_rate_cents",
+          )
+          .in("user_id", validVogIds)
+      : Promise.resolve({ data: [] }),
+    validVogIds.length
+      ? supabase
+          .from("instructor_qualifications")
+          .select("user_id, qualification_id")
+          .in("user_id", validVogIds)
+      : Promise.resolve({ data: [] }),
+    validVogIds.length
+      ? supabase
+          .from("instructor_lesson_types")
+          .select("user_id, lesson_type_id")
+          .in("user_id", validVogIds)
+      : Promise.resolve({ data: [] }),
+    validVogIds.length
+      ? supabase
+          .from("availability_rules")
+          .select("user_id, weekday, start_time, end_time")
+          .in("user_id", validVogIds)
+      : Promise.resolve({ data: [] }),
+    validVogIds.length
+      ? supabase
+          .from("availability_exceptions")
+          .select("user_id, on_date, is_available")
+          .in("user_id", validVogIds)
+          .in("on_date", Array.from(new Set(openJobs.map((job) => job.starts_on))))
+      : Promise.resolve({ data: [] }),
+    openJobIds.length
+      ? supabase
+          .from("job_requirements")
+          .select("job_id, qualification_id")
+          .in("job_id", openJobIds)
+      : Promise.resolve({ data: [] }),
+    locationIds.length
+      ? supabase
+          .from("organization_locations")
+          .select("id, city:cities(id, lat, lng)")
+          .in("id", locationIds)
+      : Promise.resolve({ data: [] }),
+    candidateCityIds.length
+      ? supabase
+          .from("cities")
+          .select("id, lat, lng")
+          .in("id", candidateCityIds)
+      : Promise.resolve({ data: [] }),
+    supabase.from("lesson_types").select("id, name"),
+  ]);
+
+  type DetailRow = {
+    user_id: string;
+    years_experience: number;
+    travel_distance_km: number;
+    work_experience: string;
+    hourly_rate_cents: number | null;
+  };
+  type AvailabilityRuleRow = {
+    user_id: string;
+    weekday: number;
+    start_time: string;
+    end_time: string;
+  };
+  const detailsById = new Map(
+    ((detailsResult.data as DetailRow[] | null) ?? []).map((row) => [
+      row.user_id,
+      row,
+    ]),
+  );
+  const qualificationsByUser = new Map<string, Set<string>>();
+  for (const row of
+    (qualificationsResult.data as
+      | { user_id: string; qualification_id: string }[]
+      | null) ?? []) {
+    const current = qualificationsByUser.get(row.user_id) ?? new Set<string>();
+    current.add(row.qualification_id);
+    qualificationsByUser.set(row.user_id, current);
+  }
+  const lessonTypesByUser = new Map<string, Set<string>>();
+  for (const row of
+    (lessonSpecialtiesResult.data as
+      | { user_id: string; lesson_type_id: string }[]
+      | null) ?? []) {
+    const current = lessonTypesByUser.get(row.user_id) ?? new Set<string>();
+    current.add(row.lesson_type_id);
+    lessonTypesByUser.set(row.user_id, current);
+  }
+  const rulesByUser = new Map<string, AvailabilityRuleRow[]>();
+  for (const row of
+    (availabilityRulesResult.data as AvailabilityRuleRow[] | null) ?? []) {
+    rulesByUser.set(row.user_id, [...(rulesByUser.get(row.user_id) ?? []), row]);
+  }
+  const exceptionsByUserDate = new Map<string, boolean>();
+  for (const row of
+    (availabilityExceptionsResult.data as
+      | { user_id: string; on_date: string; is_available: boolean }[]
+      | null) ?? []) {
+    exceptionsByUserDate.set(`${row.user_id}:${row.on_date}`, row.is_available);
+  }
+  const requirementsByJob = new Map<string, Set<string>>();
+  for (const row of
+    (requirementsResult.data as
+      | { job_id: string; qualification_id: string }[]
+      | null) ?? []) {
+    const current = requirementsByJob.get(row.job_id) ?? new Set<string>();
+    current.add(row.qualification_id);
+    requirementsByJob.set(row.job_id, current);
+  }
+  const coordinatesByLocation = new Map<string, { lat: number; lng: number }>();
+  for (const row of
+    (locationsResult.data as
+      | {
+          id: string;
+          city: { lat: number; lng: number } | null;
+        }[]
+      | null) ?? []) {
+    if (row.city) coordinatesByLocation.set(row.id, row.city);
+  }
+  const coordinatesByCity = new Map(
+    ((citiesResult.data as { id: string; lat: number; lng: number }[] | null) ?? [])
+      .map((row) => [row.id, { lat: row.lat, lng: row.lng }] as const),
+  );
+  const lessonTypeNames = new Map(
+    ((lessonTypesResult.data as { id: string; name: string }[] | null) ?? [])
+      .map((row) => [row.id, row.name] as const),
+  );
+  const sportsByUser = new Map<string, Set<string>>();
+  for (const row of matchRows) {
+    const current = sportsByUser.get(row.user_id) ?? new Set<string>();
+    current.add(row.sport_id);
+    sportsByUser.set(row.user_id, current);
+  }
+  const workedBeforeSet = new Set(workedBeforeIds);
+  const candidateMatches: CandidateMatch[] = [];
+
+  for (const userId of validVogIds) {
+    if (appliedIds.has(userId) || workedBeforeSet.has(userId)) continue;
+    const details = detailsById.get(userId);
+    const candidateProfile = namesById.get(userId);
+    if (!details || !candidateProfile) continue;
+
+    let bestMatch: CandidateMatch | null = null;
+    for (const job of openJobs) {
+      if (!sportsByUser.get(userId)?.has(job.sport_id)) continue;
+
+      const lessonSpecialties = lessonTypesByUser.get(userId) ?? new Set<string>();
+      if (
+        job.lesson_type_id &&
+        lessonSpecialties.size > 0 &&
+        !lessonSpecialties.has(job.lesson_type_id)
+      ) {
+        continue;
+      }
+
+      const requirements = requirementsByJob.get(job.id) ?? new Set<string>();
+      const qualifications = qualificationsByUser.get(userId) ?? new Set<string>();
+      if ([...requirements].some((qualificationId) => !qualifications.has(qualificationId))) {
+        continue;
+      }
+
+      const distanceKm = distanceInKm(
+        candidateProfile.cityId
+          ? coordinatesByCity.get(candidateProfile.cityId) ?? null
+          : null,
+        coordinatesByLocation.get(job.location_id) ?? null,
+      );
+      if (distanceKm != null && distanceKm > details.travel_distance_km) continue;
+
+      const exception = exceptionsByUserDate.get(`${userId}:${job.starts_on}`);
+      if (exception === false) continue;
+      const availabilityRules = rulesByUser.get(userId) ?? [];
+      const weekday = new Date(`${job.starts_on}T12:00:00Z`).getUTCDay();
+      const fitsRule = availabilityRules.some(
+        (rule) =>
+          rule.weekday === weekday &&
+          rule.start_time <= job.start_time &&
+          rule.end_time >= job.end_time,
+      );
+      if (exception !== true && availabilityRules.length > 0 && !fitsRule) continue;
+      const availability = exception === true || fitsRule ? "available" : "unknown";
+
+      const stats = statsById.get(userId);
+      const isFirstJob = !stats || Number(stats.review_count) === 0;
+      const profileScore =
+        (candidateProfile.onboardingCompleted ? 4 : 0) +
+        (candidateProfile.avatar ? 2 : 0) +
+        (details.work_experience.trim().length >= 40 ? 2 : 0) +
+        (details.hourly_rate_cents != null ? 2 : 0);
+      const score = Math.round(
+        25 +
+          (job.lesson_type_id && lessonSpecialties.has(job.lesson_type_id) ? 15 : 8) +
+          (requirements.size > 0 ? 15 : 8) +
+          (distanceKm == null
+            ? 6
+            : Math.max(0, 15 - (distanceKm / details.travel_distance_km) * 15)) +
+          Math.min(details.years_experience, 10) +
+          profileScore +
+          (availability === "available" ? 8 : 4) +
+          (isFirstJob
+            ? 8
+            : Math.min(10, (Number(stats?.avg_rating ?? 0) / 5) * 10)),
+      );
+      const match: CandidateMatch = {
+        userId,
+        job,
+        score,
+        lessonTypeName:
+          job.custom_lesson_type ||
+          (job.lesson_type_id ? lessonTypeNames.get(job.lesson_type_id) : null) ||
+          "Algemene training",
+        distanceKm,
+        availability,
+        yearsExperience: details.years_experience,
+        requiredQualifications: requirements.size,
+        isFirstJob,
+      };
+      if (!bestMatch || match.score > bestMatch.score) bestMatch = match;
+    }
+    if (bestMatch) candidateMatches.push(bestMatch);
+  }
+
+  candidateMatches.sort((left, right) => {
+    if (right.score !== left.score) return right.score - left.score;
+    if (left.isFirstJob !== right.isFirstJob) return left.isFirstJob ? -1 : 1;
+    return left.userId.localeCompare(right.userId);
+  });
+  const visibleCandidateMatches = candidateMatches.slice(0, 12);
 
   return (
     <div className="mx-auto w-full max-w-4xl space-y-6 px-4 py-8">
@@ -274,20 +579,38 @@ export default async function KandidatenPage({
       </section>
 
       <section className="space-y-3">
-        <div><h2 className="text-lg font-semibold">Passende instructeurs</h2><p className="text-sm text-muted-foreground">Nog niet gereageerd, passend op sport en met een goedgekeurde VOG. Lege beschikbaarheid sluit niemand uit.</p></div>
-        {eligibleMatchIds.length === 0 ? (
+        <div><h2 className="text-lg font-semibold">Passende instructeurs</h2><p className="text-sm text-muted-foreground">Nog niet gereageerd, passend op sport, lesvorm, diploma&apos;s, VOG, afstand en eventuele beschikbaarheid. Een leeg beschikbaarheidsschema sluit niemand uit.</p></div>
+        {visibleCandidateMatches.length === 0 ? (
           <p className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground">Geen extra passende instructeurs gevonden.</p>
         ) : (
           <div className="grid gap-3 sm:grid-cols-2">
-            {eligibleMatchIds.map((instructorId) => {
-              const instructor = namesById.get(instructorId);
-              const stats = statsById.get(instructorId);
-              const sportIds = matchRows.filter((item) => item.user_id === instructorId).map((item) => item.sport_id);
-              const targetJob = openJobs.find((job) => sportIds.includes(job.sport_id));
+            {visibleCandidateMatches.map((match) => {
+              const instructor = namesById.get(match.userId);
+              const stats = statsById.get(match.userId);
               return (
-                <Card key={instructorId}><CardContent className="space-y-3 pt-5">
-                  <div className="flex items-center gap-3"><Avatar name={instructor?.name ?? "?"} src={instructor?.avatar} /><div><p className="font-medium">{instructor?.name}</p>{stats?.review_count ? <p className="text-xs text-muted-foreground">★ {stats.avg_rating} · {stats.review_count} reviews · {stats.completed_count} afgerond</p> : <Badge variant="muted">Eerste klus</Badge>}</div></div>
-                  {targetJob ? <Link href={`/organisatie/opdrachten/${targetJob.id}`}><Button size="sm" variant="outline">Bekijken en uitnodigen</Button></Link> : null}
+                <Card key={match.userId}><CardContent className="space-y-3 pt-5">
+                  <div className="flex items-center gap-3"><Avatar name={instructor?.name ?? "?"} src={instructor?.avatar} /><div><p className="font-medium">{instructor?.name}</p>{match.isFirstJob ? <Badge variant="muted">Eerste klus</Badge> : <p className="text-xs text-muted-foreground">★ {stats?.avg_rating} · {stats?.review_count} reviews · {stats?.completed_count} afgerond</p>}</div></div>
+                  <div className="flex flex-wrap gap-1.5">
+                    <Badge variant="accent">Match {match.score}</Badge>
+                    <Badge variant="outline">{match.lessonTypeName}</Badge>
+                    <Badge variant="outline">VOG goedgekeurd</Badge>
+                    <Badge variant="outline">
+                      {match.distanceKm == null ? "Afstand onbekend" : `${match.distanceKm} km`}
+                    </Badge>
+                    <Badge variant="outline">{match.yearsExperience} jaar ervaring</Badge>
+                    {match.requiredQualifications > 0 ? (
+                      <Badge variant="outline">Diploma&apos;s compleet</Badge>
+                    ) : null}
+                    <Badge variant="outline">
+                      {match.availability === "available"
+                        ? "Beschikbaar volgens profiel"
+                        : "Beschikbaarheid niet ingevuld"}
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Beste match voor {match.job.title}.
+                  </p>
+                  <Link href={`/organisatie/opdrachten/${match.job.id}`}><Button size="sm" variant="outline">Bekijken en uitnodigen</Button></Link>
                 </CardContent></Card>
               );
             })}

@@ -205,6 +205,20 @@ export async function createDemoSession(role: DemoRole): Promise<DemoCredentials
       ),
     );
     assertDatabaseResult(sportsError, "Demo-specialisaties ontbreken");
+    const { error: lessonSpecialtiesError } = await admin
+      .from("instructor_lesson_types")
+      .insert(
+        instructorIds.flatMap((userId) =>
+          lessonTypes.map((lessonType) => ({
+            user_id: userId,
+            lesson_type_id: lessonType.id,
+          })),
+        ),
+      );
+    assertDatabaseResult(
+      lessonSpecialtiesError,
+      "Demo-lesvormspecialisaties ontbreken",
+    );
     if (qualifications?.length) {
       const { error: qualificationsError } = await admin.from("instructor_qualifications").insert(
         instructorIds.flatMap((userId) =>
