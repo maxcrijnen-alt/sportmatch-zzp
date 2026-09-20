@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -62,6 +63,48 @@ export default async function InstellingenPage() {
           <Link href="/abonnement">
             <Button variant="outline">Naar abonnement</Button>
           </Link>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Agenda-integraties</CardTitle>
+          <CardDescription>
+            Beheer je SportMatch-agenda en gebruik een kalenderexport. Externe
+            softwaresystemen worden pas als gekoppeld getoond wanneer er een
+            echte verbinding actief is.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border p-3">
+            <div>
+              <p className="text-sm font-medium">SportMatch agenda</p>
+              <p className="text-xs text-muted-foreground">Je bevestigde opdrachten en lessen.</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge variant="success">Actief</Badge>
+              <Link href="/agenda"><Button size="sm" variant="outline">Openen</Button></Link>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border p-3">
+            <div>
+              <p className="text-sm font-medium">Externe kalender / ICS</p>
+              <p className="text-xs text-muted-foreground">Exporteer je huidige agenda naar een kalenderapp.</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge variant="accent">Beschikbaar</Badge>
+              <a href="/agenda/export"><Button size="sm" variant="outline">ICS downloaden</Button></a>
+            </div>
+          </div>
+          {[
+            ["Gymly", "Nog niet gekoppeld"],
+            ["SportBit", "Nog niet gekoppeld"],
+          ].map(([provider, status]) => (
+            <div className="flex items-center justify-between gap-3 rounded-md border border-border p-3" key={provider}>
+              <p className="text-sm font-medium">{provider}</p>
+              <Badge variant="muted">{status}</Badge>
+            </div>
+          ))}
         </CardContent>
       </Card>
 

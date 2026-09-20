@@ -28,13 +28,13 @@ const exampleJobs = [
     title: "Spoed-inval spinning",
     meta: "Vanavond 19:00 · Utrecht",
     details: "Les van 45 minuten voor 18 deelnemers. Ervaring met groepslessen gewenst.",
-    pay: "€ 55-€ 70",
+    pay: "Tarief in overleg",
   },
   {
     title: "Terugkerende yoga-ochtend",
     meta: "Elke dinsdag · Den Haag",
     details: "Rustige hatha-les voor beginners. Vervanging voor 6 weken.",
-    pay: "€ 45-€ 60",
+    pay: "Vast tarief afgesproken",
   },
   {
     title: "Tijdelijke fitnesscoach",
@@ -70,7 +70,7 @@ const steps = [
 const schoolBenefits = [
   "Plaats spoed-inval, losse lessen, reeksen of vacatures vanaf één plek.",
   "Zie snel wie past op afstand, specialisatie, ervaring en beoordeling.",
-  "Beheer meerdere vestigingen en planners zonder losse appgroepen.",
+  "Beheer meerdere vestigingen vanuit één centraal overzicht.",
   "Deel contactgegevens pas nadat de opdracht door beide partijen is bevestigd.",
 ];
 
@@ -117,8 +117,8 @@ const faqs = [
     a: "Nee. De opdrachtvergoeding spreek je samen af en wordt rechtstreeks tussen sportschool en instructeur betaald. Het platform rekent geen commissie over die vergoeding.",
   },
   {
-    q: "Wat kost het na de gratis periode?",
-    a: "Na 30 dagen gratis proberen kost het € 5 per vestiging per maand excl. btw voor sportorganisaties en € 5 per maand excl. btw voor instructeurs. Maandelijks opzegbaar.",
+    q: "Waar vind ik de actuele tarieven?",
+    a: "Je kunt SportMatch 30 dagen gratis proberen. Bekijk de tarievenpagina voor de actuele abonnementen en voorwaarden.",
   },
 ];
 
@@ -480,7 +480,7 @@ export default function HomePage() {
         </Alert>
       </section>
 
-      {/* Tarieven */}
+      {/* Gratis proberen */}
       <section className="bg-muted/50">
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-14 sm:py-16 lg:flex-row lg:items-center lg:justify-between">
           <div>
@@ -488,12 +488,11 @@ export default function HomePage() {
               30 dagen gratis
             </Badge>
             <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
-              Daarna simpel: € 5 per maand excl. btw
+              Ontdek of SportMatch bij je past
             </h2>
             <p className="mt-3 max-w-2xl text-muted-foreground">
-              Voor sportorganisaties geldt € 5 per vestiging p/m excl. btw.
-              Voor instructeurs geldt € 5 p/m excl. btw. Geen commissie over
-              de afgesproken opdrachtvergoeding.
+              Probeer alle belangrijke functies 30 dagen gratis. Bekijk de
+              tarievenpagina wanneer je meer wilt weten over de abonnementen.
             </p>
           </div>
           <div className="flex flex-col gap-3 sm:flex-row lg:shrink-0">

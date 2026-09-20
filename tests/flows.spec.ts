@@ -133,7 +133,8 @@ test("opdracht ondersteunt eigen lesvorm, herhaling, blok en sjabloon", async ({
   await page.getByLabel("Omschrijving herhaling").fill("Iedere dinsdagavond");
   await page.getByLabel("Uurtarief (€)").fill("50");
   await page.getByLabel("Meerdere aansluitende lessen plaatsen").check();
-  await page.getByLabel("Lesvorm les 1").selectOption({ index: 1 });
+  await page.getByLabel("Lesvorm les 1").selectOption("custom");
+  await page.getByLabel("Eigen lesvorm les 1").fill("Mobiliteit en herstel");
   await page.getByLabel("Lesvorm les 2").selectOption({ index: 1 });
   await page.getByLabel("Gedeeltelijk overnemen toegestaan").check();
   await page.getByLabel("Deze keuzes ook als sjabloon opslaan").check();
@@ -144,6 +145,7 @@ test("opdracht ondersteunt eigen lesvorm, herhaling, blok en sjabloon", async ({
   await page.getByRole("button", { name: "Opdracht plaatsen" }).click();
   await page.waitForURL("**/organisatie/opdrachten/**", { timeout: 30_000 });
   await expect(page.getByText("Terugkerend lessenblok")).toBeVisible();
+  await expect(page.getByText("Mobiliteit en herstel")).toBeVisible();
   await expect(page.getByRole("button", { name: "Opslaan als sjabloon" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Opdracht dupliceren" })).toBeVisible();
   await closeDemo(page);

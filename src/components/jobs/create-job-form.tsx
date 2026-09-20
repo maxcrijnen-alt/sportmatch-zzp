@@ -247,6 +247,14 @@ export function CreateJobForm({
             onChange={(event) => {
               setSportId(event.target.value);
               setLessonTypeId("");
+              setCustomLessonType("");
+              setSegments((current) =>
+                current.map((segment) => ({
+                  ...segment,
+                  lessonTypeId: "",
+                  customLessonType: "",
+                })),
+              );
             }}
             required
             value={sportId}
@@ -427,7 +435,10 @@ export function CreateJobForm({
                 segments.map((segment, index) => ({
                   startTime: segment.startTime,
                   endTime: segment.endTime,
-                  lessonTypeId: segment.lessonTypeId,
+                  lessonTypeId:
+                    segment.lessonTypeId === "custom"
+                      ? null
+                      : segment.lessonTypeId,
                   customLessonType: segment.customLessonType,
                   level: segment.level,
                   position: index + 1,
@@ -444,10 +455,40 @@ export function CreateJobForm({
                   <span className="pt-2 text-sm font-semibold">{index + 1}</span>
                   <Input aria-label={`Begintijd les ${index + 1}`} onChange={(event) => updateSegment(segment.key, { startTime: event.target.value })} required type="time" value={segment.startTime} />
                   <Input aria-label={`Eindtijd les ${index + 1}`} onChange={(event) => updateSegment(segment.key, { endTime: event.target.value })} required type="time" value={segment.endTime} />
-                  <Select aria-label={`Lesvorm les ${index + 1}`} onChange={(event) => updateSegment(segment.key, { lessonTypeId: event.target.value })} required value={segment.lessonTypeId}>
-                    <option disabled value="">Kies lesvorm</option>
-                    {sportLessonTypes.map((lessonType) => <option key={lessonType.id} value={lessonType.id}>{lessonType.name}</option>)}
-                  </Select>
+                  <div className="space-y-2">
+                    <Select
+                      aria-label={`Lesvorm les ${index + 1}`}
+                      onChange={(event) =>
+                        updateSegment(segment.key, {
+                          lessonTypeId: event.target.value,
+                          customLessonType:
+                            event.target.value === "custom"
+                              ? segment.customLessonType
+                              : "",
+                        })
+                      }
+                      required
+                      value={segment.lessonTypeId}
+                    >
+                      <option disabled value="">Kies lesvorm</option>
+                      {sportLessonTypes.map((lessonType) => <option key={lessonType.id} value={lessonType.id}>{lessonType.name}</option>)}
+                      <option value="custom">Anders, namelijk…</option>
+                    </Select>
+                    {segment.lessonTypeId === "custom" ? (
+                      <Input
+                        aria-label={`Eigen lesvorm les ${index + 1}`}
+                        maxLength={100}
+                        onChange={(event) =>
+                          updateSegment(segment.key, {
+                            customLessonType: event.target.value,
+                          })
+                        }
+                        placeholder="Vul de lesvorm in"
+                        required
+                        value={segment.customLessonType}
+                      />
+                    ) : null}
+                  </div>
                   <Button aria-label={`Les ${index + 1} verwijderen`} disabled={segments.length <= 2} onClick={() => setSegments((current) => current.filter((item) => item.key !== segment.key))} size="icon" type="button" variant="ghost">
                     <Trash2 className="h-4 w-4" />
                   </Button>

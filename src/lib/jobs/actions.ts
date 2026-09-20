@@ -105,14 +105,24 @@ const createJobSchema = z
     }
   });
 
-const jobSegmentSchema = z.object({
-  position: z.number().int().positive(),
-  startTime: z.string().regex(/^\d{2}:\d{2}$/),
-  endTime: z.string().regex(/^\d{2}:\d{2}$/),
-  lessonTypeId: z.string().uuid(),
-  customLessonType: z.string().max(100).default(""),
-  level: z.string().max(100).default(""),
-});
+const jobSegmentSchema = z
+  .object({
+    position: z.number().int().positive(),
+    startTime: z.string().regex(/^\d{2}:\d{2}$/),
+    endTime: z.string().regex(/^\d{2}:\d{2}$/),
+    lessonTypeId: z.string().uuid().nullable(),
+    customLessonType: z.string().trim().max(100).default(""),
+    level: z.string().max(100).default(""),
+  })
+  .superRefine((segment, ctx) => {
+    if (!segment.lessonTypeId && segment.customLessonType.length < 2) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Kies per les een lesvorm of vul een eigen lesvorm in.",
+        path: ["customLessonType"],
+      });
+    }
+  });
 
 export async function createJobAction(
   _previous: JobActionState,
@@ -197,18 +207,34 @@ export async function createJobAction(
     return initialError("Deze vestiging hoort niet bij jouw organisatie.");
   }
 
-  const [{ data: pendingReview }, lessonTypeResult] = await Promise.all([
-    supabase.rpc("has_pending_review", { target_user: profile.id }),
-    input.lessonTypeId
-      ? supabase
-          .from("lesson_types")
-          .select("id")
-          .eq("id", input.lessonTypeId)
-          .eq("sport_id", input.sportId)
-          .eq("is_active", true)
-          .maybeSingle()
-      : Promise.resolve({ data: null, error: null }),
-  ]);
+  const segmentLessonTypeIds = Array.from(
+    new Set(
+      segments
+        .map((segment) => segment.lessonTypeId)
+        .filter((id): id is string => Boolean(id)),
+    ),
+  );
+  const [{ data: pendingReview }, lessonTypeResult, segmentLessonTypesResult] =
+    await Promise.all([
+      supabase.rpc("has_pending_review", { target_user: profile.id }),
+      input.lessonTypeId
+        ? supabase
+            .from("lesson_types")
+            .select("id")
+            .eq("id", input.lessonTypeId)
+            .eq("sport_id", input.sportId)
+            .eq("is_active", true)
+            .maybeSingle()
+        : Promise.resolve({ data: null, error: null }),
+      segmentLessonTypeIds.length > 0
+        ? supabase
+            .from("lesson_types")
+            .select("id")
+            .in("id", segmentLessonTypeIds)
+            .eq("sport_id", input.sportId)
+            .eq("is_active", true)
+        : Promise.resolve({ data: [], error: null }),
+    ]);
 
   if (pendingReview === true) {
     return initialError(
@@ -217,6 +243,12 @@ export async function createJobAction(
   }
   if (input.lessonTypeId && !lessonTypeResult.data) {
     return initialError("De gekozen lesvorm hoort niet bij deze sport.");
+  }
+  if (
+    segmentLessonTypesResult.error ||
+    (segmentLessonTypesResult.data?.length ?? 0) !== segmentLessonTypeIds.length
+  ) {
+    return initialError("Een lesvorm in het lessenblok hoort niet bij deze sport.");
   }
 
   const { data: job, error } = await supabase
@@ -297,7 +329,9 @@ export async function createJobAction(
         start_time: segment.startTime,
         end_time: segment.endTime,
         lesson_type_id: segment.lessonTypeId,
-        custom_lesson_type: segment.customLessonType || null,
+        custom_lesson_type: segment.lessonTypeId
+          ? null
+          : segment.customLessonType,
         level: segment.level,
       })),
     );
@@ -314,7 +348,7 @@ export async function createJobAction(
       template_data: {
         jobType: input.jobType,
         sportId: input.sportId,
-        lessonTypeId: input.lessonTypeId,
+        lessonTypeId: input.lessonTypeId ?? "custom",
         customLessonType: input.customLessonType,
         locationId: input.locationId,
         title: input.title,
@@ -335,7 +369,7 @@ export async function createJobAction(
         segments: segments.map((segment) => ({
           startTime: segment.startTime,
           endTime: segment.endTime,
-          lessonTypeId: segment.lessonTypeId,
+          lessonTypeId: segment.lessonTypeId ?? "custom",
           customLessonType: segment.customLessonType,
           level: segment.level,
         })),
@@ -432,7 +466,8 @@ export async function saveJobAsTemplateAction(jobId: string): Promise<void> {
     template_data: {
       jobType: job.job_type,
       sportId: job.sport_id,
-      lessonTypeId: job.lesson_type_id,
+      lessonTypeId:
+        job.lesson_type_id ?? (job.custom_lesson_type ? "custom" : undefined),
       customLessonType: job.custom_lesson_type,
       locationId: job.location_id,
       title: job.title,
@@ -461,7 +496,9 @@ export async function saveJobAsTemplateAction(jobId: string): Promise<void> {
         segments?.map((segment) => ({
           startTime: String(segment.start_time).slice(0, 5),
           endTime: String(segment.end_time).slice(0, 5),
-          lessonTypeId: segment.lesson_type_id as string,
+          lessonTypeId: segment.lesson_type_id
+            ? (segment.lesson_type_id as string)
+            : "custom",
           customLessonType:
             (segment.custom_lesson_type as string | null) ?? undefined,
           level: (segment.level as string | null) ?? undefined,

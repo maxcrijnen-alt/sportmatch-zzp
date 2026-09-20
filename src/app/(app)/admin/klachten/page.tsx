@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -32,9 +33,24 @@ const statusLabels = {
   rejected: "Afgewezen",
 };
 
-export default async function AdminKlachtenPage() {
+const categoryLabels: Record<Complaint["category"], string> = {
+  safety: "Veiligheid",
+  conduct: "Gedrag",
+  agreement: "Afspraken",
+  no_show: "No-show",
+  payment: "Vergoeding/betaling",
+  other: "Anders",
+};
+
+export default async function AdminKlachtenPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ status?: string; category?: string; q?: string }>;
+}) {
   const supabase = await createClient();
   if (!supabase) return null;
+
+  const params = await searchParams;
 
   const [{ data }, { data: cancellationData }] = await Promise.all([
     supabase
@@ -50,6 +66,24 @@ export default async function AdminKlachtenPage() {
   const complaints = (data as unknown as ComplaintRow[] | null) ?? [];
   const cancellations =
     (cancellationData as unknown as CancellationRow[] | null) ?? [];
+  const selectedStatus = Object.hasOwn(statusLabels, params.status ?? "")
+    ? params.status
+    : "";
+  const selectedCategory = Object.hasOwn(categoryLabels, params.category ?? "")
+    ? params.category
+    : "";
+  const searchQuery = params.q?.trim().toLocaleLowerCase("nl") ?? "";
+  const filteredComplaints = complaints.filter((complaint) => {
+    if (selectedStatus && complaint.status !== selectedStatus) return false;
+    if (selectedCategory && complaint.category !== selectedCategory) return false;
+    if (!searchQuery) return true;
+    return [
+      complaint.job?.title,
+      complaint.job?.id,
+      complaint.reporter?.full_name,
+      complaint.reported_by,
+    ].some((value) => value?.toLocaleLowerCase("nl").includes(searchQuery));
+  });
   const signedUrls = new Map<string, string>();
   await Promise.all(
     [...complaints, ...cancellations]
@@ -97,16 +131,46 @@ export default async function AdminKlachtenPage() {
           ))}
         </CardContent>
       </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle>Meldingen filteren</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form className="grid gap-3 md:grid-cols-[1fr_12rem_12rem_auto_auto]">
+            <Input
+              defaultValue={params.q ?? ""}
+              name="q"
+              placeholder="Zoek op opdracht of gebruiker"
+            />
+            <Select defaultValue={selectedStatus} name="status">
+              <option value="">Alle statussen</option>
+              {Object.entries(statusLabels).map(([value, label]) => (
+                <option key={value} value={value}>{label}</option>
+              ))}
+            </Select>
+            <Select defaultValue={selectedCategory} name="category">
+              <option value="">Alle categorieën</option>
+              {Object.entries(categoryLabels).map(([value, label]) => (
+                <option key={value} value={value}>{label}</option>
+              ))}
+            </Select>
+            <Button type="submit">Filteren</Button>
+            <Link href="/admin/klachten">
+              <Button className="w-full" type="button" variant="outline">Wissen</Button>
+            </Link>
+          </form>
+        </CardContent>
+      </Card>
       <div className="space-y-4">
-        {complaints.length === 0 ? (
-          <Card><CardContent className="py-10 text-sm text-muted-foreground">Geen meldingen.</CardContent></Card>
-        ) : complaints.map((complaint) => (
+        {filteredComplaints.length === 0 ? (
+          <Card><CardContent className="py-10 text-sm text-muted-foreground">Geen meldingen voor deze filters.</CardContent></Card>
+        ) : filteredComplaints.map((complaint) => (
           <Card key={complaint.id}>
             <CardHeader className="flex-row items-start justify-between gap-3">
               <div>
                 <CardTitle className="text-base">{complaint.job?.title ?? "Opdracht"}</CardTitle>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {complaint.reporter?.full_name} · {formatDate(complaint.created_at)} · {complaint.category}
+                  {complaint.reporter?.full_name} · {formatDate(complaint.created_at)} · {categoryLabels[complaint.category]}
                 </p>
               </div>
               <Badge variant={complaint.status === "new" ? "warning" : complaint.status === "resolved" ? "success" : "muted"}>

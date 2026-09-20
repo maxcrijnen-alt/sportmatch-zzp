@@ -141,7 +141,8 @@ export default async function NieuweOpdrachtPage({
       defaults = {
         jobType: job.job_type,
         sportId: job.sport_id,
-        lessonTypeId: job.lesson_type_id ?? undefined,
+        lessonTypeId:
+          job.lesson_type_id ?? (job.custom_lesson_type ? "custom" : undefined),
         customLessonType: job.custom_lesson_type ?? undefined,
         locationId: job.location_id,
         title: `${job.title} (kopie)`,
@@ -170,7 +171,9 @@ export default async function NieuweOpdrachtPage({
           segments?.map((segment) => ({
             startTime: String(segment.start_time).slice(0, 5),
             endTime: String(segment.end_time).slice(0, 5),
-            lessonTypeId: segment.lesson_type_id as string,
+            lessonTypeId: segment.lesson_type_id
+              ? (segment.lesson_type_id as string)
+              : "custom",
             customLessonType:
               (segment.custom_lesson_type as string | null) ?? undefined,
             level: (segment.level as string | null) ?? undefined,

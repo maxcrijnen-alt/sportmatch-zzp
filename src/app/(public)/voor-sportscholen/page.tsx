@@ -46,7 +46,7 @@ const startSteps = [
   {
     icon: Building2,
     title: "Maak je organisatie aan",
-    text: "Voeg je sportschool, vestigingen en teamleden toe. Zo kunnen eigenaren en planners vanuit dezelfde omgeving werken.",
+    text: "Voeg je sportschool en vestigingen toe en houd opdrachten centraal bij.",
   },
   {
     icon: ClipboardList,
@@ -79,7 +79,7 @@ const benefits = [
   {
     icon: Users,
     title: "Handig voor meerdere vestigingen",
-    text: "Werk met vestigingen en teamleden zonder dat alles via één inbox of appgroep hoeft te lopen.",
+    text: "Werk met meerdere vestigingen zonder dat het overzicht versnipperd raakt.",
   },
   {
     icon: MessageSquare,

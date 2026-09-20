@@ -138,7 +138,7 @@ export default async function DemoPage({
           <CalendarCheck className="h-5 w-5 text-primary" />
           <h2 className="mt-3 font-semibold">Echte productflow</h2>
           <p className="mt-1 text-sm leading-6 text-muted-foreground">
-            Test agenda, meldingen, reviews en berichten met server-side data.
+            Bekijk agenda, meldingen, reviews en berichten met realistische data.
           </p>
         </div>
       </div>

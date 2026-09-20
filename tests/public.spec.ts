@@ -16,6 +16,8 @@ test("homepage toont propositie en CTA's", async ({ page }) => {
   await expect(
     page.getByRole("link", { name: /demo/i }).first(),
   ).toBeVisible();
+  await expect(page.getByRole("link", { name: "Bekijk tarieven" })).toBeVisible();
+  await expect(page.getByText("€ 5", { exact: false })).toHaveCount(0);
 });
 
 test("homepage toont juridische disclaimer", async ({ page }) => {

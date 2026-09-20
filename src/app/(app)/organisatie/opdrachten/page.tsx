@@ -44,7 +44,7 @@ const statusVariant: Record<
 const organizationJobFlow = [
   "Plaats eerst één concrete opdracht met duidelijke vergoeding en tijden.",
   "Bekijk reacties per opdracht en vergelijk kandidaten op beschikbaarheid en vertrouwen.",
-  "Sluit de opdracht zodra iemand bevestigd is, zodat planners hetzelfde overzicht zien.",
+  "Sluit de opdracht zodra iemand bevestigd is, zodat het overzicht actueel blijft.",
 ];
 
 export default async function OrganisatieOpdrachtenPage({

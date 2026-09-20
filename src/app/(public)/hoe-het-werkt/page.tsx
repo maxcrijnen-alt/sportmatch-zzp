@@ -18,7 +18,7 @@ const instructorSteps = [
 ];
 
 const organizationSteps = [
-  "Registreer je organisatie en voeg vestigingen en teamleden toe.",
+  "Registreer je organisatie en voeg je vestigingen toe.",
   "Plaats een opdracht: spoed-inval, eenmalig, terugkerend, tijdelijk of een vaste vacature.",
   "Ontvang reacties van passende instructeurs en vergelijk kandidaten op afstand, ervaring en beoordeling.",
   "Nodig zelf instructeurs uit of accepteer een tegenvoorstel.",

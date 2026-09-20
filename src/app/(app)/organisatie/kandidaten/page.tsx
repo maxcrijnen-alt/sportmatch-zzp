@@ -361,7 +361,7 @@ export default async function KandidatenPage({
   const candidateMatches: CandidateMatch[] = [];
 
   for (const userId of validVogIds) {
-    if (appliedIds.has(userId) || workedBeforeSet.has(userId)) continue;
+    if (appliedIds.has(userId)) continue;
     const details = detailsById.get(userId);
     const candidateProfile = namesById.get(userId);
     if (!details || !candidateProfile) continue;
@@ -451,7 +451,31 @@ export default async function KandidatenPage({
     if (left.isFirstJob !== right.isFirstJob) return left.isFirstJob ? -1 : 1;
     return left.userId.localeCompare(right.userId);
   });
-  const visibleCandidateMatches = candidateMatches.slice(0, 12);
+  const returningMatchesById = new Map(
+    candidateMatches
+      .filter((match) => workedBeforeSet.has(match.userId))
+      .map((match) => [match.userId, match] as const),
+  );
+  const visibleCandidateMatches = candidateMatches
+    .filter((match) => !workedBeforeSet.has(match.userId))
+    .slice(0, 12);
+  const highlyRatedMatches = candidateMatches
+    .filter((match) => {
+      const stats = statsById.get(match.userId);
+      return Number(stats?.review_count ?? 0) > 0 && stats?.avg_rating != null;
+    })
+    .sort((left, right) => {
+      const leftStats = statsById.get(left.userId);
+      const rightStats = statsById.get(right.userId);
+      const ratingDifference =
+        Number(rightStats?.avg_rating ?? 0) - Number(leftStats?.avg_rating ?? 0);
+      if (ratingDifference !== 0) return ratingDifference;
+      return (
+        Number(rightStats?.review_count ?? 0) -
+        Number(leftStats?.review_count ?? 0)
+      );
+    })
+    .slice(0, 6);
 
   return (
     <div className="mx-auto w-full max-w-4xl space-y-6 px-4 py-8">
@@ -494,11 +518,38 @@ export default async function KandidatenPage({
             {workedBeforeIds.map((instructorId) => {
               const instructor = namesById.get(instructorId);
               const stats = statsById.get(instructorId);
+              const returningMatch = returningMatchesById.get(instructorId);
               return (
-                <Card key={instructorId}><CardContent className="flex items-center gap-3 pt-5">
-                  <Avatar name={instructor?.name ?? "?"} src={instructor?.avatar} />
-                  <div><p className="font-medium">{instructor?.name}</p><p className="text-xs text-muted-foreground">{stats?.completed_count ?? 0} afgerond · {stats?.review_count ?? 0} reviews</p></div>
-                </CardContent></Card>
+                <Card key={instructorId}>
+                  <CardContent className="space-y-3 pt-5">
+                    <div className="flex items-center gap-3">
+                      <Avatar name={instructor?.name ?? "?"} src={instructor?.avatar} />
+                      <div>
+                        <p className="font-medium">{instructor?.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {stats?.avg_rating != null ? `★ ${stats.avg_rating} · ` : ""}
+                          {stats?.review_count ?? 0} reviews · {stats?.completed_count ?? 0} afgerond
+                        </p>
+                      </div>
+                    </div>
+                    {returningMatch ? (
+                      <div className="space-y-2">
+                        <p className="text-xs text-muted-foreground">
+                          Past bij {returningMatch.job.title}.
+                        </p>
+                        <Link href={`/organisatie/opdrachten/${returningMatch.job.id}`}>
+                          <Button size="sm" variant="outline">
+                            Opnieuw uitnodigen
+                          </Button>
+                        </Link>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">
+                        Momenteel geen passende open opdracht om voor uit te nodigen.
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
               );
             })}
           </div>
@@ -612,6 +663,52 @@ export default async function KandidatenPage({
                   </p>
                   <Link href={`/organisatie/opdrachten/${match.job.id}`}><Button size="sm" variant="outline">Bekijken en uitnodigen</Button></Link>
                 </CardContent></Card>
+              );
+            })}
+          </div>
+        )}
+      </section>
+
+      <section className="space-y-3">
+        <div>
+          <h2 className="text-lg font-semibold">Hoog beoordeelde instructeurs</h2>
+          <p className="text-sm text-muted-foreground">
+            Passende instructeurs gerangschikt op echte beoordelingen en het
+            aantal ontvangen reviews. Nieuwe instructeurs blijven hierboven
+            zichtbaar als Eerste klus.
+          </p>
+        </div>
+        {highlyRatedMatches.length === 0 ? (
+          <p className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground">
+            Nog geen passende instructeurs met ontvangen reviews.
+          </p>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2">
+            {highlyRatedMatches.map((match) => {
+              const instructor = namesById.get(match.userId);
+              const stats = statsById.get(match.userId);
+              return (
+                <Card key={match.userId}>
+                  <CardContent className="space-y-3 pt-5">
+                    <div className="flex items-center gap-3">
+                      <Avatar name={instructor?.name ?? "?"} src={instructor?.avatar} />
+                      <div>
+                        <p className="font-medium">{instructor?.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          ★ {stats?.avg_rating} · {stats?.review_count} reviews · {stats?.completed_count} afgerond
+                        </p>
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Past bij {match.job.title} · {match.lessonTypeName}
+                    </p>
+                    <Link href={`/organisatie/opdrachten/${match.job.id}`}>
+                      <Button size="sm" variant="outline">
+                        Bekijken en uitnodigen
+                      </Button>
+                    </Link>
+                  </CardContent>
+                </Card>
               );
             })}
           </div>

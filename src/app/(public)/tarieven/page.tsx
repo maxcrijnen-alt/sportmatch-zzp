@@ -55,7 +55,7 @@ export default function TarievenPage() {
             ))}
             <p className="flex items-start gap-2">
               <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-              Meerdere vestigingen en teamleden met eigen rollen
+              Meerdere vestigingen met centraal overzicht
             </p>
           </CardContent>
         </Card>

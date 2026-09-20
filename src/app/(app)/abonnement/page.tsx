@@ -64,7 +64,7 @@ function SubscriptionCard({
                 action={mockActivateSubscriptionAction.bind(null, subscription.id)}
               >
                 <Button size="sm" type="submit">
-                  Abonnement activeren (testbetaling)
+                  Abonnement activeren
                 </Button>
               </form>
             ) : null}
@@ -162,13 +162,11 @@ export default async function AbonnementPage() {
       </div>
 
       <Alert>
-        <AlertTitle>Betalingen worden nog niet automatisch verwerkt</AlertTitle>
+        <AlertTitle>Toegang en looptijd</AlertTitle>
         <AlertDescription>
-          “Activeren” registreert de abonnementsstatus zonder echte transactie.
-          Bij een verlopen
-          abonnement blijven bestaande afspraken zichtbaar, maar zijn reageren,
-          chatten, plaatsen en bevestigen geblokkeerd. Bij een mislukte betaling
-          geldt een hersteltermijn van 14 dagen.
+          Bij een verlopen abonnement blijven bestaande afspraken zichtbaar,
+          maar zijn reageren, chatten, plaatsen en bevestigen geblokkeerd. Bij
+          een mislukte betaling geldt een hersteltermijn van 14 dagen.
         </AlertDescription>
       </Alert>
 
