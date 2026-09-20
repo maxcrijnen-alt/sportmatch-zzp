@@ -95,7 +95,7 @@ export function ProfileForm({
           <Label htmlFor="email">E-mailadres</Label>
           <Input defaultValue={profile.email} disabled id="email" type="email" />
           <p className="text-xs text-muted-foreground">
-            E-mailadres wijzigen kan in deze testversie nog niet.
+            E-mailadres wijzigen is op dit moment niet beschikbaar.
           </p>
         </div>
       </div>

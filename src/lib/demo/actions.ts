@@ -39,28 +39,30 @@ export async function startDemoAction(formData: FormData): Promise<void> {
   }
   await supabase.auth.signOut();
 
+  let demo: Awaited<ReturnType<typeof createDemoSession>>;
   try {
-    const demo = await createDemoSession(role.data);
-    const { error } = await supabase.auth.signInWithPassword({
-      email: demo.email,
-      password: demo.password,
-    });
-
-    if (error) {
-      await cleanupDemoSession(demo.sessionId);
-      redirect("/demo?error=login");
-    }
-
-    cookieStore.set(DEMO_SESSION_COOKIE, demo.sessionId, {
-      httpOnly: true,
-      maxAge: 8 * 60 * 60,
-      path: "/",
-      sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
-    });
+    demo = await createDemoSession(role.data);
   } catch {
     redirect("/demo?error=start");
   }
+
+  const { error } = await supabase.auth.signInWithPassword({
+    email: demo.email,
+    password: demo.password,
+  });
+
+  if (error) {
+    await cleanupDemoSession(demo.sessionId).catch(() => undefined);
+    redirect("/demo?error=login");
+  }
+
+  cookieStore.set(DEMO_SESSION_COOKIE, demo.sessionId, {
+    httpOnly: true,
+    maxAge: 8 * 60 * 60,
+    path: "/",
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+  });
 
   redirect("/dashboard");
 }
