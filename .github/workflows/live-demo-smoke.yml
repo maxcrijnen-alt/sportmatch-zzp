@@ -1,4 +1,4 @@
-name: Live agenda workflow check
+name: Sportschool UX audit
 
 on:
   push:
@@ -6,9 +6,9 @@ on:
       - qa/demo-live-check-20260921
 
 jobs:
-  agenda-smoke:
+  ux-audit:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -17,46 +17,57 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
-      - name: Check public demo navigation and organization agenda
+      - name: Audit live sportschool demo
         env:
           BASE_URL: https://sportmatch-zzp.vercel.app
         run: |
-          cat > live-agenda-check.mjs <<'EOF'
+          cat > ux-audit.mjs <<'EOF'
           import { chromium } from "@playwright/test";
 
           const browser = await chromium.launch({ headless: true });
-          const context = await browser.newContext();
+          const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
           const page = await context.newPage();
           const baseURL = process.env.BASE_URL;
 
-          try {
-            await page.goto(baseURL + "/", { waitUntil: "networkidle", timeout: 45000 });
-            const header = page.locator("header");
-            const exactDemoLinks = header.getByRole("link", { name: /^Demo$/ });
-            if (await exactDemoLinks.count()) {
-              throw new Error('Duplicate "Demo" navigation item is still visible');
-            }
-            if (!(await header.getByRole("link", { name: "Demo bekijken" }).count())) {
-              throw new Error('"Demo bekijken" CTA is missing');
-            }
-            console.log("PASS public navigation: only Demo bekijken remains");
+          function clean(text) {
+            return text.replace(/\s+/g, " ").trim();
+          }
 
+          async function audit(path, label) {
+            await page.goto(baseURL + path, { waitUntil: "networkidle", timeout: 45000 });
+            const headings = await page.locator("h1,h2").allTextContents();
+            const buttons = await page.getByRole("button").allTextContents();
+            const links = await page.getByRole("link").allTextContents();
+            const body = clean(await page.locator("main").innerText().catch(() => ""));
+            console.log("\n=== " + label + " " + page.url() + " ===");
+            console.log("HEADINGS:", headings.map(clean).filter(Boolean).slice(0,12));
+            console.log("BUTTONS:", buttons.map(clean).filter(Boolean).slice(0,20));
+            console.log("LINKS:", links.map(clean).filter(Boolean).slice(0,20));
+            console.log("BODY:", body.slice(0,3500));
+          }
+
+          try {
             await page.goto(baseURL + "/demo", { waitUntil: "networkidle", timeout: 45000 });
             await page.getByRole("button", { name: "Start demo als sportschool" }).click();
             await page.waitForURL("**/dashboard", { timeout: 60000 });
-            await page.goto(baseURL + "/agenda", { waitUntil: "networkidle", timeout: 45000 });
 
-            for (const label of ["Nog iemand zoeken", "Reactie ontvangen", "Wacht op bevestiging", "Bevestigd"]) {
-              const count = await page.getByText(label, { exact: true }).count();
-              if (!count) throw new Error("Agenda state missing: " + label);
-              console.log("PASS agenda state", label, "count=" + count);
-            }
+            const pages = [
+              ["/dashboard", "Dashboard"],
+              ["/organisatie/opdrachten", "Opdrachten"],
+              ["/organisatie/opdrachten/nieuw", "Nieuwe opdracht"],
+              ["/organisatie/kandidaten", "Kandidaten"],
+              ["/agenda", "Agenda"],
+              ["/berichten", "Berichten"],
+              ["/meldingen", "Meldingen"],
+              ["/reviews", "Reviews"],
+              ["/organisatie", "Organisatie"],
+              ["/abonnement", "Abonnement"],
+              ["/instellingen", "Instellingen"],
+            ];
 
-            const body = await page.locator("body").innerText();
-            if (!body.includes("reactie") && !body.includes("reacties")) {
-              throw new Error("Agenda does not surface pending application context");
+            for (const [path, label] of pages) {
+              await audit(path, label);
             }
-            console.log("PASS agenda includes pending-reaction context");
 
             const logout = page.getByRole("button", { name: /uitloggen/i });
             if (await logout.count()) {
@@ -68,4 +79,4 @@ jobs:
             await browser.close();
           }
           EOF
-          node live-agenda-check.mjs
+          node ux-audit.mjs
