@@ -370,6 +370,60 @@ export async function createDemoSession(role: DemoRole): Promise<DemoCredentials
     });
     assertDatabaseResult(invitationError, "Demo-uitnodiging ontbreekt");
 
+    const awaitingInstructorId = users.get("strong")!;
+    const { data: awaitingJob, error: awaitingJobError } = await admin
+      .from("jobs")
+      .insert({
+        ...openJobs[0],
+        title: "Kandidaat gekozen – wacht op bevestiging",
+        starts_on: futureDate(4),
+        status: "open",
+      })
+      .select("id")
+      .single();
+    assertDatabaseResult(
+      awaitingJobError,
+      "Demo-opdracht in afwachting van bevestiging ontbreekt",
+    );
+    if (!awaitingJob) {
+      throw new Error("Demo-opdracht in afwachting van bevestiging ontbreekt.");
+    }
+
+    const { data: awaitingApplication, error: awaitingApplicationError } =
+      await admin
+        .from("job_applications")
+        .insert({
+          job_id: awaitingJob.id,
+          instructor_id: awaitingInstructorId,
+          message: "Ik ben beschikbaar en akkoord met de voorgestelde les.",
+        })
+        .select("id")
+        .single();
+    assertDatabaseResult(
+      awaitingApplicationError,
+      "Demo-reactie in afwachting van bevestiging ontbreekt",
+    );
+    if (!awaitingApplication) {
+      throw new Error("Demo-reactie in afwachting van bevestiging ontbreekt.");
+    }
+
+    const { error: awaitingConfirmationError } = await admin
+      .from("job_confirmations")
+      .insert({
+        job_id: awaitingJob.id,
+        application_id: awaitingApplication.id,
+        instructor_id: awaitingInstructorId,
+        terms: { note: "Kandidaat gekozen; instructeur moet nog bevestigen." },
+        organization_agreed_at: new Date().toISOString(),
+        organization_agreed_by: ownerId,
+        instructor_agreed_at: null,
+        confirmed_at: null,
+      });
+    assertDatabaseResult(
+      awaitingConfirmationError,
+      "Demo-bevestiging in afwachting ontbreekt",
+    );
+
     const { data: plannedJob, error: plannedJobError } = await admin
       .from("jobs")
       .insert({
