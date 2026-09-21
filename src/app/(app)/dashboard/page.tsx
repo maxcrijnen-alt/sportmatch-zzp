@@ -7,7 +7,6 @@ import {
   CheckCircle2,
   Inbox,
   MessageSquare,
-  Search,
 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -435,23 +434,6 @@ export default async function DashboardPage({
           </CardContent>
         </Card>
       </div>
-
-      <Card>
-        <CardHeader>
-          <Search className="mb-1 h-6 w-6 text-primary" />
-          <CardTitle>Vind je volgende opdracht</CardTitle>
-          <CardDescription>
-            Opdrachten worden gesorteerd op afstand, specialisatie en match met
-            jouw profiel. Open een kaart om vergoeding, locatie en reactieopties
-            te bekijken.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Link href="/opdrachten">
-            <Button>Opdrachten bekijken</Button>
-          </Link>
-        </CardContent>
-      </Card>
     </div>
   );
 }
