@@ -1,4 +1,4 @@
-name: Production jobs overview check
+name: Instructor UX production check
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
       - qa/demo-live-check-20260921
 
 jobs:
-  preview-check:
+  instructor-check:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -17,11 +17,11 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
-      - name: Verify production assignment overview
+      - name: Verify instructor UX on production
         env:
           BASE_URL: https://sportmatch-zzp.vercel.app
         run: |
-          cat > preview-jobs-check.mjs <<'EOF'
+          cat > instructor-ux-check.mjs <<'EOF'
           import { chromium } from "@playwright/test";
 
           const browser = await chromium.launch({ headless: true });
@@ -31,24 +31,37 @@ jobs:
 
           try {
             await page.goto(baseURL + "/demo", { waitUntil: "networkidle", timeout: 45000 });
-            await page.getByRole("button", { name: "Start demo als sportschool" }).click();
+            await page.getByRole("button", { name: "Start demo als instructeur" }).click();
             await page.waitForURL("**/dashboard", { timeout: 60000 });
-            await page.goto(baseURL + "/organisatie/opdrachten", { waitUntil: "networkidle", timeout: 45000 });
 
-            const body = await page.locator("main").innerText();
-            if (!body.includes("Bootcamp gezocht")) throw new Error("Expected demo assignments are missing");
-            for (const label of ["Wacht op bevestiging", "Reacties bekijken", "Nog zoeken", "Bevestigd"]) {
-              if (!body.includes(label)) throw new Error("Missing workflow label: " + label);
-              console.log("PASS", label);
+            const dashboard = await page.locator("main").innerText();
+            if (dashboard.includes("Vind je volgende opdracht")) {
+              throw new Error("Duplicate instructor dashboard card is still visible");
             }
-            console.log("PASS jobs overview contains demo assignments");
+            if (!dashboard.includes("Opdrachten bekijken")) {
+              throw new Error("Primary instructor jobs CTA is missing");
+            }
+            console.log("PASS instructor dashboard CTA hierarchy");
+
+            await page.goto(baseURL + "/profiel", { waitUntil: "networkidle", timeout: 45000 });
+
+            await page.getByRole("button", { name: "Persoonlijke gegevens opslaan" }).waitFor();
+            await page.getByRole("button", { name: "Instructeursprofiel opslaan" }).waitFor();
+
+            const genericSave = page.getByRole("button", { name: /^Opslaan$/ });
+            if (await genericSave.count()) {
+              throw new Error("Generic profile save buttons are still visible");
+            }
+
+            console.log("PASS instructor profile save actions are explicit");
 
             const logout = page.getByRole("button", { name: /uitloggen/i }).first();
             await logout.click();
             await page.waitForURL(/\/$/, { timeout: 30000 });
+            console.log("PASS instructor demo logout");
           } finally {
             await context.close();
             await browser.close();
           }
           EOF
-          node preview-jobs-check.mjs
+          node instructor-ux-check.mjs
