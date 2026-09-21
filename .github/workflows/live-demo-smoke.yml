@@ -1,0 +1,78 @@
+name: Live demo smoke check
+
+on:
+  push:
+    branches:
+      - qa/demo-live-check-20260921
+
+jobs:
+  demo-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Check live SportMatch demos
+        env:
+          BASE_URL: https://sportmatch-zzp.vercel.app
+        run: |
+          cat > /tmp/live-demo-check.mjs <<'EOF'
+          import { chromium } from "playwright";
+
+          const baseURL = process.env.BASE_URL;
+          const browser = await chromium.launch({ headless: true });
+
+          async function check(roleLabel) {
+            const context = await browser.newContext();
+            const page = await context.newPage();
+            const errors = [];
+            page.on("console", msg => {
+              if (msg.type() === "error") errors.push("console: " + msg.text());
+            });
+            page.on("pageerror", err => errors.push("pageerror: " + err.message));
+
+            try {
+              await page.goto(baseURL + "/demo", { waitUntil: "networkidle", timeout: 45000 });
+              const button = page.getByRole("button", { name: "Start demo als " + roleLabel });
+              await button.waitFor({ state: "visible", timeout: 15000 });
+              await button.click();
+              await page.waitForURL("**/dashboard", { timeout: 60000 });
+
+              const body = await page.locator("body").innerText();
+              if (!body || body.includes("De demo kon nu niet worden gestart")) {
+                throw new Error("Demo start landed on an error state");
+              }
+
+              const logout = page.getByRole("button", { name: /uitloggen/i });
+              if (await logout.count()) {
+                await logout.click();
+                await page.waitForURL(/\/$/, { timeout: 30000 }).catch(() => {});
+              }
+
+              if (errors.length) {
+                console.log(roleLabel + " browser errors:", errors);
+              }
+              console.log("PASS " + roleLabel + " -> " + page.url());
+            } catch (error) {
+              console.error("FAIL " + roleLabel + ":", error);
+              console.error("URL:", page.url());
+              console.error("BODY:", (await page.locator("body").innerText().catch(() => "")).slice(0, 4000));
+              throw error;
+            } finally {
+              await context.close();
+            }
+          }
+
+          try {
+            await check("sportschool");
+            await check("instructeur");
+          } finally {
+            await browser.close();
+          }
+          EOF
+          node /tmp/live-demo-check.mjs
