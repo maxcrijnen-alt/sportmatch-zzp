@@ -1,4 +1,4 @@
-name: Demo startup timing check
+name: Mobile navigation production check
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
       - qa/demo-live-check-20260921
 
 jobs:
-  demo-timing:
+  mobile-navigation:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -17,45 +17,78 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
-      - name: Measure live demo startup
+      - name: Verify mobile navigation on production
         env:
           BASE_URL: https://sportmatch-zzp.vercel.app
         run: |
-          cat > demo-timing.mjs <<'EOF'
+          cat > mobile-nav-check.mjs <<'EOF'
           import { chromium } from "@playwright/test";
 
           const browser = await chromium.launch({ headless: true });
           const baseURL = process.env.BASE_URL;
 
-          async function measure(role) {
-            const context = await browser.newContext();
+          async function checkRole(role, primaryLabels, moreLabels) {
+            const context = await browser.newContext({
+              viewport: { width: 390, height: 844 },
+            });
             const page = await context.newPage();
+
             try {
-              const navStart = Date.now();
               await page.goto(baseURL + "/demo", { waitUntil: "networkidle", timeout: 45000 });
-              const pageLoadMs = Date.now() - navStart;
+              await page.getByRole("button", { name: "Start demo als " + role }).click();
+              await page.waitForURL("**/dashboard", { timeout: 60000 });
 
-              const button = page.getByRole("button", { name: "Start demo als " + role });
-              const start = Date.now();
-              await button.click();
-              await page.waitForURL("**/dashboard", { timeout: 90000 });
-              const startupMs = Date.now() - start;
+              const bottomNav = page.locator("nav.fixed.inset-x-0.bottom-0");
+              for (const label of primaryLabels) {
+                await bottomNav.getByText(label, { exact: true }).waitFor();
+              }
+              await bottomNav.getByText("Meer", { exact: true }).waitFor();
+              console.log("PASS", role, "primary navigation");
 
-              console.log("TIMING", JSON.stringify({ role, pageLoadMs, startupMs, totalMs: pageLoadMs + startupMs }));
+              await bottomNav.getByRole("button", { name: "Meer navigatie" }).click();
+              const menu = page.getByLabel("Meer navigatie");
+              await menu.waitFor();
+
+              for (const label of moreLabels) {
+                await menu.getByText(label, { exact: true }).waitFor();
+              }
+              for (const label of ["Meldingen", "Profiel", "Instellingen", "Uitloggen"]) {
+                await menu.getByText(label, { exact: true }).waitFor();
+              }
+              console.log("PASS", role, "more menu");
+
+              const target = role === "sportschool" ? "Berichten" : "Documenten";
+              await menu.getByText(target, { exact: true }).click();
+              await page.waitForLoadState("networkidle");
+              console.log("PASS", role, "hidden section reachable", page.url());
 
               const logout = page.getByRole("button", { name: /uitloggen/i }).first();
-              await logout.click();
-              await page.waitForURL(/\/$/, { timeout: 30000 });
+              if (await logout.count()) {
+                await logout.click();
+                await page.waitForURL(/\/$/, { timeout: 30000 });
+              } else {
+                await page.getByRole("button", { name: "Meer navigatie" }).click();
+                await page.getByText("Uitloggen", { exact: true }).click();
+                await page.waitForURL(/\/$/, { timeout: 30000 });
+              }
             } finally {
               await context.close();
             }
           }
 
           try {
-            await measure("sportschool");
-            await measure("instructeur");
+            await checkRole(
+              "sportschool",
+              ["Dashboard", "Opdrachten", "Kandidaten", "Agenda"],
+              ["Berichten", "Statistieken", "Organisatie", "Reviews", "Abonnement"],
+            );
+            await checkRole(
+              "instructeur",
+              ["Dashboard", "Opdrachten", "Mijn reacties", "Agenda"],
+              ["Berichten", "Beschikbaarheid", "Documenten", "Reviews", "Abonnement"],
+            );
           } finally {
             await browser.close();
           }
           EOF
-          node demo-timing.mjs
+          node mobile-nav-check.mjs
