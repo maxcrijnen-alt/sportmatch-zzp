@@ -280,27 +280,30 @@ export async function createDemoSession(role: DemoRole): Promise<DemoCredentials
       throw new Error(organizationError?.message ?? "Demo-sportschool ontbreekt.");
     }
 
-    const { error: memberError } = await admin.from("organization_members").insert({
-      organization_id: organization.id,
-      user_id: ownerId,
-      member_role: "owner",
-      state: "active",
-    });
-    assertDatabaseResult(memberError, "Demo-lidmaatschap ontbreekt");
-    const { data: location, error: locationError } = await admin
-      .from("organization_locations")
-      .insert({
+    const [memberResult, locationResult] = await Promise.all([
+      admin.from("organization_members").insert({
         organization_id: organization.id,
-        name: "Centrum",
-        street: "Sportlaan",
-        house_number: "10",
-        postal_code: "3511 AA",
-        city_id: city.id,
-      })
-      .select("id")
-      .single();
-    if (locationError || !location) {
-      throw new Error(locationError?.message ?? "Demo-vestiging ontbreekt.");
+        user_id: ownerId,
+        member_role: "owner",
+        state: "active",
+      }),
+      admin
+        .from("organization_locations")
+        .insert({
+          organization_id: organization.id,
+          name: "Centrum",
+          street: "Sportlaan",
+          house_number: "10",
+          postal_code: "3511 AA",
+          city_id: city.id,
+        })
+        .select("id")
+        .single(),
+    ]);
+    assertDatabaseResult(memberResult.error, "Demo-lidmaatschap ontbreekt");
+    const location = locationResult.data;
+    if (locationResult.error || !location) {
+      throw new Error(locationResult.error?.message ?? "Demo-vestiging ontbreekt.");
     }
 
     const lessonTypeBySport = new Map<string, { id: string; name: string }>();
