@@ -53,9 +53,9 @@ jobs:
             if (demoA.value === demoB.value) throw new Error("Concurrent demos share the same session id");
 
             const logoutA = pageA.getByRole("button", { name: /uitloggen/i });
-            if (await logoutA.count()) {
-              await logoutA.click();
-            }
+            if (!(await logoutA.count())) throw new Error("Logout button missing in demo A");
+            await logoutA.click();
+            await pageA.waitForURL(/\/$/, { timeout: 30000 });
 
             await pageB.goto(baseURL + "/dashboard", { waitUntil: "networkidle", timeout: 45000 });
             if (!pageB.url().includes("/dashboard")) {
@@ -63,9 +63,9 @@ jobs:
             }
 
             const logoutB = pageB.getByRole("button", { name: /uitloggen/i });
-            if (await logoutB.count()) {
-              await logoutB.click();
-            }
+            if (!(await logoutB.count())) throw new Error("Logout button missing in demo B");
+            await logoutB.click();
+            await pageB.waitForURL(/\/$/, { timeout: 30000 });
 
             console.log("PASS concurrent isolation");
             console.log("PASS logout A leaves B active");
