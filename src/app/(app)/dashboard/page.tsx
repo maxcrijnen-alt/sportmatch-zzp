@@ -28,27 +28,6 @@ export const metadata: Metadata = {
   title: "Dashboard",
 };
 
-const organizationNextActions = [
-  {
-    title: "Plaats of bekijk je eerste opdracht",
-    text: "Maak sport, datum, tijd, vergoeding, locatie en vereiste kwalificaties concreet. In de demo zie je hoe dat eruitziet.",
-    href: "/organisatie/opdrachten/nieuw",
-    cta: "Eerste opdracht",
-  },
-  {
-    title: "Vergelijk kandidaten zonder zoeken",
-    text: "Open reacties en vergelijk beschikbaarheid, tarief, afstand, documenten en bericht op dezelfde plek.",
-    href: "/organisatie/kandidaten",
-    cta: "Kandidaten bekijken",
-  },
-  {
-    title: "Houd je planning actueel",
-    text: "Bekijk openstaande, te beoordelen en bevestigde lessen per vestiging in je centrale agenda.",
-    href: "/agenda",
-    cta: "Agenda bekijken",
-  },
-];
-
 const instructorNextActions = [
   {
     title: "Check profiel, reisafstand en tarief",
@@ -111,15 +90,12 @@ export default async function DashboardPage({
 
     let jobsQuery = supabase
       .from("jobs")
-      .select("id, status", { count: "exact" })
+      .select("id, status")
       .eq("organization_id", orgContext.organization.id)
       .eq("status", "open");
     let applicationsQuery = supabase
       .from("job_applications")
-      .select("id, job:jobs!inner(organization_id, location_id)", {
-        count: "exact",
-        head: true,
-      })
+      .select("id, job_id, job:jobs!inner(organization_id, location_id)")
       .eq("job.organization_id", orgContext.organization.id)
       .eq("status", "pending");
 
@@ -143,8 +119,87 @@ export default async function DashboardPage({
     const hasInactiveLocation = subscriptions.some(
       (subscription) => !subscriptionGrantsAccess(subscription),
     );
-    const openJobCount = jobsResult.count ?? 0;
-    const pendingApplicationCount = applicationsResult.count ?? 0;
+    const openJobs =
+      (jobsResult.data as { id: string; status: string }[] | null) ?? [];
+    const openJobIds = openJobs.map((job) => job.id);
+    const pendingApplications =
+      (applicationsResult.data as { id: string; job_id: string }[] | null) ?? [];
+    const pendingApplicationJobIds = new Set(
+      pendingApplications.map((application) => application.job_id),
+    );
+
+    const pendingConfirmationJobIds = new Set<string>();
+
+    if (openJobIds.length > 0) {
+      const [wholeConfirmationsResult, segmentConfirmationsResult] =
+        await Promise.all([
+          supabase
+            .from("job_confirmations")
+            .select("job_id")
+            .in("job_id", openJobIds)
+            .is("confirmed_at", null),
+          supabase
+            .from("job_segment_confirmations")
+            .select("job_id")
+            .in("job_id", openJobIds)
+            .is("confirmed_at", null)
+            .is("cancelled_at", null),
+        ]);
+
+      for (const confirmation of wholeConfirmationsResult.data ?? []) {
+        pendingConfirmationJobIds.add(confirmation.job_id as string);
+      }
+      for (const confirmation of segmentConfirmationsResult.data ?? []) {
+        pendingConfirmationJobIds.add(confirmation.job_id as string);
+      }
+    }
+
+    const openJobCount = openJobs.length;
+    const pendingApplicationCount = pendingApplications.length;
+    const pendingConfirmationCount = pendingConfirmationJobIds.size;
+    const searchingJobCount = openJobIds.filter(
+      (jobId) =>
+        !pendingApplicationJobIds.has(jobId) &&
+        !pendingConfirmationJobIds.has(jobId),
+    ).length;
+
+    const primaryAction =
+      pendingConfirmationCount > 0
+        ? {
+            title: "Bevestigingen opvolgen",
+            text: `${pendingConfirmationCount} ${
+              pendingConfirmationCount === 1 ? "opdracht wacht" : "opdrachten wachten"
+            } nog op definitieve bevestiging van de instructeur.`,
+            href: "/organisatie/opdrachten",
+            cta: "Bekijk bevestigingen",
+          }
+        : pendingApplicationCount > 0
+          ? {
+              title: "Nieuwe reacties beoordelen",
+              text: `${pendingApplicationCount} ${
+                pendingApplicationCount === 1 ? "reactie staat" : "reacties staan"
+              } klaar om te vergelijken en op te volgen.`,
+              href: "/organisatie/kandidaten",
+              cta: "Bekijk kandidaten",
+            }
+          : searchingJobCount > 0
+            ? {
+                title: "Nog iemand vinden",
+                text: `${searchingJobCount} ${
+                  searchingJobCount === 1 ? "open opdracht heeft" : "open opdrachten hebben"
+                } nog geen reactie of gekozen instructeur.`,
+                href: "/organisatie/opdrachten",
+                cta: "Bekijk open opdrachten",
+              }
+            : {
+                title: openJobCount > 0 ? "Alles is opgevolgd" : "Klaar voor een nieuwe opdracht",
+                text:
+                  openJobCount > 0
+                    ? "Je open opdrachten hebben allemaal opvolging. Houd de agenda in de gaten voor de volgende stap."
+                    : "Er staat nu niets open. Plaats een nieuwe opdracht zodra je weer iemand nodig hebt.",
+                href: openJobCount > 0 ? "/agenda" : "/organisatie/opdrachten/nieuw",
+                cta: openJobCount > 0 ? "Bekijk agenda" : "Nieuwe opdracht",
+              };
 
     return (
       <div className="mx-auto w-full max-w-5xl space-y-6 px-4 py-8">
@@ -175,113 +230,79 @@ export default async function DashboardPage({
 
         <section className="rounded-lg border border-primary/30 bg-primary/5 p-5">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <p className="text-sm font-medium text-primary">
-                Start hier als sportschool
-              </p>
+            <div className="max-w-2xl">
+              <p className="text-sm font-medium text-primary">Wat vraagt aandacht?</p>
               <h2 className="mt-1 text-xl font-semibold tracking-tight">
-                {openJobCount > 0
-                  ? pendingApplicationCount > 0
-                    ? "Vergelijk nieuwe reacties en kies wie je wilt spreken."
-                    : "Houd je open opdrachten scherp en deel ze met passende instructeurs."
-                  : "Plaats je eerste opdracht in een paar minuten."}
+                {primaryAction.title}
               </h2>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                De snelste route naar waarde: leg een concrete opdracht vast,
-                vergelijk reacties op beschikbaarheid en tarief, en rond de
-                afspraak af via berichten en bevestiging.
+                {primaryAction.text}
               </p>
             </div>
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+              <Link href={primaryAction.href}>
+                <Button className="w-full sm:w-auto">
+                  {primaryAction.cta}
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </Link>
+              {primaryAction.href !== "/organisatie/opdrachten/nieuw" ? (
+                <Link href="/organisatie/opdrachten/nieuw">
+                  <Button className="w-full sm:w-auto" variant="outline">
+                    Nieuwe opdracht
+                  </Button>
+                </Link>
+              ) : null}
+            </div>
+          </div>
+
+          <div className="mt-5 grid gap-3 md:grid-cols-3">
             <Link
-              href={
-                pendingApplicationCount > 0
-                  ? "/organisatie/kandidaten"
-                  : openJobCount > 0
-                    ? "/organisatie/opdrachten"
-                    : "/organisatie/opdrachten/nieuw"
-              }
+              className="rounded-lg border border-border bg-background p-4 transition-colors hover:border-primary/40 hover:bg-primary/5"
+              href="/organisatie/opdrachten"
             >
-              <Button className="w-full sm:w-auto">
-                {pendingApplicationCount > 0
-                  ? "Kandidaten bekijken"
-                  : openJobCount > 0
-                    ? "Opdrachten bekijken"
-                    : "Nieuwe opdracht"}
-                <ArrowRight className="h-4 w-4" />
-              </Button>
+              <p className="text-sm font-medium text-muted-foreground">
+                Nog iemand zoeken
+              </p>
+              <p className="mt-1 text-3xl font-bold tracking-tight">
+                {searchingJobCount}
+              </p>
+              <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                Open opdrachten zonder reactie of gekozen instructeur.
+              </p>
+            </Link>
+
+            <Link
+              className="rounded-lg border border-border bg-background p-4 transition-colors hover:border-primary/40 hover:bg-primary/5"
+              href="/organisatie/kandidaten"
+            >
+              <p className="text-sm font-medium text-muted-foreground">
+                Reacties te beoordelen
+              </p>
+              <p className="mt-1 text-3xl font-bold tracking-tight">
+                {pendingApplicationCount}
+              </p>
+              <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                Nieuwe reacties waarvoor je nog een keuze kunt maken.
+              </p>
+            </Link>
+
+            <Link
+              className="rounded-lg border border-border bg-background p-4 transition-colors hover:border-primary/40 hover:bg-primary/5"
+              href="/organisatie/opdrachten"
+            >
+              <p className="text-sm font-medium text-muted-foreground">
+                Wacht op bevestiging
+              </p>
+              <p className="mt-1 text-3xl font-bold tracking-tight">
+                {pendingConfirmationCount}
+              </p>
+              <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                Gekozen instructeurs die nog definitief moeten bevestigen.
+              </p>
             </Link>
           </div>
-          <div className="mt-5 grid gap-3 md:grid-cols-3">
-            {organizationNextActions.map((action) => (
-              <div
-                className="rounded-lg border border-border bg-background p-4"
-                key={action.title}
-              >
-                <CheckCircle2 className="mb-3 h-5 w-5 text-primary" />
-                <h3 className="font-semibold">{action.title}</h3>
-                <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                  {action.text}
-                </p>
-                <Link
-                  className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
-                  href={action.href}
-                >
-                  {action.cta}
-                  <ArrowRight className="h-3.5 w-3.5" />
-                </Link>
-              </div>
-            ))}
-          </div>
         </section>
-
-        <div className="grid gap-4 sm:grid-cols-3">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>Open opdrachten</CardDescription>
-              <CardTitle className="text-3xl">{openJobCount}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Link
-                className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
-                href="/organisatie/opdrachten"
-              >
-                Bekijken <ArrowRight className="h-3.5 w-3.5" />
-              </Link>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>Nieuwe reacties</CardDescription>
-              <CardTitle className="text-3xl">
-                {pendingApplicationCount}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Link
-                className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
-                href="/organisatie/kandidaten"
-              >
-                Kandidaten bekijken <ArrowRight className="h-3.5 w-3.5" />
-              </Link>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>Vestigingen</CardDescription>
-              <CardTitle className="text-3xl">
-                {orgContext.locations.length}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Link
-                className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
-                href="/organisatie/vestigingen"
-              >
-                Beheren <ArrowRight className="h-3.5 w-3.5" />
-              </Link>
-            </CardContent>
-          </Card>
-        </div>
       </div>
     );
   }
