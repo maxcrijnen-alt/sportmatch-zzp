@@ -1,4 +1,4 @@
-name: Live demo concurrency check
+name: Live agenda workflow check
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
       - qa/demo-live-check-20260921
 
 jobs:
-  demo-concurrency:
+  agenda-smoke:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -17,63 +17,55 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
-      - name: Check concurrent live demos
+      - name: Check public demo navigation and organization agenda
         env:
           BASE_URL: https://sportmatch-zzp.vercel.app
         run: |
-          cat > live-demo-concurrency.mjs <<'EOF'
+          cat > live-agenda-check.mjs <<'EOF'
           import { chromium } from "@playwright/test";
 
           const browser = await chromium.launch({ headless: true });
+          const context = await browser.newContext();
+          const page = await context.newPage();
           const baseURL = process.env.BASE_URL;
 
-          async function startDemo(context, label) {
-            const page = await context.newPage();
-            await page.goto(baseURL + "/demo", { waitUntil: "networkidle", timeout: 45000 });
-            await page.getByRole("button", { name: "Start demo als " + label }).click();
-            await page.waitForURL("**/dashboard", { timeout: 60000 });
-            return page;
-          }
-
-          const a = await browser.newContext();
-          const b = await browser.newContext();
-
           try {
-            const [pageA, pageB] = await Promise.all([
-              startDemo(a, "sportschool"),
-              startDemo(b, "sportschool"),
-            ]);
+            await page.goto(baseURL + "/", { waitUntil: "networkidle", timeout: 45000 });
+            const header = page.locator("header");
+            const exactDemoLinks = header.getByRole("link", { name: /^Demo$/ });
+            if (await exactDemoLinks.count()) {
+              throw new Error('Duplicate "Demo" navigation item is still visible');
+            }
+            if (!(await header.getByRole("link", { name: "Demo bekijken" }).count())) {
+              throw new Error('"Demo bekijken" CTA is missing');
+            }
+            console.log("PASS public navigation: only Demo bekijken remains");
 
-            const cookiesA = await a.cookies();
-            const cookiesB = await b.cookies();
-            const demoA = cookiesA.find(c => c.name.includes("demo"));
-            const demoB = cookiesB.find(c => c.name.includes("demo"));
+            await page.goto(baseURL + "/demo", { waitUntil: "networkidle", timeout: 45000 });
+            await page.getByRole("button", { name: "Start demo als sportschool" }).click();
+            await page.waitForURL("**/dashboard", { timeout: 60000 });
+            await page.goto(baseURL + "/agenda", { waitUntil: "networkidle", timeout: 45000 });
 
-            if (!demoA || !demoB) throw new Error("Demo session cookie missing");
-            if (demoA.value === demoB.value) throw new Error("Concurrent demos share the same session id");
-
-            const logoutA = pageA.getByRole("button", { name: /uitloggen/i });
-            if (!(await logoutA.count())) throw new Error("Logout button missing in demo A");
-            await logoutA.click();
-            await pageA.waitForURL(/\/$/, { timeout: 30000 });
-
-            await pageB.goto(baseURL + "/dashboard", { waitUntil: "networkidle", timeout: 45000 });
-            if (!pageB.url().includes("/dashboard")) {
-              throw new Error("Logging out demo A affected demo B");
+            for (const label of ["Nog iemand zoeken", "Reactie ontvangen", "Bevestigd"]) {
+              const count = await page.getByText(label, { exact: true }).count();
+              if (!count) throw new Error("Agenda state missing: " + label);
+              console.log("PASS agenda state", label, "count=" + count);
             }
 
-            const logoutB = pageB.getByRole("button", { name: /uitloggen/i });
-            if (!(await logoutB.count())) throw new Error("Logout button missing in demo B");
-            await logoutB.click();
-            await pageB.waitForURL(/\/$/, { timeout: 30000 });
+            const body = await page.locator("body").innerText();
+            if (!body.includes("reactie") && !body.includes("reacties")) {
+              throw new Error("Agenda does not surface pending application context");
+            }
+            console.log("PASS agenda includes pending-reaction context");
 
-            console.log("PASS concurrent isolation");
-            console.log("PASS logout A leaves B active");
-            console.log("PASS both sessions used unique demo cookies");
+            const logout = page.getByRole("button", { name: /uitloggen/i });
+            if (await logout.count()) {
+              await logout.click();
+              await page.waitForURL(/\/$/, { timeout: 30000 });
+            }
           } finally {
-            await a.close();
-            await b.close();
+            await context.close();
             await browser.close();
           }
           EOF
-          node live-demo-concurrency.mjs
+          node live-agenda-check.mjs
