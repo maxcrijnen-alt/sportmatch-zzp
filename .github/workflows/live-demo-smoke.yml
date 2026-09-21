@@ -55,15 +55,18 @@ jobs:
                 await item.scrollIntoViewIfNeeded();
                 await item.waitFor();
               }
-              for (const label of ["Meldingen", "Profiel", "Instellingen", "Uitloggen"]) {
-                const item = menu.getByText(label, { exact: true });
+              for (const label of ["Meldingen", "Profiel", "Instellingen"]) {
+                const item = menu.getByRole("link", { name: new RegExp(label) });
                 await item.scrollIntoViewIfNeeded();
                 await item.waitFor();
               }
+              const logoutItem = menu.getByRole("button", { name: "Uitloggen" });
+              await logoutItem.scrollIntoViewIfNeeded();
+              await logoutItem.waitFor();
               console.log("PASS", role, "more menu");
 
               const target = role === "sportschool" ? "Berichten" : "Documenten";
-              await menu.getByText(target, { exact: true }).click();
+              await menu.getByRole("link", { name: target }).click();
               await page.waitForLoadState("networkidle");
               console.log("PASS", role, "hidden section reachable", page.url());
 
