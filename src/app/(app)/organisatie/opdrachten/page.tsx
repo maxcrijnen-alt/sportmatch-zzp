@@ -28,11 +28,6 @@ interface JobRow extends Job {
   sport: { name: string } | null;
   location: { name: string } | null;
   applications: { count: number }[];
-  confirmations: {
-    id: string;
-    confirmed_at: string | null;
-    cancelled_at: string | null;
-  }[];
 }
 
 const statusVariant: Record<
@@ -83,8 +78,7 @@ export default async function OrganisatieOpdrachtenPage({
       `*,
       sport:sports (name),
       location:organization_locations (name),
-      applications:job_applications (count),
-      confirmations:job_confirmations!job_confirmations_job_id_fkey (id, confirmed_at, cancelled_at)`,
+      applications:job_applications (count)`,
     )
     .eq("organization_id", orgContext.organization.id)
     .order("created_at", { ascending: false });
@@ -93,24 +87,49 @@ export default async function OrganisatieOpdrachtenPage({
     query = query.eq("location_id", selectedLocationId);
   }
 
-  const { data } = await query;
+  const { data, error } = await query;
 
-  const jobs = ((data as unknown as JobRow[] | null) ?? []).sort((left, right) => {
-    const priority = (job: JobRow) => {
-      const applicationCount = job.applications?.[0]?.count ?? 0;
-      const pendingConfirmation = job.confirmations?.some(
-        (confirmation) => !confirmation.cancelled_at && !confirmation.confirmed_at,
+  if (error) {
+    console.error("Opdrachtenoverzicht kon niet worden geladen", error.message);
+  }
+
+  const baseJobs = (data as unknown as JobRow[] | null) ?? [];
+  const jobIds = baseJobs.map((job) => job.id);
+  const pendingConfirmationJobIds = new Set<string>();
+
+  if (jobIds.length > 0) {
+    const { data: confirmationData, error: confirmationError } = await supabase
+      .from("job_confirmations")
+      .select("job_id, confirmed_at, cancelled_at")
+      .in("job_id", jobIds);
+
+    if (confirmationError) {
+      console.error(
+        "Bevestigingsstatussen konden niet worden geladen",
+        confirmationError.message,
       );
+    } else {
+      for (const confirmation of confirmationData ?? []) {
+        if (!confirmation.cancelled_at && !confirmation.confirmed_at) {
+          pendingConfirmationJobIds.add(confirmation.job_id as string);
+        }
+      }
+    }
+  }
 
-      if (job.status === "open" && pendingConfirmation) return 0;
-      if (job.status === "open" && applicationCount > 0) return 1;
-      if (job.status === "open") return 2;
-      if (job.status === "confirmed") return 3;
-      if (job.status === "completed") return 4;
-      if (job.status === "closed") return 5;
-      return 6;
-    };
+  const priority = (job: JobRow) => {
+    const applicationCount = job.applications?.[0]?.count ?? 0;
 
+    if (job.status === "open" && pendingConfirmationJobIds.has(job.id)) return 0;
+    if (job.status === "open" && applicationCount > 0) return 1;
+    if (job.status === "open") return 2;
+    if (job.status === "confirmed") return 3;
+    if (job.status === "completed") return 4;
+    if (job.status === "closed") return 5;
+    return 6;
+  };
+
+  const jobs = [...baseJobs].sort((left, right) => {
     const priorityDifference = priority(left) - priority(right);
     if (priorityDifference !== 0) return priorityDifference;
 
@@ -120,11 +139,8 @@ export default async function OrganisatieOpdrachtenPage({
 
   const workflowStatus = (job: JobRow) => {
     const applicationCount = job.applications?.[0]?.count ?? 0;
-    const pendingConfirmation = job.confirmations?.some(
-      (confirmation) => !confirmation.cancelled_at && !confirmation.confirmed_at,
-    );
 
-    if (job.status === "open" && pendingConfirmation) {
+    if (job.status === "open" && pendingConfirmationJobIds.has(job.id)) {
       return { label: "Wacht op bevestiging", variant: "warning" as const };
     }
     if (job.status === "open" && applicationCount > 0) {
