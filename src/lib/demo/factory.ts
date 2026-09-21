@@ -476,184 +476,275 @@ export async function createDemoSession(role: DemoRole): Promise<DemoCredentials
       users.get("average")!,
       instructorId,
     ];
-    const historyJobs: { id: string; instructorId: string; title: string }[] = [];
-    for (let index = 0; index < historyInstructors.length; index += 1) {
-      const historyInstructor = historyInstructors[index];
-      const historyTitle = [
-        "Eerder succesvol samengewerkt",
-        "Afgeronde invaltraining",
-        "Afgeronde yogales",
-      ][index] ?? "Afgeronde training";
-      const { data: historyJob, error: historyJobError } = await admin
-        .from("jobs")
-        .insert({
-          ...openJobs[index],
-          title: historyTitle,
-          starts_on: pastDate(7 + index),
-          status: "completed",
-        })
-        .select("id")
-        .single();
-      assertDatabaseResult(historyJobError, "Demo-historieopdracht ontbreekt");
-      if (!historyJob) throw new Error("Demo-historieopdracht ontbreekt.");
-      const { data: historyApplication, error: historyApplicationError } = await admin
-        .from("job_applications")
-        .insert({
-          job_id: historyJob.id,
-          instructor_id: historyInstructor,
-          status: "accepted",
-        })
-        .select("id")
-        .single();
-      assertDatabaseResult(
-        historyApplicationError,
-        "Demo-historiereactie ontbreekt",
-      );
-      if (!historyApplication) throw new Error("Demo-historiereactie ontbreekt.");
-      const { error: historyConfirmationError } = await admin.from("job_confirmations").insert({
-        job_id: historyJob.id,
-        application_id: historyApplication.id,
-        instructor_id: historyInstructor,
-        terms: {},
-        organization_agreed_at: new Date().toISOString(),
-        organization_agreed_by: ownerId,
-        instructor_agreed_at: new Date().toISOString(),
-        confirmed_at: new Date().toISOString(),
-      });
-      assertDatabaseResult(
-        historyConfirmationError,
-        "Demo-historiebevestiging ontbreekt",
-      );
-      const { error: historyReviewError } = await admin.from("reviews").insert([
-        {
-          job_id: historyJob.id,
-          reviewer_id: ownerId,
-          reviewee_id: historyInstructor,
-          side: "organization",
-          rating: [5, 3, 4][index],
-          comment:
-            index === 0
-              ? "Professioneel, duidelijk en goed voorbereid."
-              : "De les was in orde en de afspraken zijn nagekomen.",
-          released_at: new Date().toISOString(),
-        },
-        {
-          job_id: historyJob.id,
-          reviewer_id: historyInstructor,
-          reviewee_id: ownerId,
-          side: "instructor",
-          rating: 4,
-          comment: "Prettige samenwerking en heldere briefing.",
-          released_at: new Date().toISOString(),
-        },
-      ]);
-      assertDatabaseResult(historyReviewError, "Demo-reviews ontbreken");
-      historyJobs.push({
-        id: historyJob.id,
-        instructorId: historyInstructor,
-        title: historyTitle,
-      });
+    const historyTitles = [
+      "Eerder succesvol samengewerkt",
+      "Afgeronde invaltraining",
+      "Afgeronde yogales",
+    ];
+    const historySpecs = historyInstructors.map((historyInstructor, index) => ({
+      instructorId: historyInstructor,
+      title: historyTitles[index] ?? "Afgeronde training",
+      job: {
+        ...openJobs[index],
+        title: historyTitles[index] ?? "Afgeronde training",
+        starts_on: pastDate(7 + index),
+        status: "completed",
+      },
+    }));
+
+    const { data: historyJobRows, error: historyJobsError } = await admin
+      .from("jobs")
+      .insert(historySpecs.map((spec) => spec.job))
+      .select("id, title");
+    assertDatabaseResult(historyJobsError, "Demo-historieopdrachten ontbreken");
+    if (!historyJobRows?.length) {
+      throw new Error("Demo-historieopdrachten ontbreken.");
     }
 
-    const addChat = async (
-      jobId: string,
-      chatInstructorId: string,
+    const historySpecByTitle = new Map(
+      historySpecs.map((spec) => [spec.title, spec] as const),
+    );
+    const historyJobs = historyJobRows.map((row) => {
+      const spec = historySpecByTitle.get(row.title as string);
+      if (!spec) {
+        throw new Error("Demo-historieopdracht kon niet worden gekoppeld.");
+      }
+      return {
+        id: row.id as string,
+        instructorId: spec.instructorId,
+        title: spec.title,
+      };
+    });
+
+    const { data: historyApplications, error: historyApplicationsError } =
+      await admin
+        .from("job_applications")
+        .insert(
+          historyJobs.map((historyJob) => ({
+            job_id: historyJob.id,
+            instructor_id: historyJob.instructorId,
+            status: "accepted",
+          })),
+        )
+        .select("id, job_id");
+    assertDatabaseResult(
+      historyApplicationsError,
+      "Demo-historiereacties ontbreken",
+    );
+    if (!historyApplications?.length) {
+      throw new Error("Demo-historiereacties ontbreken.");
+    }
+
+    const historyApplicationByJob = new Map(
+      historyApplications.map((application) => [
+        application.job_id as string,
+        application.id as string,
+      ]),
+    );
+    const confirmedAt = new Date().toISOString();
+
+    const [historyConfirmationsResult, historyReviewsResult] = await Promise.all([
+      admin.from("job_confirmations").insert(
+        historyJobs.map((historyJob) => ({
+          job_id: historyJob.id,
+          application_id: historyApplicationByJob.get(historyJob.id)!,
+          instructor_id: historyJob.instructorId,
+          terms: {},
+          organization_agreed_at: confirmedAt,
+          organization_agreed_by: ownerId,
+          instructor_agreed_at: confirmedAt,
+          confirmed_at: confirmedAt,
+        })),
+      ),
+      admin.from("reviews").insert(
+        historyJobs.flatMap((historyJob, index) => [
+          {
+            job_id: historyJob.id,
+            reviewer_id: ownerId,
+            reviewee_id: historyJob.instructorId,
+            side: "organization",
+            rating: [5, 3, 4][index],
+            comment:
+              index === 0
+                ? "Professioneel, duidelijk en goed voorbereid."
+                : "De les was in orde en de afspraken zijn nagekomen.",
+            released_at: confirmedAt,
+          },
+          {
+            job_id: historyJob.id,
+            reviewer_id: historyJob.instructorId,
+            reviewee_id: ownerId,
+            side: "instructor",
+            rating: 4,
+            comment: "Prettige samenwerking en heldere briefing.",
+            released_at: confirmedAt,
+          },
+        ]),
+      ),
+    ]);
+    assertDatabaseResult(
+      historyConfirmationsResult.error,
+      "Demo-historiebevestigingen ontbreken",
+    );
+    assertDatabaseResult(historyReviewsResult.error, "Demo-reviews ontbreken");
+
+    type DemoChatSeed = {
+      jobId: string;
+      instructorId: string;
       messages: Array<{
         senderId: string | null;
         body: string;
         systemEvent?: string;
-      }>,
-    ) => {
-      const { data: chat, error: chatError } = await admin
-        .from("chats")
-        .insert({
-          job_id: jobId,
-          organization_id: organization.id,
-          instructor_id: chatInstructorId,
-        })
-        .select("id")
-        .single();
-      assertDatabaseResult(chatError, "Demo-gesprek ontbreekt");
-      if (!chat) throw new Error("Demo-gesprek ontbreekt.");
-
-      const start = Date.now() - messages.length * 60_000;
-      const rows = messages.map((message, index) => ({
-        chat_id: chat.id,
-        sender_id: message.senderId,
-        body: message.body,
-        system_event: message.systemEvent ?? null,
-        created_at: new Date(start + index * 60_000).toISOString(),
-      }));
-      const { error: messagesError } = await admin
-        .from("chat_messages")
-        .insert(rows);
-      assertDatabaseResult(messagesError, "Demo-chatberichten ontbreken");
-      const { error: activityError } = await admin
-        .from("chats")
-        .update({ last_message_at: rows[rows.length - 1].created_at })
-        .eq("id", chat.id);
-      assertDatabaseResult(activityError, "Demo-chatdatum ontbreekt");
-      return chat.id as string;
+      }>;
     };
 
-    await addChat(firstJob.id, users.get("strong")!, [
+    const chatSeeds: DemoChatSeed[] = [
       {
-        senderId: users.get("strong")!,
-        body: "Is de muziekinstallatie op locatie beschikbaar?",
+        jobId: firstJob.id,
+        instructorId: users.get("strong")!,
+        messages: [
+          {
+            senderId: users.get("strong")!,
+            body: "Is de muziekinstallatie op locatie beschikbaar?",
+          },
+          {
+            senderId: ownerId,
+            body: "Ja, alles staat klaar. Fijn dat je reageert!",
+          },
+        ],
       },
       {
-        senderId: ownerId,
-        body: "Ja, alles staat klaar. Fijn dat je reageert!",
-      },
-    ]);
-    await addChat(firstJob.id, users.get("starter")!, [
-      {
-        senderId: null,
-        body: "Noa heeft gereageerd op deze opdracht.",
-        systemEvent: "application_created",
-      },
-      {
-        senderId: users.get("starter")!,
-        body: "Dit wordt mijn eerste klus via SportMatch. Kan ik vooraf de zaal bekijken?",
-      },
-    ]);
-    const invitationChatId = await addChat(thirdJob.id, instructorId, [
-      {
-        senderId: null,
-        body: "De sportschool heeft een uitnodiging gestuurd.",
-        systemEvent: "invitation_sent",
+        jobId: firstJob.id,
+        instructorId: users.get("starter")!,
+        messages: [
+          {
+            senderId: null,
+            body: "Noa heeft gereageerd op deze opdracht.",
+            systemEvent: "application_created",
+          },
+          {
+            senderId: users.get("starter")!,
+            body: "Dit wordt mijn eerste klus via SportMatch. Kan ik vooraf de zaal bekijken?",
+          },
+        ],
       },
       {
-        senderId: ownerId,
-        body: "Kun jij deze training verzorgen? Alle materialen zijn aanwezig.",
+        jobId: thirdJob.id,
+        instructorId,
+        messages: [
+          {
+            senderId: null,
+            body: "De sportschool heeft een uitnodiging gestuurd.",
+            systemEvent: "invitation_sent",
+          },
+          {
+            senderId: ownerId,
+            body: "Kun jij deze training verzorgen? Alle materialen zijn aanwezig.",
+          },
+        ],
       },
-    ]);
-    const plannedChatId = await addChat(plannedJob.id, instructorId, [
       {
-        senderId: null,
-        body: "De training is definitief bevestigd en staat in beide agenda's.",
-        systemEvent: "job_confirmed",
+        jobId: plannedJob.id,
+        instructorId,
+        messages: [
+          {
+            senderId: null,
+            body: "De training is definitief bevestigd en staat in beide agenda's.",
+            systemEvent: "job_confirmed",
+          },
+          {
+            senderId: instructorId,
+            body: "Bevestigd, ik ben vijftien minuten van tevoren aanwezig.",
+          },
+        ],
       },
-      {
-        senderId: instructorId,
-        body: "Bevestigd, ik ben vijftien minuten van tevoren aanwezig.",
-      },
-    ]);
-    const historyChatIds = new Map<string, string>();
-    for (const historyJob of historyJobs) {
-      const historyChatId = await addChat(historyJob.id, historyJob.instructorId, [
-        {
-          senderId: null,
-          body: "De opdracht is afgerond. Jullie kunnen elkaar beoordelen.",
-          systemEvent: "review_available",
-        },
-        {
-          senderId: historyJob.instructorId,
-          body: "Bedankt voor de fijne samenwerking!",
-        },
-      ]);
-      historyChatIds.set(historyJob.id, historyChatId);
+      ...historyJobs.map((historyJob) => ({
+        jobId: historyJob.id,
+        instructorId: historyJob.instructorId,
+        messages: [
+          {
+            senderId: null,
+            body: "De opdracht is afgerond. Jullie kunnen elkaar beoordelen.",
+            systemEvent: "review_available",
+          },
+          {
+            senderId: historyJob.instructorId,
+            body: "Bedankt voor de fijne samenwerking!",
+          },
+        ],
+      })),
+    ];
+
+    const chatSeedRows = chatSeeds.map((seed) => {
+      const start = Date.now() - seed.messages.length * 60_000;
+      const messages = seed.messages.map((message, index) => ({
+        senderId: message.senderId,
+        body: message.body,
+        systemEvent: message.systemEvent ?? null,
+        createdAt: new Date(start + index * 60_000).toISOString(),
+      }));
+      return {
+        seed,
+        messages,
+        lastMessageAt: messages[messages.length - 1].createdAt,
+      };
+    });
+
+    const { data: chatRows, error: chatsError } = await admin
+      .from("chats")
+      .insert(
+        chatSeedRows.map(({ seed, lastMessageAt }) => ({
+          job_id: seed.jobId,
+          organization_id: organization.id,
+          instructor_id: seed.instructorId,
+          last_message_at: lastMessageAt,
+        })),
+      )
+      .select("id, job_id, instructor_id");
+    assertDatabaseResult(chatsError, "Demo-gesprekken ontbreken");
+    if (!chatRows?.length) {
+      throw new Error("Demo-gesprekken ontbreken.");
     }
+
+    const chatIdByRelation = new Map(
+      chatRows.map((chat) => [
+        `${chat.job_id as string}:${chat.instructor_id as string}`,
+        chat.id as string,
+      ]),
+    );
+    const chatMessageRows = chatSeedRows.flatMap(({ seed, messages }) => {
+      const chatId = chatIdByRelation.get(`${seed.jobId}:${seed.instructorId}`);
+      if (!chatId) {
+        throw new Error("Demo-gesprek kon niet worden gekoppeld.");
+      }
+      return messages.map((message) => ({
+        chat_id: chatId,
+        sender_id: message.senderId,
+        body: message.body,
+        system_event: message.systemEvent,
+        created_at: message.createdAt,
+      }));
+    });
+
+    const { error: messagesError } = await admin
+      .from("chat_messages")
+      .insert(chatMessageRows);
+    assertDatabaseResult(messagesError, "Demo-chatberichten ontbreken");
+
+    const invitationChatId = chatIdByRelation.get(
+      `${thirdJob.id}:${instructorId}`,
+    )!;
+    const plannedChatId = chatIdByRelation.get(
+      `${plannedJob.id}:${instructorId}`,
+    )!;
+    const historyChatIds = new Map(
+      historyJobs.map((historyJob) => [
+        historyJob.id,
+        chatIdByRelation.get(
+          `${historyJob.id}:${historyJob.instructorId}`,
+        )!,
+      ]),
+    );
 
     const primaryHistory = historyJobs.find(
       (historyJob) => historyJob.instructorId === instructorId,
