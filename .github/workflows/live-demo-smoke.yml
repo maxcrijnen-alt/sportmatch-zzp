@@ -1,4 +1,4 @@
-name: Mobile navigation production check
+name: Instructor dashboard production check
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
       - qa/demo-live-check-20260921
 
 jobs:
-  mobile-navigation:
+  instructor-dashboard:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -17,87 +17,60 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
-      - name: Verify mobile navigation on production
+      - name: Verify instructor action dashboard on production
         env:
           BASE_URL: https://sportmatch-zzp.vercel.app
         run: |
-          cat > mobile-nav-check.mjs <<'EOF'
+          cat > instructor-dashboard-check.mjs <<'EOF'
           import { chromium } from "@playwright/test";
 
           const browser = await chromium.launch({ headless: true });
+          const context = await browser.newContext();
+          const page = await context.newPage();
           const baseURL = process.env.BASE_URL;
 
-          async function checkRole(role, primaryLabels, moreLabels) {
-            const context = await browser.newContext({
-              viewport: { width: 390, height: 844 },
-            });
-            const page = await context.newPage();
-
-            try {
-              await page.goto(baseURL + "/demo", { waitUntil: "networkidle", timeout: 45000 });
-              await page.getByRole("button", { name: "Start demo als " + role }).click();
-              await page.waitForURL("**/dashboard", { timeout: 60000 });
-
-              const bottomNav = page.locator("nav.fixed.inset-x-0.bottom-0");
-              for (const label of primaryLabels) {
-                await bottomNav.getByText(label, { exact: true }).waitFor();
-              }
-              await bottomNav.getByText("Meer", { exact: true }).waitFor();
-              console.log("PASS", role, "primary navigation");
-
-              await bottomNav.getByRole("button", { name: "Meer navigatie" }).click();
-              const menu = page.getByRole("region", { name: "Meer navigatie" });
-              await menu.waitFor();
-              console.log("MENU_TEXT", role, JSON.stringify(await menu.innerText()));
-
-              for (const label of moreLabels) {
-                const item = menu.getByText(label, { exact: true });
-                await item.scrollIntoViewIfNeeded();
-                await item.waitFor();
-              }
-              for (const label of ["Meldingen", "Profiel", "Instellingen"]) {
-                const item = menu.getByRole("link", { name: new RegExp(label) });
-                await item.scrollIntoViewIfNeeded();
-                await item.waitFor();
-              }
-              const logoutItem = menu.getByRole("button", { name: "Uitloggen" });
-              await logoutItem.scrollIntoViewIfNeeded();
-              await logoutItem.waitFor();
-              console.log("PASS", role, "more menu");
-
-              const target = role === "sportschool" ? "Berichten" : "Documenten";
-              const expectedPath = role === "sportschool" ? "/berichten" : "/documenten";
-              const targetLink = menu.getByRole("link", { name: target });
-              console.log("TARGET_HREF", role, await targetLink.getAttribute("href"));
-              await targetLink.click();
-              await page.waitForURL((url) => url.pathname === expectedPath, { timeout: 30000 });
-              console.log("PASS", role, "hidden section reachable", page.url());
-
-              await page.getByRole("button", { name: "Meer navigatie" }).click();
-              const logoutMenu = page.getByRole("region", { name: "Meer navigatie" });
-              const logoutButton = logoutMenu.getByRole("button", { name: "Uitloggen" });
-              await logoutButton.scrollIntoViewIfNeeded();
-              await logoutButton.click();
-              await page.waitForURL((url) => url.pathname === "/", { timeout: 30000 });
-              console.log("PASS", role, "mobile logout");
-            } finally {
-              await context.close();
-            }
-          }
-
           try {
-            await checkRole(
-              "sportschool",
-              ["Dashboard", "Opdrachten", "Kandidaten", "Agenda"],
-              ["Berichten", "Statistieken", "Organisatie", "Reviews", "Abonnement"],
-            );
-            await checkRole(
-              "instructeur",
-              ["Dashboard", "Opdrachten", "Mijn reacties", "Agenda"],
-              ["Berichten", "Beschikbaarheid", "Documenten", "Reviews", "Abonnement"],
-            );
+            await page.goto(baseURL + "/demo", { waitUntil: "networkidle", timeout: 45000 });
+            await page.getByRole("button", { name: "Start demo als instructeur" }).click();
+            await page.waitForURL("**/dashboard", { timeout: 60000 });
+
+            const main = page.locator("main");
+            for (const label of [
+              "Uitnodigingen",
+              "Open reacties",
+              "Wacht op jouw bevestiging",
+              "Eerstvolgende bevestigde klus",
+              "Profiel & VOG",
+            ]) {
+              await main.getByText(label, { exact: true }).waitFor();
+              console.log("PASS dashboard item", label);
+            }
+
+            const oldExplainer = main.getByText("Start hier als instructeur", { exact: true });
+            if (await oldExplainer.count()) {
+              throw new Error("Old instructor explainer is still visible");
+            }
+
+            await main.getByText("Wat vraagt aandacht?", { exact: true }).waitFor();
+            console.log("PASS action-focused instructor dashboard");
+
+            const counts = {};
+            for (const label of ["Uitnodigingen", "Open reacties", "Wacht op jouw bevestiging"]) {
+              const card = main.getByText(label, { exact: true }).locator("..");
+              counts[label] = await card.locator("p").nth(1).innerText();
+            }
+            console.log("COUNTS", JSON.stringify(counts));
+
+            const primaryLink = main.locator("section").first().getByRole("link").first();
+            console.log("PRIMARY_HREF", await primaryLink.getAttribute("href"));
+
+            const logout = page.getByRole("button", { name: /uitloggen/i }).first();
+            await logout.click();
+            await page.waitForURL((url) => url.pathname === "/", { timeout: 30000 });
+            console.log("PASS instructor demo logout");
           } finally {
+            await context.close();
             await browser.close();
           }
           EOF
-          node mobile-nav-check.mjs
+          node instructor-dashboard-check.mjs
