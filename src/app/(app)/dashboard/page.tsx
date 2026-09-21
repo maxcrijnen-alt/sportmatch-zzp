@@ -303,7 +303,6 @@ export default async function DashboardPage({
             </Link>
           </div>
         </section>
-        </div>
       </div>
     );
   }
