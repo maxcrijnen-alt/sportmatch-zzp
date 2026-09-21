@@ -28,6 +28,11 @@ interface JobRow extends Job {
   sport: { name: string } | null;
   location: { name: string } | null;
   applications: { count: number }[];
+  confirmations: {
+    id: string;
+    confirmed_at: string | null;
+    cancelled_at: string | null;
+  }[];
 }
 
 const statusVariant: Record<
@@ -78,7 +83,8 @@ export default async function OrganisatieOpdrachtenPage({
       `*,
       sport:sports (name),
       location:organization_locations (name),
-      applications:job_applications (count)`,
+      applications:job_applications (count),
+      confirmations:job_confirmations (id, confirmed_at, cancelled_at)`,
     )
     .eq("organization_id", orgContext.organization.id)
     .order("created_at", { ascending: false });
@@ -89,7 +95,50 @@ export default async function OrganisatieOpdrachtenPage({
 
   const { data } = await query;
 
-  const jobs = (data as unknown as JobRow[] | null) ?? [];
+  const jobs = ((data as unknown as JobRow[] | null) ?? []).sort((left, right) => {
+    const priority = (job: JobRow) => {
+      const applicationCount = job.applications?.[0]?.count ?? 0;
+      const pendingConfirmation = job.confirmations?.some(
+        (confirmation) => !confirmation.cancelled_at && !confirmation.confirmed_at,
+      );
+
+      if (job.status === "open" && pendingConfirmation) return 0;
+      if (job.status === "open" && applicationCount > 0) return 1;
+      if (job.status === "open") return 2;
+      if (job.status === "confirmed") return 3;
+      if (job.status === "completed") return 4;
+      if (job.status === "closed") return 5;
+      return 6;
+    };
+
+    const priorityDifference = priority(left) - priority(right);
+    if (priorityDifference !== 0) return priorityDifference;
+
+    const dateDifference = left.starts_on.localeCompare(right.starts_on);
+    return priority(left) >= 4 ? -dateDifference : dateDifference;
+  });
+
+  const workflowStatus = (job: JobRow) => {
+    const applicationCount = job.applications?.[0]?.count ?? 0;
+    const pendingConfirmation = job.confirmations?.some(
+      (confirmation) => !confirmation.cancelled_at && !confirmation.confirmed_at,
+    );
+
+    if (job.status === "open" && pendingConfirmation) {
+      return { label: "Wacht op bevestiging", variant: "warning" as const };
+    }
+    if (job.status === "open" && applicationCount > 0) {
+      return { label: "Reacties bekijken", variant: "warning" as const };
+    }
+    if (job.status === "open") {
+      return { label: "Nog zoeken", variant: "secondary" as const };
+    }
+
+    return {
+      label: jobStatusLabels[job.status],
+      variant: statusVariant[job.status],
+    };
+  };
 
   return (
     <div className="mx-auto w-full max-w-5xl space-y-6 px-4 py-8">
@@ -161,7 +210,10 @@ export default async function OrganisatieOpdrachtenPage({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {jobs.map((job) => (
+              {jobs.map((job) => {
+                const workflow = workflowStatus(job);
+
+                return (
                 <TableRow key={job.id}>
                   <TableCell>
                     <Link
@@ -188,12 +240,13 @@ export default async function OrganisatieOpdrachtenPage({
                     {job.applications?.[0]?.count ?? 0}
                   </TableCell>
                   <TableCell>
-                    <Badge variant={statusVariant[job.status]}>
-                      {jobStatusLabels[job.status]}
+                    <Badge variant={workflow.variant}>
+                      {workflow.label}
                     </Badge>
                   </TableCell>
                 </TableRow>
-              ))}
+                );
+              })}
             </TableBody>
           </Table>
         </Card>

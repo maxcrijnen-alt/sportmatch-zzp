@@ -3,7 +3,6 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
   ArrowRight,
-  Briefcase,
   CalendarCheck,
   CheckCircle2,
   Inbox,
@@ -45,7 +44,7 @@ const organizationNextActions = [
   },
   {
     title: "Houd je planning actueel",
-    text: "Bekijk voorlopige en bevestigde lessen per vestiging in je centrale agenda.",
+    text: "Bekijk openstaande, te beoordelen en bevestigde lessen per vestiging in je centrale agenda.",
     href: "/agenda",
     cta: "Agenda bekijken",
   },
@@ -280,38 +279,6 @@ export default async function DashboardPage({
                 href="/organisatie/vestigingen"
               >
                 Beheren <ArrowRight className="h-3.5 w-3.5" />
-              </Link>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <Briefcase className="mb-1 h-6 w-6 text-primary" />
-              <CardTitle>Plaats een opdracht</CardTitle>
-              <CardDescription>
-                Van spoed-inval tot vaste vacature: bereik direct passende
-                instructeurs.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Link href="/organisatie/opdrachten/nieuw">
-                <Button>Nieuwe opdracht</Button>
-              </Link>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CalendarCheck className="mb-1 h-6 w-6 text-primary" />
-              <CardTitle>Bekijk je agenda</CardTitle>
-              <CardDescription>
-                Houd voorlopige en definitief bevestigde lessen bij elkaar.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Link href="/agenda">
-                <Button variant="outline">Agenda openen</Button>
               </Link>
             </CardContent>
           </Card>
