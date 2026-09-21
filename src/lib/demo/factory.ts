@@ -161,10 +161,6 @@ export async function createDemoSession(role: DemoRole): Promise<DemoCredentials
       instructorProfilesScopeResult,
       ownerProfileScopeResult,
       instructorProfileResult,
-      statusesResult,
-      sportsSeedResult,
-      lessonSpecialtiesResult,
-      qualificationsSeedResult,
       vogResult,
     ] = await Promise.all([
       admin
@@ -195,6 +191,39 @@ export async function createDemoSession(role: DemoRole): Promise<DemoCredentials
               : "Ervaren sportinstructeur voor groepslessen en invalopdrachten.",
         })),
       ),
+      admin.from("document_uploads").insert(
+        instructorIds.map((userId) => ({
+          user_id: userId,
+          doc_type: "vog",
+          storage_path: `${userId}/vog/demo-vog.pdf`,
+          original_filename: "vog-demo.pdf",
+          status: "approved",
+          expires_at: futureDate(365),
+          reviewed_at: new Date().toISOString(),
+        })),
+      ),
+    ]);
+
+    assertDatabaseResult(
+      instructorProfilesScopeResult.error,
+      "Demo-instructeurs konden niet worden geïsoleerd",
+    );
+    assertDatabaseResult(
+      ownerProfileScopeResult.error,
+      "Demo-organisatieprofiel kon niet worden geïsoleerd",
+    );
+    assertDatabaseResult(
+      instructorProfileResult.error,
+      "Demo-instructeursprofielen ontbreken",
+    );
+    assertDatabaseResult(vogResult.error, "Demo-VOG's ontbreken");
+
+    const [
+      statusesResult,
+      sportsSeedResult,
+      lessonSpecialtiesResult,
+      qualificationsSeedResult,
+    ] = await Promise.all([
       admin.from("instructor_statuses").insert(
         instructorIds.map((userId) => ({ user_id: userId, status: "zzp" })),
       ),
@@ -221,31 +250,8 @@ export async function createDemoSession(role: DemoRole): Promise<DemoCredentials
             ),
           )
         : Promise.resolve({ error: null }),
-      admin.from("document_uploads").insert(
-        instructorIds.map((userId) => ({
-          user_id: userId,
-          doc_type: "vog",
-          storage_path: `${userId}/vog/demo-vog.pdf`,
-          original_filename: "vog-demo.pdf",
-          status: "approved",
-          expires_at: futureDate(365),
-          reviewed_at: new Date().toISOString(),
-        })),
-      ),
     ]);
 
-    assertDatabaseResult(
-      instructorProfilesScopeResult.error,
-      "Demo-instructeurs konden niet worden geïsoleerd",
-    );
-    assertDatabaseResult(
-      ownerProfileScopeResult.error,
-      "Demo-organisatieprofiel kon niet worden geïsoleerd",
-    );
-    assertDatabaseResult(
-      instructorProfileResult.error,
-      "Demo-instructeursprofielen ontbreken",
-    );
     assertDatabaseResult(statusesResult.error, "Demo-statussen ontbreken");
     assertDatabaseResult(sportsSeedResult.error, "Demo-specialisaties ontbreken");
     assertDatabaseResult(
@@ -256,7 +262,6 @@ export async function createDemoSession(role: DemoRole): Promise<DemoCredentials
       qualificationsSeedResult.error,
       "Demo-diploma's ontbreken",
     );
-    assertDatabaseResult(vogResult.error, "Demo-VOG's ontbreken");
 
     const { data: organization, error: organizationError } = await admin
       .from("organizations")
