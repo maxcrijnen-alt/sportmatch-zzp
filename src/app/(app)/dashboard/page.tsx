@@ -4,9 +4,8 @@ import { redirect } from "next/navigation";
 import {
   ArrowRight,
   CalendarCheck,
-  CheckCircle2,
   Inbox,
-  MessageSquare,
+  ShieldCheck,
 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -21,33 +20,13 @@ import { getSessionProfile } from "@/lib/auth/session";
 import { subscriptionGrantsAccess } from "@/lib/billing/access";
 import { getOrgContext } from "@/lib/org/context";
 import { resolveLocationFilter } from "@/lib/org/location-filter";
+import { formatDate, formatTime } from "@/lib/labels";
 import { createClient } from "@/lib/supabase/server";
 import type { Subscription } from "@/types/database";
 
 export const metadata: Metadata = {
   title: "Dashboard",
 };
-
-const instructorNextActions = [
-  {
-    title: "Check profiel, reisafstand en tarief",
-    text: "Je profiel bepaalt welke opdrachten logisch bovenaan staan en hoe sportscholen jou beoordelen.",
-    href: "/profiel",
-    cta: "Profiel openen",
-  },
-  {
-    title: "Bekijk passende opdrachten",
-    text: "Start met opdrachten binnen je reisafstand en filter daarna op sport, datum of vergoeding.",
-    href: "/opdrachten",
-    cta: "Opdrachten bekijken",
-  },
-  {
-    title: "Volg reacties en uitnodigingen",
-    text: "Bekijk open reacties, bevestigingen en gesprekken zodat geen opvolging blijft hangen.",
-    href: "/mijn-reacties",
-    cta: "Mijn reacties",
-  },
-];
 
 export default async function DashboardPage({
   searchParams,
@@ -308,32 +287,197 @@ export default async function DashboardPage({
   }
 
   // Instructeur
-  const [subscriptionResult, applicationsResult, confirmationsResult, chatsResult] =
-    await Promise.all([
-      supabase
-        .from("subscriptions")
-        .select("*")
-        .eq("instructor_id", profile.id)
-        .maybeSingle(),
-      supabase
-        .from("job_applications")
-        .select("id", { count: "exact", head: true })
-        .eq("instructor_id", profile.id)
-        .eq("status", "pending"),
-      supabase
-        .from("job_confirmations")
-        .select("id", { count: "exact", head: true })
-        .eq("instructor_id", profile.id)
-        .not("confirmed_at", "is", null),
-      supabase
-        .from("chats")
-        .select("id", { count: "exact", head: true })
-        .eq("instructor_id", profile.id),
-    ]);
+  const today = new Date().toISOString().slice(0, 10);
+  const [
+    subscriptionResult,
+    applicationsResult,
+    invitationsResult,
+    pendingConfirmationsResult,
+    pendingSegmentConfirmationsResult,
+    confirmedJobsResult,
+    vogResult,
+    instructorProfileResult,
+  ] = await Promise.all([
+    supabase
+      .from("subscriptions")
+      .select("*")
+      .eq("instructor_id", profile.id)
+      .maybeSingle(),
+    supabase
+      .from("job_applications")
+      .select("id", { count: "exact", head: true })
+      .eq("instructor_id", profile.id)
+      .eq("status", "pending"),
+    supabase
+      .from("job_invitations")
+      .select("id", { count: "exact", head: true })
+      .eq("instructor_id", profile.id)
+      .eq("status", "pending"),
+    supabase
+      .from("job_confirmations")
+      .select("job_id")
+      .eq("instructor_id", profile.id)
+      .not("organization_agreed_at", "is", null)
+      .is("instructor_agreed_at", null)
+      .is("confirmed_at", null),
+    supabase
+      .from("job_segment_confirmations")
+      .select("job_id")
+      .eq("instructor_id", profile.id)
+      .not("organization_agreed_at", "is", null)
+      .is("instructor_agreed_at", null)
+      .is("confirmed_at", null)
+      .is("cancelled_at", null),
+    supabase
+      .from("job_confirmations")
+      .select(
+        "job_id, job:jobs!inner(id, title, starts_on, start_time, status)",
+      )
+      .eq("instructor_id", profile.id)
+      .not("confirmed_at", "is", null)
+      .eq("job.status", "confirmed")
+      .gte("job.starts_on", today),
+    supabase
+      .from("document_uploads")
+      .select("status, expires_at, created_at")
+      .eq("user_id", profile.id)
+      .eq("doc_type", "vog")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from("instructor_profiles")
+      .select(
+        "hourly_rate_cents, travel_distance_km, work_experience, years_experience",
+      )
+      .eq("user_id", profile.id)
+      .maybeSingle(),
+  ]);
 
   const subscription = subscriptionResult.data as Subscription | null;
   const hasAccess = subscriptionGrantsAccess(subscription);
   const pendingApplicationCount = applicationsResult.count ?? 0;
+  const pendingInvitationCount = invitationsResult.count ?? 0;
+
+  const pendingConfirmationJobIds = new Set<string>();
+  for (const row of pendingConfirmationsResult.data ?? []) {
+    pendingConfirmationJobIds.add(row.job_id as string);
+  }
+  for (const row of pendingSegmentConfirmationsResult.data ?? []) {
+    pendingConfirmationJobIds.add(row.job_id as string);
+  }
+  const pendingConfirmationCount = pendingConfirmationJobIds.size;
+  const firstPendingConfirmationJobId =
+    Array.from(pendingConfirmationJobIds)[0] ?? null;
+
+  type ConfirmedDashboardJob = {
+    job_id: string;
+    job: {
+      id: string;
+      title: string;
+      starts_on: string;
+      start_time: string;
+      status: string;
+    } | null;
+  };
+
+  const upcomingConfirmedJobs =
+    (confirmedJobsResult.data as unknown as ConfirmedDashboardJob[] | null) ?? [];
+  const nextConfirmedJob = upcomingConfirmedJobs
+    .filter((row) => row.job)
+    .sort((left, right) =>
+      `${left.job!.starts_on}T${left.job!.start_time}`.localeCompare(
+        `${right.job!.starts_on}T${right.job!.start_time}`,
+      ),
+    )[0]?.job ?? null;
+
+  const latestVog = vogResult.data as
+    | { status: string; expires_at: string | null; created_at: string }
+    | null;
+  const vogValid =
+    latestVog?.status === "approved" &&
+    (!latestVog.expires_at || latestVog.expires_at >= today);
+
+  const instructorDetails = instructorProfileResult.data as
+    | {
+        hourly_rate_cents: number | null;
+        travel_distance_km: number | null;
+        work_experience: string | null;
+        years_experience: number | null;
+      }
+    | null;
+
+  const profileNeedsAttention =
+    !profile.phone ||
+    (!profile.city_id && !profile.custom_city) ||
+    !instructorDetails?.hourly_rate_cents ||
+    !instructorDetails?.travel_distance_km ||
+    !instructorDetails?.work_experience;
+
+  const primaryAction =
+    pendingInvitationCount > 0
+      ? {
+          title: "Je hebt een nieuwe uitnodiging",
+          text: `${pendingInvitationCount} ${
+            pendingInvitationCount === 1 ? "sportschool wil" : "sportscholen willen"
+          } je rechtstreeks boeken. Bekijk datum, locatie en vergoeding en reageer.`,
+          href: "/mijn-reacties",
+          cta: "Bekijk uitnodigingen",
+        }
+      : pendingConfirmationCount > 0
+        ? {
+            title: "Een sportschool heeft jou gekozen",
+            text: `${pendingConfirmationCount} ${
+              pendingConfirmationCount === 1 ? "opdracht wacht" : "opdrachten wachten"
+            } nog op jouw definitieve bevestiging.`,
+            href: firstPendingConfirmationJobId
+              ? `/opdrachten/${firstPendingConfirmationJobId}`
+              : "/mijn-reacties",
+            cta: "Bevestiging bekijken",
+          }
+        : !vogValid
+          ? {
+              title: "Je VOG vraagt aandacht",
+              text:
+                latestVog?.status === "pending"
+                  ? "Je VOG wacht nog op controle. Je kunt opdrachten bekijken, maar commerciële acties blijven beperkt totdat deze is goedgekeurd."
+                  : "Zorg voor een geldige, goedgekeurde VOG zodat je kunt reageren, uitnodigingen accepteren en bevestigd kunt worden.",
+              href: "/documenten",
+              cta: "Bekijk documenten",
+            }
+          : profileNeedsAttention
+            ? {
+                title: "Maak je profiel completer",
+                text:
+                  "Vul je woonplaats, reisafstand, tarief en werkervaring zo volledig mogelijk in. Dat verbetert je matching en geeft sportscholen meer context.",
+                href: "/profiel",
+                cta: "Profiel aanvullen",
+              }
+            : pendingApplicationCount > 0
+              ? {
+                  title: "Je reacties lopen",
+                  text: `${pendingApplicationCount} ${
+                    pendingApplicationCount === 1 ? "reactie staat" : "reacties staan"
+                  } nog open. Je hoeft niets opnieuw te versturen; houd opvolging en berichten in de gaten.`,
+                  href: "/mijn-reacties",
+                  cta: "Mijn reacties",
+                }
+              : nextConfirmedJob
+                ? {
+                    title: "Je volgende klus staat gepland",
+                    text: `${nextConfirmedJob.title} · ${formatDate(
+                      nextConfirmedJob.starts_on,
+                    )} om ${formatTime(nextConfirmedJob.start_time)}.`,
+                    href: `/opdrachten/${nextConfirmedJob.id}`,
+                    cta: "Bekijk opdracht",
+                  }
+                : {
+                    title: "Bekijk passende opdrachten",
+                    text:
+                      "Er staat nu geen actie voor je open. Bekijk opdrachten die passen bij je sport, reisafstand en voorkeuren.",
+                    href: "/opdrachten",
+                    cta: "Opdrachten bekijken",
+                  };
 
   return (
     <div className="mx-auto w-full max-w-5xl space-y-6 px-4 py-8">
@@ -342,8 +486,8 @@ export default async function DashboardPage({
           Hoi {profile.full_name.split(" ")[0]}!
         </h1>
         <p className="text-sm text-muted-foreground">
-          Je startpunt voor profiel, passende opdrachten, reacties en gesprekken.
-          Begin met je profiel en open daarna opdrachten die echt passen.
+          Je overzicht voor uitnodigingen, reacties, bevestigingen en aankomende
+          opdrachten.
         </p>
       </div>
 
@@ -362,98 +506,151 @@ export default async function DashboardPage({
 
       <section className="rounded-lg border border-primary/30 bg-primary/5 p-5">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <p className="text-sm font-medium text-primary">
-              Start hier als instructeur
-            </p>
+          <div className="max-w-2xl">
+            <p className="text-sm font-medium text-primary">Wat vraagt aandacht?</p>
             <h2 className="mt-1 text-xl font-semibold tracking-tight">
-              {pendingApplicationCount > 0
-                ? "Volg je open reacties en reageer snel op opvolging."
-                : "Check je profiel en open daarna passende opdrachten."}
+              {primaryAction.title}
             </h2>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              De snelste route naar waarde: zet reisafstand, tarief en
-              specialisaties goed, bekijk opdrachten binnen je voorkeuren en
-              reageer alleen wanneer tijd, locatie en vergoeding kloppen.
+              {primaryAction.text}
             </p>
           </div>
-          <Link href={pendingApplicationCount > 0 ? "/mijn-reacties" : "/opdrachten"}>
+          <Link href={primaryAction.href}>
             <Button className="w-full sm:w-auto">
-              {pendingApplicationCount > 0 ? "Mijn reacties" : "Opdrachten bekijken"}
+              {primaryAction.cta}
               <ArrowRight className="h-4 w-4" />
             </Button>
           </Link>
         </div>
+
         <div className="mt-5 grid gap-3 md:grid-cols-3">
-          {instructorNextActions.map((action) => (
-            <div
-              className="rounded-lg border border-border bg-background p-4"
-              key={action.title}
-            >
-              <CheckCircle2 className="mb-3 h-5 w-5 text-primary" />
-              <h3 className="font-semibold">{action.title}</h3>
-              <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                {action.text}
-              </p>
-              <Link
-                className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
-                href={action.href}
-              >
-                {action.cta}
-                <ArrowRight className="h-3.5 w-3.5" />
-              </Link>
-            </div>
-          ))}
+          <Link
+            className="rounded-lg border border-border bg-background p-4 transition-colors hover:border-primary/40 hover:bg-primary/5"
+            href="/mijn-reacties"
+          >
+            <p className="text-sm font-medium text-muted-foreground">
+              Uitnodigingen
+            </p>
+            <p className="mt-1 text-3xl font-bold tracking-tight">
+              {pendingInvitationCount}
+            </p>
+            <p className="mt-2 text-xs leading-5 text-muted-foreground">
+              Rechtstreekse verzoeken van sportscholen waarop je nog moet reageren.
+            </p>
+          </Link>
+
+          <Link
+            className="rounded-lg border border-border bg-background p-4 transition-colors hover:border-primary/40 hover:bg-primary/5"
+            href="/mijn-reacties"
+          >
+            <p className="text-sm font-medium text-muted-foreground">
+              Open reacties
+            </p>
+            <p className="mt-1 text-3xl font-bold tracking-tight">
+              {pendingApplicationCount}
+            </p>
+            <p className="mt-2 text-xs leading-5 text-muted-foreground">
+              Opdrachten waarop je hebt gereageerd en nog geen uitkomst hebt.
+            </p>
+          </Link>
+
+          <Link
+            className="rounded-lg border border-border bg-background p-4 transition-colors hover:border-primary/40 hover:bg-primary/5"
+            href={
+              firstPendingConfirmationJobId
+                ? `/opdrachten/${firstPendingConfirmationJobId}`
+                : "/mijn-reacties"
+            }
+          >
+            <p className="text-sm font-medium text-muted-foreground">
+              Wacht op jouw bevestiging
+            </p>
+            <p className="mt-1 text-3xl font-bold tracking-tight">
+              {pendingConfirmationCount}
+            </p>
+            <p className="mt-2 text-xs leading-5 text-muted-foreground">
+              Opdrachten waarvoor een sportschool jou al heeft gekozen.
+            </p>
+          </Link>
         </div>
       </section>
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Openstaande reacties</CardDescription>
-            <CardTitle className="text-3xl">
-              {pendingApplicationCount}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Link
-              className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
-              href="/mijn-reacties"
-            >
-              <Inbox className="h-3.5 w-3.5" /> Mijn reacties
-            </Link>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Bevestigde opdrachten</CardDescription>
-            <CardTitle className="text-3xl">
-              {confirmationsResult.count ?? 0}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Link
-              className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
-              href="/mijn-reacties"
-            >
-              <CalendarCheck className="h-3.5 w-3.5" /> Bekijken
-            </Link>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Gesprekken</CardDescription>
-            <CardTitle className="text-3xl">{chatsResult.count ?? 0}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Link
-              className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
-              href="/berichten"
-            >
-              <MessageSquare className="h-3.5 w-3.5" /> Berichten
-            </Link>
-          </CardContent>
-        </Card>
+      <div className="grid gap-4 md:grid-cols-2">
+        <section className="rounded-lg border border-border bg-card p-5">
+          <div className="flex items-start gap-3">
+            <CalendarCheck className="mt-0.5 h-5 w-5 text-primary" />
+            <div className="min-w-0">
+              <p className="font-semibold">Eerstvolgende bevestigde klus</p>
+              {nextConfirmedJob ? (
+                <>
+                  <p className="mt-1 truncate text-sm font-medium">
+                    {nextConfirmedJob.title}
+                  </p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {formatDate(nextConfirmedJob.starts_on)} ·{" "}
+                    {formatTime(nextConfirmedJob.start_time)}
+                  </p>
+                  <Link
+                    className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+                    href={`/opdrachten/${nextConfirmedJob.id}`}
+                  >
+                    Bekijk opdracht
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                    Er staat nu geen bevestigde toekomstige klus in je planning.
+                  </p>
+                  <Link
+                    className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+                    href="/opdrachten"
+                  >
+                    Bekijk opdrachten
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </Link>
+                </>
+              )}
+            </div>
+          </div>
+        </section>
+
+        <section className="rounded-lg border border-border bg-card p-5">
+          <div className="flex items-start gap-3">
+            <ShieldCheck
+              className={`mt-0.5 h-5 w-5 ${
+                vogValid ? "text-primary" : "text-amber-600"
+              }`}
+            />
+            <div>
+              <p className="font-semibold">Profiel & VOG</p>
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                {vogValid
+                  ? profileNeedsAttention
+                    ? "Je VOG is goedgekeurd. Je profiel kan nog completer voor betere matching."
+                    : "Je VOG is goedgekeurd en je basisprofiel is compleet."
+                  : latestVog?.status === "pending"
+                    ? "Je VOG wacht op beoordeling."
+                    : "Je hebt nog geen geldige, goedgekeurde VOG."}
+              </p>
+              <div className="mt-3 flex flex-wrap gap-3 text-sm">
+                <Link
+                  className="font-medium text-primary hover:underline"
+                  href="/documenten"
+                >
+                  Documenten
+                </Link>
+                <Link
+                  className="font-medium text-primary hover:underline"
+                  href="/profiel"
+                >
+                  Profiel
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
       </div>
     </div>
   );
