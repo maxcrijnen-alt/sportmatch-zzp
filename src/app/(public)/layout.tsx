@@ -34,13 +34,13 @@ export default function PublicLayout({
 
           <div className="hidden items-center gap-2 lg:flex">
             <Link href="/demo">
-              <Button>Demo bekijken</Button>
-            </Link>
-            <Link href="/login">
-              <Button variant="ghost">Inloggen</Button>
+              <Button variant="secondary">Demo bekijken</Button>
             </Link>
             <Link href="/registreren">
               <Button>Gratis starten</Button>
+            </Link>
+            <Link href="/login">
+              <Button variant="ghost">Inloggen</Button>
             </Link>
           </div>
 
@@ -57,20 +57,20 @@ export default function PublicLayout({
                 <ActiveNavLink {...item} key={item.href} mobile />
               ))}
               <Link
-                className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground"
+                className="rounded-md bg-secondary px-3 py-2 text-sm font-medium text-secondary-foreground hover:bg-secondary/90"
                 href="/demo"
               >
                 Demo bekijken
-              </Link>
-              <div className="my-1 h-px bg-border" />
-              <Link className="rounded-md px-3 py-2 text-sm hover:bg-muted" href="/login">
-                Inloggen
               </Link>
               <Link
                 className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground"
                 href="/registreren"
               >
                 Gratis starten
+              </Link>
+              <div className="my-1 h-px bg-border" />
+              <Link className="rounded-md px-3 py-2 text-sm hover:bg-muted" href="/login">
+                Inloggen
               </Link>
             </div>
           </details>
