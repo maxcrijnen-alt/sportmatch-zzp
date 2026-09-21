@@ -42,7 +42,8 @@ export async function startDemoAction(formData: FormData): Promise<void> {
   let demo: Awaited<ReturnType<typeof createDemoSession>>;
   try {
     demo = await createDemoSession(role.data);
-  } catch {
+  } catch (error) {
+    console.error("Demo session creation failed", error);
     redirect("/demo?error=start");
   }
 

@@ -108,7 +108,11 @@ export default async function DemoPage({
                 </ul>
                 <form action={startDemoAction}>
                   <input name="role" type="hidden" value={demo.role} />
-                  <Button className="w-full bg-emerald-600 hover:bg-emerald-700" size="lg">
+                  <Button
+                    className="w-full bg-emerald-600 hover:bg-emerald-700"
+                    size="lg"
+                    type="submit"
+                  >
                     Start {demo.title.toLowerCase()}
                     <ArrowRight className="h-4 w-4" />
                   </Button>
