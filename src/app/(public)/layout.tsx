@@ -10,7 +10,6 @@ const navItems = [
   { href: "/voor-sportscholen", label: "Voor sportscholen" },
   { href: "/voor-instructeurs", label: "Voor instructeurs" },
   { href: "/tarieven", label: "Tarieven" },
-  { href: "/demo", label: "Demo" },
   { href: "/faq", label: "FAQ" },
 ];
 
@@ -57,6 +56,12 @@ export default function PublicLayout({
               {navItems.map((item) => (
                 <ActiveNavLink {...item} key={item.href} mobile />
               ))}
+              <Link
+                className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground"
+                href="/demo"
+              >
+                Demo bekijken
+              </Link>
               <div className="my-1 h-px bg-border" />
               <Link className="rounded-md px-3 py-2 text-sm hover:bg-muted" href="/login">
                 Inloggen
