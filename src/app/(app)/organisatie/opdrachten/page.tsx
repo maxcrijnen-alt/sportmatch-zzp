@@ -84,7 +84,7 @@ export default async function OrganisatieOpdrachtenPage({
       sport:sports (name),
       location:organization_locations (name),
       applications:job_applications (count),
-      confirmations:job_confirmations (id, confirmed_at, cancelled_at)`,
+      confirmations:job_confirmations!job_confirmations_job_id_fkey (id, confirmed_at, cancelled_at)`,
     )
     .eq("organization_id", orgContext.organization.id)
     .order("created_at", { ascending: false });
