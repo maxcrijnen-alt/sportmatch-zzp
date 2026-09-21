@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import {
-  ArrowRight,
   Building2,
   CalendarCheck,
   CheckCircle2,
@@ -13,6 +12,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { DemoStartButton } from "@/components/demo/demo-start-button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { startDemoAction } from "@/lib/demo/actions";
 
@@ -108,14 +108,7 @@ export default async function DemoPage({
                 </ul>
                 <form action={startDemoAction}>
                   <input name="role" type="hidden" value={demo.role} />
-                  <Button
-                    className="w-full bg-emerald-600 hover:bg-emerald-700"
-                    size="lg"
-                    type="submit"
-                  >
-                    Start {demo.title.toLowerCase()}
-                    <ArrowRight className="h-4 w-4" />
-                  </Button>
+                  <DemoStartButton label={`Start ${demo.title.toLowerCase()}`} />
                 </form>
               </CardContent>
             </Card>
