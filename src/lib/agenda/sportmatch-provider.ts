@@ -57,6 +57,49 @@ interface AgendaSegmentConfirmationRow {
   job: AgendaConfirmationRow["job"];
 }
 
+interface AgendaPlanningJobRow {
+  id: string;
+  organization_id: string;
+  location_id: string;
+  title: string;
+  custom_lesson_type: string | null;
+  starts_on: string;
+  start_time: string;
+  end_time: string;
+  status: JobStatus;
+  pay_type: PayType;
+  pay_amount_cents: number | null;
+  pay_hourly_rate_cents: number | null;
+  pay_is_negotiable: boolean;
+  sport: { name: string } | null;
+  lesson_type: { name: string } | null;
+  location: { id: string; name: string } | null;
+  organization: { name: string } | null;
+  recurrence: {
+    interval_weeks: number;
+    ends_on: string | null;
+    occurrence_count: number | null;
+  } | null;
+  segments: Array<{
+    id: string;
+    position: number;
+    start_time: string;
+    end_time: string;
+    custom_lesson_type: string | null;
+    lesson_type: { name: string } | null;
+  }>;
+}
+
+interface AgendaApplicationRow {
+  id: string;
+  job_id: string;
+}
+
+interface AgendaApplicationSegmentRow {
+  application_id: string;
+  segment_id: string;
+}
+
 function eventState(
   jobStatus: JobStatus,
   confirmedAt: string | null,
@@ -196,6 +239,92 @@ class SportMatchAgendaProvider implements AgendaProvider {
     const segmentRows =
       (segmentResult.data as unknown as AgendaSegmentConfirmationRow[] | null) ??
       [];
+
+    let planningJobs: AgendaPlanningJobRow[] = [];
+    let pendingApplications: AgendaApplicationRow[] = [];
+    let applicationSegments: AgendaApplicationSegmentRow[] = [];
+
+    if (
+      context.role === "organization" &&
+      context.organizationId &&
+      context.includeOpenPlanning
+    ) {
+      let planningQuery = supabase
+        .from("jobs")
+        .select(
+          `id, organization_id, location_id, title, custom_lesson_type,
+          starts_on, start_time, end_time, status, pay_type, pay_amount_cents,
+          pay_hourly_rate_cents, pay_is_negotiable,
+          sport:sports (name),
+          lesson_type:lesson_types (name),
+          location:organization_locations (id, name),
+          organization:organizations (name),
+          recurrence:job_recurrence_rules (interval_weeks, ends_on, occurrence_count),
+          segments:job_segments (
+            id, position, start_time, end_time, custom_lesson_type,
+            lesson_type:lesson_types (name)
+          )`,
+        )
+        .eq("organization_id", context.organizationId)
+        .eq("status", "open");
+
+      if (context.locationId) {
+        planningQuery = planningQuery.eq("location_id", context.locationId);
+      }
+
+      const planningResult = await planningQuery;
+      if (planningResult.error) {
+        console.error(
+          "Openstaande opdrachten konden niet in de agenda worden geladen",
+          planningResult.error.message,
+        );
+      } else {
+        planningJobs =
+          (planningResult.data as unknown as AgendaPlanningJobRow[] | null) ?? [];
+      }
+
+      const planningJobIds = planningJobs.map((job) => job.id);
+      if (planningJobIds.length > 0) {
+        const applicationsResult = await supabase
+          .from("job_applications")
+          .select("id, job_id")
+          .in("job_id", planningJobIds)
+          .eq("status", "pending");
+
+        if (applicationsResult.error) {
+          console.error(
+            "Openstaande reacties konden niet in de agenda worden geladen",
+            applicationsResult.error.message,
+          );
+        } else {
+          pendingApplications =
+            (applicationsResult.data as AgendaApplicationRow[] | null) ?? [];
+        }
+
+        const applicationIds = pendingApplications.map(
+          (application) => application.id,
+        );
+        if (applicationIds.length > 0) {
+          const applicationSegmentsResult = await supabase
+            .from("job_application_segments")
+            .select("application_id, segment_id")
+            .in("application_id", applicationIds);
+
+          if (applicationSegmentsResult.error) {
+            console.error(
+              "Reacties op lesonderdelen konden niet in de agenda worden geladen",
+              applicationSegmentsResult.error.message,
+            );
+          } else {
+            applicationSegments =
+              (applicationSegmentsResult.data as
+                | AgendaApplicationSegmentRow[]
+                | null) ?? [];
+          }
+        }
+      }
+    }
+
     const instructorIds = Array.from(
       new Set(
         [...rows, ...segmentRows].map((row) => row.instructor_id),
@@ -282,10 +411,125 @@ class SportMatchAgendaProvider implements AgendaProvider {
       );
     });
 
-    return [...wholeJobEvents, ...segmentEvents].sort((left, right) =>
-      `${left.date}T${left.startTime}`.localeCompare(
-        `${right.date}T${right.startTime}`,
+    const wholeConfirmationJobIds = new Set(
+      rows.flatMap((row) => (row.job ? [row.job.id] : [])),
+    );
+    const activeSegmentIds = new Set(
+      segmentRows.flatMap((row) =>
+        row.segment && !row.cancelled_at ? [row.segment.id] : [],
       ),
+    );
+    const pendingByJob = new Map<string, number>();
+    const applicationJob = new Map<string, string>();
+
+    for (const application of pendingApplications) {
+      applicationJob.set(application.id, application.job_id);
+      pendingByJob.set(
+        application.job_id,
+        (pendingByJob.get(application.job_id) ?? 0) + 1,
+      );
+    }
+
+    const pendingBySegment = new Map<string, number>();
+    const jobsWithSegmentScopedApplications = new Set<string>();
+    for (const selection of applicationSegments) {
+      pendingBySegment.set(
+        selection.segment_id,
+        (pendingBySegment.get(selection.segment_id) ?? 0) + 1,
+      );
+      const jobId = applicationJob.get(selection.application_id);
+      if (jobId) {
+        jobsWithSegmentScopedApplications.add(jobId);
+      }
+    }
+
+    const planningEvents =
+      context.role === "organization" && context.includeOpenPlanning
+        ? planningJobs.flatMap((job): AgendaEvent[] => {
+            const detailHref = `/organisatie/opdrachten/${job.id}`;
+            const dates = occurrenceDates(job);
+            const segments = [...(job.segments ?? [])].sort(
+              (left, right) => left.position - right.position,
+            );
+
+            if (segments.length === 0) {
+              if (wholeConfirmationJobIds.has(job.id)) {
+                return [];
+              }
+
+              const pendingCount = pendingByJob.get(job.id) ?? 0;
+              const state: AgendaEventState =
+                pendingCount > 0 ? "action_required" : "searching";
+              const instructorName =
+                pendingCount > 0
+                  ? `${pendingCount} ${pendingCount === 1 ? "reactie" : "reacties"} te beoordelen`
+                  : "Nog geen instructeur";
+
+              return dates.map((date, occurrenceIndex) => ({
+                id: `planning-${job.id}-${occurrenceIndex}`,
+                jobId: job.id,
+                title: `${job.custom_lesson_type ?? job.lesson_type?.name ?? "Les"} · ${job.title}`,
+                date,
+                startTime: job.start_time,
+                endTime: job.end_time,
+                state,
+                jobStatus: job.status,
+                sportName: job.sport?.name ?? "Sportles",
+                payLabel: agendaPayLabel(job),
+                locationId: job.location_id,
+                locationName: job.location?.name ?? "Onbekende vestiging",
+                organizationName: job.organization?.name ?? "Sportschool",
+                instructorName,
+                detailHref,
+              }));
+            }
+
+            return segments.flatMap((segment): AgendaEvent[] => {
+              if (activeSegmentIds.has(segment.id)) {
+                return [];
+              }
+
+              const segmentScoped = jobsWithSegmentScopedApplications.has(job.id);
+              const pendingCount = segmentScoped
+                ? pendingBySegment.get(segment.id) ?? 0
+                : pendingByJob.get(job.id) ?? 0;
+              const state: AgendaEventState =
+                pendingCount > 0 ? "action_required" : "searching";
+              const instructorName =
+                pendingCount > 0
+                  ? `${pendingCount} ${pendingCount === 1 ? "reactie" : "reacties"} te beoordelen`
+                  : "Nog geen instructeur";
+              const lessonName =
+                segment.custom_lesson_type ??
+                segment.lesson_type?.name ??
+                `Les ${segment.position}`;
+
+              return dates.map((date, occurrenceIndex) => ({
+                id: `planning-${segment.id}-${occurrenceIndex}`,
+                jobId: job.id,
+                title: `${job.title} · ${lessonName}`,
+                date,
+                startTime: segment.start_time,
+                endTime: segment.end_time,
+                state,
+                jobStatus: job.status,
+                sportName: job.sport?.name ?? "Sportles",
+                payLabel: agendaPayLabel(job),
+                locationId: job.location_id,
+                locationName: job.location?.name ?? "Onbekende vestiging",
+                organizationName: job.organization?.name ?? "Sportschool",
+                instructorName,
+                detailHref,
+              }));
+            });
+          })
+        : [];
+
+    return [...wholeJobEvents, ...segmentEvents, ...planningEvents].sort(
+      (left, right) =>
+        `${left.date}T${left.startTime}`.localeCompare(
+          `${right.date}T${right.startTime}`,
+        ),
     );
   }
 }
