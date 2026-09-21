@@ -101,7 +101,7 @@ export function ProfileForm({
       </div>
 
       <Button disabled={isPending} type="submit">
-        {isPending ? "Opslaan…" : "Opslaan"}
+        {isPending ? "Persoonlijke gegevens opslaan…" : "Persoonlijke gegevens opslaan"}
       </Button>
     </form>
   );
