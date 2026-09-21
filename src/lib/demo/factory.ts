@@ -103,20 +103,25 @@ export async function createDemoSession(role: DemoRole): Promise<DemoCredentials
 
   try {
     const users = new Map<DemoUserSpec["key"], string>();
+    const createdUsers = await Promise.all(
+      userSpecs.map(async (spec) => {
+        const email = demoEmail(sessionId, spec.key);
+        const { data, error } = await admin.auth.admin.createUser({
+          email,
+          password,
+          email_confirm: true,
+          user_metadata: { full_name: spec.name, role: spec.role },
+        });
+        if (error || !data.user) {
+          throw new Error(error?.message ?? "Demo-account kon niet worden gemaakt.");
+        }
+        return { key: spec.key, id: data.user.id };
+      }),
+    );
 
-    for (const spec of userSpecs) {
-      const email = demoEmail(sessionId, spec.key);
-      const { data, error } = await admin.auth.admin.createUser({
-        email,
-        password,
-        email_confirm: true,
-        user_metadata: { full_name: spec.name, role: spec.role },
-      });
-      if (error || !data.user) {
-        throw new Error(error?.message ?? "Demo-account kon niet worden gemaakt.");
-      }
-      createdUserIds.push(data.user.id);
-      users.set(spec.key, data.user.id);
+    for (const user of createdUsers) {
+      createdUserIds.push(user.id);
+      users.set(user.key, user.id);
     }
 
     const ownerId = users.get("owner")!;
