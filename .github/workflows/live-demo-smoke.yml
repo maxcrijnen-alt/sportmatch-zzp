@@ -1,4 +1,4 @@
-name: Preview jobs overview check
+name: Production jobs overview check
 
 on:
   push:
@@ -17,9 +17,9 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
-      - name: Verify preview assignment overview
+      - name: Verify production assignment overview
         env:
-          BASE_URL: https://sportmatch-1re8ztzdq-maxcrijnen-alts-projects.vercel.app
+          BASE_URL: https://sportmatch-zzp.vercel.app
         run: |
           cat > preview-jobs-check.mjs <<'EOF'
           import { chromium } from "@playwright/test";
