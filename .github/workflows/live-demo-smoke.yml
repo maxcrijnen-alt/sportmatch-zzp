@@ -46,7 +46,7 @@ jobs:
               console.log("PASS", role, "primary navigation");
 
               await bottomNav.getByRole("button", { name: "Meer navigatie" }).click();
-              const menu = page.getByLabel("Meer navigatie");
+              const menu = page.getByRole("region", { name: "Meer navigatie" });
               await menu.waitFor();
 
               for (const label of moreLabels) {
