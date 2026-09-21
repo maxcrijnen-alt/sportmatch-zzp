@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Bell, LogOut, Settings, Star, User } from "lucide-react";
+import { Bell, LogOut, Menu, Settings, Star, User, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Logo } from "@/components/brand/logo";
 import {
   LocationSelector,
   type LocationOption,
 } from "@/components/app/location-selector";
-import { navLinksForRole } from "@/components/app/nav-links";
+import { navLinksForRole, secondaryLinks } from "@/components/app/nav-links";
 import { signOutAction } from "@/lib/auth/actions";
 import { LOCATION_FILTER_COOKIE } from "@/lib/org/location-filter-constants";
 import { cn } from "@/lib/utils";
@@ -46,6 +46,7 @@ export function AppShell({
       ? initialLocationId
       : "",
   );
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     if (role !== "organization" || locations.length === 0) {
@@ -107,6 +108,38 @@ export function AppShell({
     href === "/dashboard" || href === "/admin" || href === "/organisatie"
       ? pathname === href
       : pathname.startsWith(href);
+
+  const mobilePrimaryLinks = links.slice(0, 4);
+  const mobileMoreLinks = links.slice(4);
+  const mobileMoreActive =
+    mobileMoreLinks.some((link) => isActive(link.href)) ||
+    secondaryLinks.some((link) => isActive(link.href));
+
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!mobileMenuOpen) {
+      return;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setMobileMenuOpen(false);
+      }
+    };
+
+    window.addEventListener("keydown", closeOnEscape);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [mobileMenuOpen]);
 
   return (
     <div className="flex min-h-screen">
@@ -213,9 +246,100 @@ export function AppShell({
           {children}
         </main>
 
-        {/* Bottom nav (mobiel): eerste vijf links */}
-        <nav className="fixed inset-x-0 bottom-0 z-30 flex border-t border-border bg-card lg:hidden">
-          {links.slice(0, 5).map((link) => (
+        {mobileMenuOpen ? (
+          <div className="fixed inset-0 z-40 lg:hidden">
+            <button
+              aria-label="Sluit meer-menu"
+              className="absolute inset-0 bg-foreground/30"
+              onClick={() => setMobileMenuOpen(false)}
+              type="button"
+            />
+            <section
+              aria-label="Meer navigatie"
+              className="absolute inset-x-0 bottom-[4.25rem] max-h-[72vh] overflow-y-auto rounded-t-2xl border-t border-border bg-card p-4 shadow-2xl"
+            >
+              <div className="mb-3 flex items-center justify-between">
+                <div>
+                  <p className="font-semibold">Meer</p>
+                  <p className="text-xs text-muted-foreground">
+                    Alle overige onderdelen van SportMatch
+                  </p>
+                </div>
+                <button
+                  aria-label="Sluit menu"
+                  className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+                  onClick={() => setMobileMenuOpen(false)}
+                  type="button"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <nav className="grid gap-1" aria-label="Overige hoofdnavigatie">
+                {mobileMoreLinks.map((link) => (
+                  <Link
+                    className={cn(
+                      "flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition-colors",
+                      isActive(link.href)
+                        ? "bg-primary/10 text-primary"
+                        : "text-foreground hover:bg-muted",
+                    )}
+                    href={withLocation(link.href)}
+                    key={link.href}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <link.icon className="h-5 w-5 text-muted-foreground" />
+                    {link.label}
+                  </Link>
+                ))}
+              </nav>
+
+              <div className="my-3 h-px bg-border" />
+
+              <nav className="grid gap-1" aria-label="Accountnavigatie">
+                {secondaryLinks.map((link) => (
+                  <Link
+                    className={cn(
+                      "flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition-colors",
+                      isActive(link.href)
+                        ? "bg-primary/10 text-primary"
+                        : "text-foreground hover:bg-muted",
+                    )}
+                    href={link.href}
+                    key={link.href}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <span className="relative">
+                      <link.icon className="h-5 w-5 text-muted-foreground" />
+                      {link.href === "/meldingen" && unreadCount > 0 ? (
+                        <span className="absolute -right-2 -top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[0.6rem] font-bold text-destructive-foreground">
+                          {unreadCount > 9 ? "9+" : unreadCount}
+                        </span>
+                      ) : null}
+                    </span>
+                    {link.label}
+                  </Link>
+                ))}
+              </nav>
+
+              <div className="my-3 h-px bg-border" />
+
+              <form action={signOutAction}>
+                <button
+                  className="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                  type="submit"
+                >
+                  <LogOut className="h-5 w-5" />
+                  Uitloggen
+                </button>
+              </form>
+            </section>
+          </div>
+        ) : null}
+
+        {/* Bottom nav (mobiel): vier kernacties + Meer */}
+        <nav className="fixed inset-x-0 bottom-0 z-50 flex border-t border-border bg-card lg:hidden">
+          {mobilePrimaryLinks.map((link) => (
             <Link
               className={cn(
                 "flex flex-1 flex-col items-center gap-1 py-2.5 text-[0.65rem] font-medium",
@@ -228,6 +352,21 @@ export function AppShell({
               {link.label}
             </Link>
           ))}
+          <button
+            aria-expanded={mobileMenuOpen}
+            aria-label="Meer navigatie"
+            className={cn(
+              "flex flex-1 flex-col items-center gap-1 py-2.5 text-[0.65rem] font-medium",
+              mobileMoreActive || mobileMenuOpen
+                ? "text-primary"
+                : "text-muted-foreground",
+            )}
+            onClick={() => setMobileMenuOpen((open) => !open)}
+            type="button"
+          >
+            <Menu className="h-5 w-5" />
+            Meer
+          </button>
         </nav>
       </div>
     </div>
