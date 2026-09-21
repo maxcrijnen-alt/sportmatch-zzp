@@ -100,7 +100,7 @@ export default async function OrganisatieOpdrachtenPage({
   if (jobIds.length > 0) {
     const { data: confirmationData, error: confirmationError } = await supabase
       .from("job_confirmations")
-      .select("job_id, confirmed_at, cancelled_at")
+      .select("job_id, confirmed_at")
       .in("job_id", jobIds);
 
     if (confirmationError) {
@@ -110,7 +110,7 @@ export default async function OrganisatieOpdrachtenPage({
       );
     } else {
       for (const confirmation of confirmationData ?? []) {
-        if (!confirmation.cancelled_at && !confirmation.confirmed_at) {
+        if (!confirmation.confirmed_at) {
           pendingConfirmationJobIds.add(confirmation.job_id as string);
         }
       }
