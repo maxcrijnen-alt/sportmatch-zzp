@@ -98,17 +98,6 @@ export async function createDemoSession(role: DemoRole): Promise<DemoCredentials
     expires_at: expiresAt,
   });
   if (sessionError) {
-    const configuredKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
-    console.error("Demo session insert diagnostic", {
-      code: sessionError.code,
-      hint: sessionError.hint,
-      details: sessionError.details,
-      adminKeyType: configuredKey.startsWith("sb_secret_")
-        ? "modern-secret"
-        : configuredKey.split(".").length === 3
-          ? "legacy-jwt"
-          : "other",
-    });
     throw new Error(`Demosessie kon niet worden gestart: ${sessionError.message}`);
   }
 
