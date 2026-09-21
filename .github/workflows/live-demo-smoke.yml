@@ -19,7 +19,7 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - name: Measure live demo startup
         env:
-          BASE_URL: https://sportmatch-f57jxkcgn-maxcrijnen-alts-projects.vercel.app
+          BASE_URL: https://sportmatch-zzp.vercel.app
         run: |
           cat > demo-timing.mjs <<'EOF'
           import { chromium } from "@playwright/test";
