@@ -1,4 +1,4 @@
-name: Instructor UX audit
+name: Preview jobs overview check
 
 on:
   push:
@@ -6,9 +6,9 @@ on:
       - qa/demo-live-check-20260921
 
 jobs:
-  ux-audit:
+  preview-check:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -17,54 +17,31 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
-      - name: Audit live instructor demo
+      - name: Verify preview assignment overview
         env:
-          BASE_URL: https://sportmatch-zzp.vercel.app
+          BASE_URL: https://sportmatch-1re8ztzdq-maxcrijnen-alts-projects.vercel.app
         run: |
-          cat > instructor-audit.mjs <<'EOF'
+          cat > preview-jobs-check.mjs <<'EOF'
           import { chromium } from "@playwright/test";
 
           const browser = await chromium.launch({ headless: true });
-          const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+          const context = await browser.newContext();
           const page = await context.newPage();
           const baseURL = process.env.BASE_URL;
-          const clean = (text) => text.replace(/\s+/g, " ").trim();
-
-          async function audit(path, label) {
-            await page.goto(baseURL + path, { waitUntil: "networkidle", timeout: 45000 });
-            const headings = await page.locator("h1,h2").allTextContents();
-            const buttons = await page.getByRole("button").allTextContents();
-            const links = await page.getByRole("link").allTextContents();
-            const body = clean(await page.locator("main").innerText().catch(() => ""));
-            console.log("\n=== " + label + " " + page.url() + " ===");
-            console.log("HEADINGS:", headings.map(clean).filter(Boolean).slice(0,12));
-            console.log("BUTTONS:", buttons.map(clean).filter(Boolean).slice(0,20));
-            console.log("LINKS:", links.map(clean).filter(Boolean).slice(0,25));
-            console.log("BODY:", body.slice(0,3500));
-          }
 
           try {
             await page.goto(baseURL + "/demo", { waitUntil: "networkidle", timeout: 45000 });
-            await page.getByRole("button", { name: "Start demo als instructeur" }).click();
+            await page.getByRole("button", { name: "Start demo als sportschool" }).click();
             await page.waitForURL("**/dashboard", { timeout: 60000 });
+            await page.goto(baseURL + "/organisatie/opdrachten", { waitUntil: "networkidle", timeout: 45000 });
 
-            const pages = [
-              ["/dashboard", "Dashboard"],
-              ["/opdrachten", "Opdrachten"],
-              ["/mijn-reacties", "Mijn reacties"],
-              ["/agenda", "Agenda"],
-              ["/berichten", "Berichten"],
-              ["/beschikbaarheid", "Beschikbaarheid"],
-              ["/documenten", "Documenten"],
-              ["/profiel", "Profiel"],
-              ["/reviews", "Reviews"],
-              ["/abonnement", "Abonnement"],
-              ["/instellingen", "Instellingen"],
-            ];
-
-            for (const [path, label] of pages) {
-              await audit(path, label);
+            const body = await page.locator("main").innerText();
+            if (!body.includes("Bootcamp gezocht")) throw new Error("Expected demo assignments are missing");
+            for (const label of ["Wacht op bevestiging", "Reacties bekijken", "Nog zoeken", "Bevestigd"]) {
+              if (!body.includes(label)) throw new Error("Missing workflow label: " + label);
+              console.log("PASS", label);
             }
+            console.log("PASS jobs overview contains demo assignments");
 
             const logout = page.getByRole("button", { name: /uitloggen/i }).first();
             await logout.click();
@@ -74,4 +51,4 @@ jobs:
             await browser.close();
           }
           EOF
-          node instructor-audit.mjs
+          node preview-jobs-check.mjs
