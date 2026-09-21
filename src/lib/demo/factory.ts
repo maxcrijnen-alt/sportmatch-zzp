@@ -133,43 +133,57 @@ export async function createDemoSession(role: DemoRole): Promise<DemoCredentials
       users.get("starter")!,
     ];
 
-    const { data: city, error: cityError } = await admin
-      .from("cities")
-      .select("id")
-      .eq("name", "Utrecht")
-      .single();
-    if (cityError || !city) {
+    const [cityResult, sportsResult, qualificationsResult, lessonTypesResult] =
+      await Promise.all([
+        admin.from("cities").select("id").eq("name", "Utrecht").single(),
+        admin.from("sports").select("id, name, slug").eq("is_active", true).order("name"),
+        admin.from("qualifications").select("id").eq("is_active", true).limit(4),
+        admin
+          .from("lesson_types")
+          .select("id, sport_id, name, sort_order")
+          .eq("is_active", true)
+          .order("sort_order"),
+      ]);
+
+    const city = cityResult.data;
+    const sports = sportsResult.data;
+    const qualifications = qualificationsResult.data;
+    const lessonTypes = lessonTypesResult.data;
+
+    if (cityResult.error || !city) {
       throw new Error("De demo-baseline mist de plaats Utrecht.");
     }
+    if (!sports?.length || !lessonTypes?.length) {
+      throw new Error("Sport- of lesvormconfiguratie ontbreekt voor de demo.");
+    }
 
-    const { error: instructorProfilesScopeError } = await admin
-      .from("profiles")
-      .update({
-        demo_session_id: sessionId,
-        onboarding_completed: true,
-        city_id: city.id,
-      })
-      .in("id", instructorIds);
-    assertDatabaseResult(
-      instructorProfilesScopeError,
-      "Demo-instructeurs konden niet worden geïsoleerd",
-    );
-    const { error: ownerProfileScopeError } = await admin
-      .from("profiles")
-      .update({
-        demo_session_id: sessionId,
-        onboarding_completed: true,
-        city_id: city.id,
-      })
-      .eq("id", ownerId);
-    assertDatabaseResult(
-      ownerProfileScopeError,
-      "Demo-organisatieprofiel kon niet worden geïsoleerd",
-    );
-
-    const { error: instructorProfileError } = await admin
-      .from("instructor_profiles")
-      .insert(
+    const [
+      instructorProfilesScopeResult,
+      ownerProfileScopeResult,
+      instructorProfileResult,
+      statusesResult,
+      sportsSeedResult,
+      lessonSpecialtiesResult,
+      qualificationsSeedResult,
+      vogResult,
+    ] = await Promise.all([
+      admin
+        .from("profiles")
+        .update({
+          demo_session_id: sessionId,
+          onboarding_completed: true,
+          city_id: city.id,
+        })
+        .in("id", instructorIds),
+      admin
+        .from("profiles")
+        .update({
+          demo_session_id: sessionId,
+          onboarding_completed: true,
+          city_id: city.id,
+        })
+        .eq("id", ownerId),
+      admin.from("instructor_profiles").insert(
         instructorIds.map((userId, index) => ({
           user_id: userId,
           years_experience: [6, 11, 4, 0][index],
@@ -180,73 +194,69 @@ export async function createDemoSession(role: DemoRole): Promise<DemoCredentials
               ? "Nieuw op SportMatch, met relevante diploma's en een compleet profiel."
               : "Ervaren sportinstructeur voor groepslessen en invalopdrachten.",
         })),
-      );
-    if (instructorProfileError) {
-      throw new Error(instructorProfileError.message);
-    }
-
-    const [{ data: sports }, { data: qualifications }, { data: lessonTypes }] =
-      await Promise.all([
-        admin.from("sports").select("id, name, slug").eq("is_active", true).order("name"),
-        admin.from("qualifications").select("id").eq("is_active", true).limit(4),
-        admin
-          .from("lesson_types")
-          .select("id, sport_id, name, sort_order")
-          .eq("is_active", true)
-          .order("sort_order"),
-      ]);
-
-    if (!sports?.length || !lessonTypes?.length) {
-      throw new Error("Sport- of lesvormconfiguratie ontbreekt voor de demo.");
-    }
-
-    const { error: statusesError } = await admin.from("instructor_statuses").insert(
-      instructorIds.map((userId) => ({ user_id: userId, status: "zzp" })),
-    );
-    assertDatabaseResult(statusesError, "Demo-statussen ontbreken");
-    const { error: sportsError } = await admin.from("instructor_sports").insert(
-      instructorIds.flatMap((userId) =>
-        sports.map((sport) => ({ user_id: userId, sport_id: sport.id })),
       ),
-    );
-    assertDatabaseResult(sportsError, "Demo-specialisaties ontbreken");
-    const { error: lessonSpecialtiesError } = await admin
-      .from("instructor_lesson_types")
-      .insert(
+      admin.from("instructor_statuses").insert(
+        instructorIds.map((userId) => ({ user_id: userId, status: "zzp" })),
+      ),
+      admin.from("instructor_sports").insert(
+        instructorIds.flatMap((userId) =>
+          sports.map((sport) => ({ user_id: userId, sport_id: sport.id })),
+        ),
+      ),
+      admin.from("instructor_lesson_types").insert(
         instructorIds.flatMap((userId) =>
           lessonTypes.map((lessonType) => ({
             user_id: userId,
             lesson_type_id: lessonType.id,
           })),
         ),
-      );
+      ),
+      qualifications?.length
+        ? admin.from("instructor_qualifications").insert(
+            instructorIds.flatMap((userId) =>
+              qualifications.map((qualification) => ({
+                user_id: userId,
+                qualification_id: qualification.id,
+              })),
+            ),
+          )
+        : Promise.resolve({ error: null }),
+      admin.from("document_uploads").insert(
+        instructorIds.map((userId) => ({
+          user_id: userId,
+          doc_type: "vog",
+          storage_path: `${userId}/vog/demo-vog.pdf`,
+          original_filename: "vog-demo.pdf",
+          status: "approved",
+          expires_at: futureDate(365),
+          reviewed_at: new Date().toISOString(),
+        })),
+      ),
+    ]);
+
     assertDatabaseResult(
-      lessonSpecialtiesError,
+      instructorProfilesScopeResult.error,
+      "Demo-instructeurs konden niet worden geïsoleerd",
+    );
+    assertDatabaseResult(
+      ownerProfileScopeResult.error,
+      "Demo-organisatieprofiel kon niet worden geïsoleerd",
+    );
+    assertDatabaseResult(
+      instructorProfileResult.error,
+      "Demo-instructeursprofielen ontbreken",
+    );
+    assertDatabaseResult(statusesResult.error, "Demo-statussen ontbreken");
+    assertDatabaseResult(sportsSeedResult.error, "Demo-specialisaties ontbreken");
+    assertDatabaseResult(
+      lessonSpecialtiesResult.error,
       "Demo-lesvormspecialisaties ontbreken",
     );
-    if (qualifications?.length) {
-      const { error: qualificationsError } = await admin.from("instructor_qualifications").insert(
-        instructorIds.flatMap((userId) =>
-          qualifications.map((qualification) => ({
-            user_id: userId,
-            qualification_id: qualification.id,
-          })),
-        ),
-      );
-      assertDatabaseResult(qualificationsError, "Demo-diploma's ontbreken");
-    }
-    const { error: vogError } = await admin.from("document_uploads").insert(
-      instructorIds.map((userId) => ({
-        user_id: userId,
-        doc_type: "vog",
-        storage_path: `${userId}/vog/demo-vog.pdf`,
-        original_filename: "vog-demo.pdf",
-        status: "approved",
-        expires_at: futureDate(365),
-        reviewed_at: new Date().toISOString(),
-      })),
+    assertDatabaseResult(
+      qualificationsSeedResult.error,
+      "Demo-diploma's ontbreken",
     );
-    assertDatabaseResult(vogError, "Demo-VOG's ontbreken");
+    assertDatabaseResult(vogResult.error, "Demo-VOG's ontbreken");
 
     const { data: organization, error: organizationError } = await admin
       .from("organizations")
