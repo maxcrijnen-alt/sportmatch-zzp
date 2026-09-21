@@ -48,9 +48,12 @@ jobs:
               await bottomNav.getByRole("button", { name: "Meer navigatie" }).click();
               const menu = page.getByRole("region", { name: "Meer navigatie" });
               await menu.waitFor();
+              console.log("MENU_TEXT", role, JSON.stringify(await menu.innerText()));
 
               for (const label of moreLabels) {
-                await menu.getByText(label, { exact: true }).waitFor();
+                const item = menu.getByText(label, { exact: true });
+                await item.scrollIntoViewIfNeeded();
+                await item.waitFor();
               }
               for (const label of ["Meldingen", "Profiel", "Instellingen", "Uitloggen"]) {
                 await menu.getByText(label, { exact: true }).waitFor();
