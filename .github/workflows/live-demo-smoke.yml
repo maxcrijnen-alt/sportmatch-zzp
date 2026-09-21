@@ -1,5 +1,4 @@
-name: Live demo smoke check
-# rerun after production diagnostics
+name: Live demo concurrency check
 
 on:
   push:
@@ -7,7 +6,7 @@ on:
       - qa/demo-live-check-20260921
 
 jobs:
-  demo-smoke:
+  demo-concurrency:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -18,62 +17,63 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
-      - name: Check live SportMatch demos
+      - name: Check concurrent live demos
         env:
           BASE_URL: https://sportmatch-zzp.vercel.app
         run: |
-          cat > live-demo-check.mjs <<'EOF'
+          cat > live-demo-concurrency.mjs <<'EOF'
           import { chromium } from "@playwright/test";
 
-          const baseURL = process.env.BASE_URL;
           const browser = await chromium.launch({ headless: true });
+          const baseURL = process.env.BASE_URL;
 
-          async function check(roleLabel) {
-            const context = await browser.newContext();
+          async function startDemo(context, label) {
             const page = await context.newPage();
-            const errors = [];
-            page.on("console", msg => {
-              if (msg.type() === "error") errors.push("console: " + msg.text());
-            });
-            page.on("pageerror", err => errors.push("pageerror: " + err.message));
-
-            try {
-              await page.goto(baseURL + "/demo", { waitUntil: "networkidle", timeout: 45000 });
-              const button = page.getByRole("button", { name: "Start demo als " + roleLabel });
-              await button.waitFor({ state: "visible", timeout: 15000 });
-              await button.click();
-              await page.waitForURL("**/dashboard", { timeout: 60000 });
-
-              const body = await page.locator("body").innerText();
-              if (!body || body.includes("De demo kon nu niet worden gestart")) {
-                throw new Error("Demo start landed on an error state");
-              }
-
-              const logout = page.getByRole("button", { name: /uitloggen/i });
-              if (await logout.count()) {
-                await logout.click();
-                await page.waitForURL(/\/$/, { timeout: 30000 }).catch(() => {});
-              }
-
-              if (errors.length) {
-                console.log(roleLabel + " browser errors:", errors);
-              }
-              console.log("PASS " + roleLabel + " -> " + page.url());
-            } catch (error) {
-              console.error("FAIL " + roleLabel + ":", error);
-              console.error("URL:", page.url());
-              console.error("BODY:", (await page.locator("body").innerText().catch(() => "")).slice(0, 4000));
-              throw error;
-            } finally {
-              await context.close();
-            }
+            await page.goto(baseURL + "/demo", { waitUntil: "networkidle", timeout: 45000 });
+            await page.getByRole("button", { name: "Start demo als " + label }).click();
+            await page.waitForURL("**/dashboard", { timeout: 60000 });
+            return page;
           }
 
+          const a = await browser.newContext();
+          const b = await browser.newContext();
+
           try {
-            await check("sportschool");
-            await check("instructeur");
+            const [pageA, pageB] = await Promise.all([
+              startDemo(a, "sportschool"),
+              startDemo(b, "sportschool"),
+            ]);
+
+            const cookiesA = await a.cookies();
+            const cookiesB = await b.cookies();
+            const demoA = cookiesA.find(c => c.name.includes("demo"));
+            const demoB = cookiesB.find(c => c.name.includes("demo"));
+
+            if (!demoA || !demoB) throw new Error("Demo session cookie missing");
+            if (demoA.value === demoB.value) throw new Error("Concurrent demos share the same session id");
+
+            const logoutA = pageA.getByRole("button", { name: /uitloggen/i });
+            if (await logoutA.count()) {
+              await logoutA.click();
+            }
+
+            await pageB.goto(baseURL + "/dashboard", { waitUntil: "networkidle", timeout: 45000 });
+            if (!pageB.url().includes("/dashboard")) {
+              throw new Error("Logging out demo A affected demo B");
+            }
+
+            const logoutB = pageB.getByRole("button", { name: /uitloggen/i });
+            if (await logoutB.count()) {
+              await logoutB.click();
+            }
+
+            console.log("PASS concurrent isolation");
+            console.log("PASS logout A leaves B active");
+            console.log("PASS both sessions used unique demo cookies");
           } finally {
+            await a.close();
+            await b.close();
             await browser.close();
           }
           EOF
-          node live-demo-check.mjs
+          node live-demo-concurrency.mjs
