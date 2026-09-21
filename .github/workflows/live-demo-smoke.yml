@@ -1,4 +1,4 @@
-name: Instructor UX production check
+name: Sportschool dashboard production check
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
       - qa/demo-live-check-20260921
 
 jobs:
-  instructor-check:
+  organization-dashboard-check:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -17,11 +17,11 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
-      - name: Verify instructor UX on production
+      - name: Verify sportschool action dashboard on production
         env:
           BASE_URL: https://sportmatch-zzp.vercel.app
         run: |
-          cat > instructor-ux-check.mjs <<'EOF'
+          cat > organization-dashboard-check.mjs <<'EOF'
           import { chromium } from "@playwright/test";
 
           const browser = await chromium.launch({ headless: true });
@@ -31,37 +31,49 @@ jobs:
 
           try {
             await page.goto(baseURL + "/demo", { waitUntil: "networkidle", timeout: 45000 });
-            await page.getByRole("button", { name: "Start demo als instructeur" }).click();
+            await page.getByRole("button", { name: "Start demo als sportschool" }).click();
             await page.waitForURL("**/dashboard", { timeout: 60000 });
 
-            const dashboard = await page.locator("main").innerText();
-            if (dashboard.includes("Vind je volgende opdracht")) {
-              throw new Error("Duplicate instructor dashboard card is still visible");
-            }
-            if (!dashboard.includes("Opdrachten bekijken")) {
-              throw new Error("Primary instructor jobs CTA is missing");
-            }
-            console.log("PASS instructor dashboard CTA hierarchy");
-
-            await page.goto(baseURL + "/profiel", { waitUntil: "networkidle", timeout: 45000 });
-
-            await page.getByRole("button", { name: "Persoonlijke gegevens opslaan" }).waitFor();
-            await page.getByRole("button", { name: "Instructeursprofiel opslaan" }).waitFor();
-
-            const genericSave = page.getByRole("button", { name: /^Opslaan$/ });
-            if (await genericSave.count()) {
-              throw new Error("Generic profile save buttons are still visible");
+            const main = page.locator("main");
+            for (const label of [
+              "Nog iemand zoeken",
+              "Reacties te beoordelen",
+              "Wacht op bevestiging",
+            ]) {
+              await main.getByText(label, { exact: true }).waitFor();
+              console.log("PASS dashboard state", label);
             }
 
-            console.log("PASS instructor profile save actions are explicit");
+            const oldExplainer = main.getByText("Start hier als sportschool", { exact: true });
+            if (await oldExplainer.count()) {
+              throw new Error("Old onboarding-style dashboard explainer is still visible");
+            }
+
+            await main.getByText("Wat vraagt aandacht?", { exact: true }).waitFor();
+            const counts = {};
+            for (const label of [
+              "Nog iemand zoeken",
+              "Reacties te beoordelen",
+              "Wacht op bevestiging",
+            ]) {
+              const card = main.getByText(label, { exact: true }).locator("..");
+              counts[label] = await card.locator("p").nth(1).innerText();
+            }
+            console.log("COUNTS", JSON.stringify(counts));
+
+            const primaryButtons = main.getByRole("button");
+            if (!(await primaryButtons.count())) {
+              throw new Error("Dashboard has no primary action button");
+            }
+            console.log("PASS dashboard has contextual primary action");
 
             const logout = page.getByRole("button", { name: /uitloggen/i }).first();
             await logout.click();
             await page.waitForURL(/\/$/, { timeout: 30000 });
-            console.log("PASS instructor demo logout");
+            console.log("PASS sportschool demo logout");
           } finally {
             await context.close();
             await browser.close();
           }
           EOF
-          node instructor-ux-check.mjs
+          node organization-dashboard-check.mjs
