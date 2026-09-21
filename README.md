@@ -38,6 +38,19 @@ maakt via `src/lib/demo/factory.ts` een tijdelijke database-isolatie met eigen
 gebruikers en een vaste baseline. Uitloggen, opnieuw starten of de dagelijkse
 cleanup verwijdert die sessie.
 
+## Onderhoudscron en tijdzone
+
+Het bestaande Vercel-project gebruikt het Hobby-plan. Dat plan ondersteunt
+cronjobs maximaal eenmaal per dag; `vercel.json` start het onderhoud daarom
+dagelijks om 03:00 UTC. Opdrachtdata en -tijden worden voor herinneringen
+expliciet als `Europe/Amsterdam` geïnterpreteerd, inclusief zomer- en
+wintertijd.
+
+De cron verstuurt één 24-uursherinnering per gebruiker en bevestigde opdracht.
+Een 2-uursherinnering staat bewust uit: daarvoor is een Vercel-plan met minimaal
+hourly cron nodig. Na een planwijziging moeten zowel het schema naar bijvoorbeeld
+`0 * * * *` als de 2-uurslogica expliciet worden geactiveerd en getest.
+
 ## Validatie
 
 ```bash

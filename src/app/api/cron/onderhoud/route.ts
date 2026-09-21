@@ -1,4 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
+import {
+  amsterdamDateTimeToInstant,
+  dateInAmsterdam,
+} from "@/lib/datetime/amsterdam";
 import { cleanupExpiredDemoSessions } from "@/lib/demo/factory";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -18,9 +22,12 @@ interface UpcomingConfirmation {
 }
 
 /**
- * Periodiek onderhoud (Vercel Cron, dagelijks om 03:00 Europe/Amsterdam):
- * - herinneringen 24 uur en 2 uur voor aanvang van bevestigde opdrachten;
+ * Periodiek onderhoud (Vercel Cron, dagelijks om 03:00 UTC op Hobby):
+ * - één herinnering zodra een bevestigde opdracht binnen 24 uur begint;
  * - goedgekeurde documenten met een verstreken vervaldatum op "verlopen" zetten.
+ *
+ * Een betrouwbare 2-uursherinnering vereist minimaal een hourly cron en staat
+ * daarom uit zolang het bestaande Vercel-project op Hobby draait.
  *
  * Beveiliging: Vercel stuurt een Authorization-header met CRON_SECRET mee.
  */
@@ -48,10 +55,12 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const now = Date.now();
+  const now = new Date();
+  const todayInAmsterdam = dateInAmsterdam(now);
   const results = {
     reminders24h: 0,
     reminders2h: 0,
+    reminder2hEnabled: false,
     expiredDocuments: 0,
     expiredDemoSessions: 0,
   };
@@ -63,7 +72,7 @@ export async function GET(request: NextRequest) {
     .from("document_uploads")
     .update({ status: "expired" })
     .eq("status", "approved")
-    .lt("expires_at", new Date().toISOString().slice(0, 10))
+    .lt("expires_at", todayInAmsterdam)
     .select("id, user_id, doc_type");
 
   results.expiredDocuments = expired?.length ?? 0;
@@ -83,10 +92,11 @@ export async function GET(request: NextRequest) {
     .from("job_confirmations")
     .select(
       `job_id, instructor_id,
-      job:jobs (id, title, starts_on, start_time, organization_id, status)`,
+      job:jobs!inner (id, title, starts_on, start_time, organization_id, status)`,
     )
     .not("confirmed_at", "is", null)
-    .gte("job.starts_on", new Date(now).toISOString().slice(0, 10));
+    .eq("job.status", "confirmed")
+    .gte("job.starts_on", todayInAmsterdam);
 
   for (const confirmation of (confirmations as unknown as UpcomingConfirmation[]) ??
     []) {
@@ -96,64 +106,61 @@ export async function GET(request: NextRequest) {
       continue;
     }
 
-    const startsAt = new Date(
-      `${job.starts_on}T${job.start_time}`,
-    ).getTime();
-    const hoursUntil = (startsAt - now) / (1000 * 60 * 60);
+    const startsAt = amsterdamDateTimeToInstant(job.starts_on, job.start_time);
+    if (!startsAt) continue;
 
-    const windows: { key: "reminder_24h" | "reminder_2h"; label: string }[] = [];
-    if (hoursUntil > 0 && hoursUntil <= 24) {
-      windows.push({ key: "reminder_24h", label: "morgen" });
-    }
-    if (hoursUntil > 0 && hoursUntil <= 2) {
-      windows.push({ key: "reminder_2h", label: "over minder dan 2 uur" });
+    const hoursUntil = (startsAt.getTime() - now.getTime()) / (1000 * 60 * 60);
+    if (hoursUntil <= 0 || hoursUntil > 24) continue;
+
+    const notificationType = "reminder_24h";
+    const instructorHref = `/opdrachten/${job.id}`;
+    const { data: existingInstructorReminder } = await supabase
+      .from("notifications")
+      .select("id")
+      .eq("user_id", confirmation.instructor_id)
+      .eq("notification_type", notificationType)
+      .eq("href", instructorHref)
+      .limit(1);
+
+    if (!existingInstructorReminder?.length) {
+      const { error: reminderError } = await supabase.from("notifications").insert({
+        user_id: confirmation.instructor_id,
+        notification_type: notificationType,
+        title: `Herinnering: ${job.title}`,
+        body: "Je bevestigde opdracht begint binnen 24 uur.",
+        href: instructorHref,
+      });
+      if (!reminderError || reminderError.code === "23505") {
+        results.reminders24h += reminderError ? 0 : 1;
+      }
     }
 
-    for (const window of windows) {
-      // niet dubbel herinneren
-      const { data: existing } = await supabase
+    const { data: members } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", job.organization_id)
+      .eq("state", "active")
+      .not("user_id", "is", null);
+
+    for (const member of members ?? []) {
+      if (!member.user_id) continue;
+      const organizationHref = `/organisatie/opdrachten/${job.id}`;
+      const { data: existingOrganizationReminder } = await supabase
         .from("notifications")
         .select("id")
-        .eq("user_id", confirmation.instructor_id)
-        .eq("notification_type", window.key)
-        .eq("href", `/opdrachten/${job.id}`)
+        .eq("user_id", member.user_id)
+        .eq("notification_type", notificationType)
+        .eq("href", organizationHref)
         .limit(1);
-
-      if (existing && existing.length > 0) {
-        continue;
-      }
+      if (existingOrganizationReminder?.length) continue;
 
       await supabase.from("notifications").insert({
-        user_id: confirmation.instructor_id,
-        notification_type: window.key,
+        user_id: member.user_id,
+        notification_type: notificationType,
         title: `Herinnering: ${job.title}`,
-        body: `Je bevestigde opdracht begint ${window.label}.`,
-        href: `/opdrachten/${job.id}`,
+        body: "De bevestigde opdracht begint binnen 24 uur.",
+        href: organizationHref,
       });
-
-      // ook de organisatieleden herinneren
-      const { data: members } = await supabase
-        .from("organization_members")
-        .select("user_id")
-        .eq("organization_id", job.organization_id)
-        .eq("state", "active")
-        .not("user_id", "is", null);
-
-      for (const member of members ?? []) {
-        await supabase.from("notifications").insert({
-          user_id: member.user_id,
-          notification_type: window.key,
-          title: `Herinnering: ${job.title}`,
-          body: `De bevestigde opdracht begint ${window.label}.`,
-          href: `/organisatie/opdrachten/${job.id}`,
-        });
-      }
-
-      if (window.key === "reminder_24h") {
-        results.reminders24h += 1;
-      } else {
-        results.reminders2h += 1;
-      }
     }
   }
 
