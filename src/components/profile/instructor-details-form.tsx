@@ -254,7 +254,7 @@ export function InstructorDetailsForm({
       </div>
 
       <Button disabled={isPending} type="submit">
-        {isPending ? "Opslaan…" : "Opslaan"}
+        {isPending ? "Instructeursprofiel opslaan…" : "Instructeursprofiel opslaan"}
       </Button>
     </form>
   );
