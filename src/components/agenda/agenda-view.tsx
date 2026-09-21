@@ -46,7 +46,9 @@ const viewLabels: Record<AgendaViewMode, string> = {
 };
 
 const stateLabels: Record<AgendaEventState, string> = {
-  planned: "Voorlopig",
+  searching: "Nog iemand zoeken",
+  action_required: "Reactie ontvangen",
+  planned: "Wacht op bevestiging",
   confirmed: "Bevestigd",
   completed: "Afgerond",
   cancelled: "Geannuleerd",
@@ -56,6 +58,8 @@ const stateVariants: Record<
   AgendaEventState,
   "warning" | "success" | "muted" | "destructive"
 > = {
+  searching: "muted",
+  action_required: "warning",
   planned: "warning",
   confirmed: "success",
   completed: "muted",
@@ -401,8 +405,9 @@ export function AgendaView({
       <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
         <span className="inline-flex items-center gap-1">
           <CalendarDays className="h-3.5 w-3.5" />
-          Voorlopige afspraken wachten nog op de definitieve bevestiging van de
-          instructeur.
+          "Nog iemand zoeken" betekent dat de plek nog openstaat. "Reactie ontvangen"
+          vraagt om actie van de sportschool. "Wacht op bevestiging" betekent dat een
+          kandidaat al is gekozen en de instructeur nog definitief moet bevestigen.
         </span>
       </div>
     </div>

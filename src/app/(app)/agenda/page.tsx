@@ -44,6 +44,7 @@ export default async function AgendaPage({ searchParams }: AgendaPageProps) {
     userId: profile.id,
     organizationId: orgContext?.organization.id,
     locationId,
+    includeOpenPlanning: profile.role === "organization",
   });
   const selectedLocation = orgContext?.locations.find(
     (location) => location.id === locationId,
@@ -59,8 +60,8 @@ export default async function AgendaPage({ searchParams }: AgendaPageProps) {
         <p className="text-sm text-muted-foreground">
           {profile.role === "organization"
             ? selectedLocation
-              ? `Geplande en bevestigde lessen voor ${selectedLocation.name}.`
-              : "Geplande en bevestigde lessen voor alle vestigingen."
+              ? `Openstaande, te beoordelen en bevestigde lessen voor ${selectedLocation.name}.`
+              : "Openstaande, te beoordelen en bevestigde lessen voor alle vestigingen."
             : "Al je voorlopige, bevestigde en afgeronde opdrachten in één overzicht."}
         </p>
       </div>
@@ -69,9 +70,10 @@ export default async function AgendaPage({ searchParams }: AgendaPageProps) {
         <CalendarDays className="h-4 w-4" />
         <AlertTitle>Automatisch bijgewerkt</AlertTitle>
         <AlertDescription>
-          De agenda wordt opgebouwd uit afspraken en bevestigingen in
-          SportMatch. Een geannuleerde, vervangen of afgeronde opdracht krijgt
-          automatisch de actuele status; er wordt geen losse kopie bijgehouden.
+          De agenda wordt rechtstreeks opgebouwd uit opdrachten, reacties en
+          bevestigingen in SportMatch. Daardoor zie je ook wanneer je nog iemand
+          zoekt, wanneer er een reactie klaarstaat en wanneer een gekozen
+          instructeur nog moet bevestigen. Er wordt geen losse kopie bijgehouden.
         </AlertDescription>
       </Alert>
 
