@@ -66,19 +66,20 @@ jobs:
               console.log("PASS", role, "more menu");
 
               const target = role === "sportschool" ? "Berichten" : "Documenten";
-              await menu.getByRole("link", { name: target }).click();
-              await page.waitForLoadState("networkidle");
+              const expectedPath = role === "sportschool" ? "/berichten" : "/documenten";
+              const targetLink = menu.getByRole("link", { name: target });
+              console.log("TARGET_HREF", role, await targetLink.getAttribute("href"));
+              await targetLink.click();
+              await page.waitForURL((url) => url.pathname === expectedPath, { timeout: 30000 });
               console.log("PASS", role, "hidden section reachable", page.url());
 
-              const logout = page.getByRole("button", { name: /uitloggen/i }).first();
-              if (await logout.count()) {
-                await logout.click();
-                await page.waitForURL(/\/$/, { timeout: 30000 });
-              } else {
-                await page.getByRole("button", { name: "Meer navigatie" }).click();
-                await page.getByText("Uitloggen", { exact: true }).click();
-                await page.waitForURL(/\/$/, { timeout: 30000 });
-              }
+              await page.getByRole("button", { name: "Meer navigatie" }).click();
+              const logoutMenu = page.getByRole("region", { name: "Meer navigatie" });
+              const logoutButton = logoutMenu.getByRole("button", { name: "Uitloggen" });
+              await logoutButton.scrollIntoViewIfNeeded();
+              await logoutButton.click();
+              await page.waitForURL((url) => url.pathname === "/", { timeout: 30000 });
+              console.log("PASS", role, "mobile logout");
             } finally {
               await context.close();
             }
