@@ -1,4 +1,4 @@
-name: Sportschool UX audit
+name: Instructor UX audit
 
 on:
   push:
@@ -17,21 +17,18 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
-      - name: Audit live sportschool demo
+      - name: Audit live instructor demo
         env:
           BASE_URL: https://sportmatch-zzp.vercel.app
         run: |
-          cat > ux-audit.mjs <<'EOF'
+          cat > instructor-audit.mjs <<'EOF'
           import { chromium } from "@playwright/test";
 
           const browser = await chromium.launch({ headless: true });
           const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
           const page = await context.newPage();
           const baseURL = process.env.BASE_URL;
-
-          function clean(text) {
-            return text.replace(/\s+/g, " ").trim();
-          }
+          const clean = (text) => text.replace(/\s+/g, " ").trim();
 
           async function audit(path, label) {
             await page.goto(baseURL + path, { waitUntil: "networkidle", timeout: 45000 });
@@ -42,25 +39,25 @@ jobs:
             console.log("\n=== " + label + " " + page.url() + " ===");
             console.log("HEADINGS:", headings.map(clean).filter(Boolean).slice(0,12));
             console.log("BUTTONS:", buttons.map(clean).filter(Boolean).slice(0,20));
-            console.log("LINKS:", links.map(clean).filter(Boolean).slice(0,20));
+            console.log("LINKS:", links.map(clean).filter(Boolean).slice(0,25));
             console.log("BODY:", body.slice(0,3500));
           }
 
           try {
             await page.goto(baseURL + "/demo", { waitUntil: "networkidle", timeout: 45000 });
-            await page.getByRole("button", { name: "Start demo als sportschool" }).click();
+            await page.getByRole("button", { name: "Start demo als instructeur" }).click();
             await page.waitForURL("**/dashboard", { timeout: 60000 });
 
             const pages = [
               ["/dashboard", "Dashboard"],
-              ["/organisatie/opdrachten", "Opdrachten"],
-              ["/organisatie/opdrachten/nieuw", "Nieuwe opdracht"],
-              ["/organisatie/kandidaten", "Kandidaten"],
+              ["/opdrachten", "Opdrachten"],
+              ["/mijn-reacties", "Mijn reacties"],
               ["/agenda", "Agenda"],
               ["/berichten", "Berichten"],
-              ["/meldingen", "Meldingen"],
+              ["/beschikbaarheid", "Beschikbaarheid"],
+              ["/documenten", "Documenten"],
+              ["/profiel", "Profiel"],
               ["/reviews", "Reviews"],
-              ["/organisatie", "Organisatie"],
               ["/abonnement", "Abonnement"],
               ["/instellingen", "Instellingen"],
             ];
@@ -69,14 +66,12 @@ jobs:
               await audit(path, label);
             }
 
-            const logout = page.getByRole("button", { name: /uitloggen/i });
-            if (await logout.count()) {
-              await logout.click();
-              await page.waitForURL(/\/$/, { timeout: 30000 });
-            }
+            const logout = page.getByRole("button", { name: /uitloggen/i }).first();
+            await logout.click();
+            await page.waitForURL(/\/$/, { timeout: 30000 });
           } finally {
             await context.close();
             await browser.close();
           }
           EOF
-          node ux-audit.mjs
+          node instructor-audit.mjs
