@@ -1,6 +1,8 @@
 import type { JobStatus, UserRole } from "@/types/database";
 
 export type AgendaEventState =
+  | "searching"
+  | "action_required"
   | "planned"
   | "confirmed"
   | "completed"
@@ -29,6 +31,7 @@ export interface AgendaQueryContext {
   userId: string;
   organizationId?: string;
   locationId?: string | null;
+  includeOpenPlanning?: boolean;
 }
 
 export interface AgendaProvider {
