@@ -20,7 +20,6 @@ import {
 } from "date-fns";
 import { nl } from "date-fns/locale";
 import {
-  CalendarDays,
   ChevronLeft,
   ChevronRight,
   Clock3,
@@ -60,7 +59,7 @@ function EventCard({
     <Link
       className={cn(
         "block rounded-md border border-border bg-card transition-colors hover:border-primary/40 hover:bg-primary/5",
-        compact ? "p-2" : "p-4",
+        compact ? "p-2" : "p-3",
         event.state === "cancelled" && "opacity-70",
         highlighted && "border-primary ring-2 ring-primary/25",
       )}
@@ -96,7 +95,7 @@ function EventCard({
         </div>
       </div>
       {!compact ? (
-        <div className="mt-3 grid gap-1 text-xs text-muted-foreground sm:grid-cols-2">
+        <div className="mt-2 grid gap-1 text-xs text-muted-foreground sm:grid-cols-2">
           <span className="inline-flex items-center gap-1.5">
             <MapPin className="h-3.5 w-3.5" /> {event.locationName}
           </span>
@@ -118,7 +117,7 @@ function EventCard({
 
 function EmptyDay() {
   return (
-    <div className="rounded-md border border-dashed border-border p-4 text-sm text-muted-foreground">
+    <div className="rounded-md border border-dashed border-border p-3 text-sm text-muted-foreground">
       Geen lessen of opdrachten op deze dag.
     </div>
   );
@@ -189,23 +188,23 @@ export function AgendaView({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-3 rounded-lg border border-border bg-card p-3 lg:flex-row lg:items-center lg:justify-between">
+      <div className="flex flex-col gap-2 rounded-lg border border-border bg-card p-2.5 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-center gap-2">
           <Button
             aria-label="Vorige periode"
             onClick={() => move(-1)}
-            size="icon"
+            size="icon-sm"
             variant="outline"
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <Button onClick={() => setCursor(new Date())} variant="outline">
+          <Button onClick={() => setCursor(new Date())} size="sm" variant="outline">
             Vandaag
           </Button>
           <Button
             aria-label="Volgende periode"
             onClick={() => move(1)}
-            size="icon"
+            size="icon-sm"
             variant="outline"
           >
             <ChevronRight className="h-4 w-4" />
@@ -225,7 +224,7 @@ export function AgendaView({
               <button
                 aria-pressed={view === mode}
                 className={cn(
-                  "rounded px-2.5 py-1.5 text-xs font-medium transition-colors sm:text-sm",
+                  "rounded px-2 py-1 text-xs font-medium transition-colors",
                   view === mode
                     ? "bg-primary text-primary-foreground"
                     : "text-muted-foreground hover:bg-muted hover:text-foreground",
@@ -239,7 +238,7 @@ export function AgendaView({
             ))}
           </div>
           <a href={exportHref}>
-            <Button variant="outline">
+            <Button size="sm" variant="outline">
               <Download className="h-4 w-4" /> Exporteer .ics
             </Button>
           </a>
@@ -250,7 +249,7 @@ export function AgendaView({
         <div className="space-y-3">
           {listEvents.length > 0 ? (
             listEvents.map((event) => (
-              <div className="grid gap-2 sm:grid-cols-[10rem_1fr]" key={event.id}>
+              <div className="grid gap-2 sm:grid-cols-[8rem_1fr]" key={event.id}>
                 <div className="pt-2">
                   <p className="text-sm font-semibold capitalize">
                     {format(parseISO(event.date), "EEEE", { locale: nl })}
@@ -274,7 +273,7 @@ export function AgendaView({
 
       {view === "month" ? (
         <div className="overflow-x-auto rounded-lg border border-border bg-card">
-          <div className="grid min-w-[52rem] grid-cols-7 border-b border-border bg-muted/50">
+          <div className="grid min-w-[52rem] grid-cols-7 border-b border-border bg-muted/30">
             {["Ma", "Di", "Wo", "Do", "Vr", "Za", "Zo"].map((day) => (
               <div className="p-2 text-center text-xs font-medium" key={day}>
                 {day}
@@ -287,13 +286,13 @@ export function AgendaView({
               return (
                 <div
                   className={cn(
-                    "min-h-32 border-b border-r border-border p-2 last:border-r-0",
+                    "min-h-28 border-b border-r border-border p-1.5 last:border-r-0",
                     !isSameMonth(day, cursor) && "bg-muted/30 text-muted-foreground",
                   )}
                   key={day.toISOString()}
                 >
                   <button
-                    className="mb-2 flex h-7 w-7 items-center justify-center rounded-full text-xs font-medium hover:bg-muted"
+                    className="mb-1.5 flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium hover:bg-muted"
                     onClick={() => {
                       setCursor(day);
                       setView("day");
@@ -336,9 +335,9 @@ export function AgendaView({
         <div className="overflow-x-auto rounded-lg border border-border bg-card">
           <div className="grid min-w-[52rem] grid-cols-7">
             {weekDays.map((day) => (
-              <div className="min-h-72 border-r border-border p-2 last:border-r-0" key={day.toISOString()}>
+              <div className="min-h-64 border-r border-border p-1.5 last:border-r-0" key={day.toISOString()}>
                 <button
-                  className="mb-3 w-full rounded-md p-2 text-center hover:bg-muted"
+                  className="mb-2 w-full rounded-md p-1.5 text-center hover:bg-muted"
                   onClick={() => {
                     setCursor(day);
                     setView("day");
@@ -348,7 +347,7 @@ export function AgendaView({
                   <span className="block text-xs font-medium capitalize text-muted-foreground">
                     {format(day, "EEE", { locale: nl })}
                   </span>
-                  <span className="text-lg font-semibold">{format(day, "d")}</span>
+                  <span className="text-base font-semibold">{format(day, "d")}</span>
                 </button>
                 <div className="space-y-1.5">
                   {eventsForDay(day).map((event) => (
@@ -369,10 +368,10 @@ export function AgendaView({
 
       {view === "day" ? (
         <Card>
-          <CardContent className="space-y-3 pt-5">
+          <CardContent className="space-y-2 p-4">
             {eventsForDay(cursor).length > 0 ? (
               eventsForDay(cursor).map((event) => (
-                <div className="grid gap-2 sm:grid-cols-[7rem_1fr]" key={event.id}>
+                <div className="grid gap-2 sm:grid-cols-[6rem_1fr]" key={event.id}>
                   <p className="flex items-center gap-1.5 pt-3 text-sm font-medium">
                     <Clock3 className="h-4 w-4 text-muted-foreground" />
                     {event.startTime.slice(0, 5)}
@@ -391,14 +390,6 @@ export function AgendaView({
         </Card>
       ) : null}
 
-      <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-        <span className="inline-flex items-center gap-1">
-          <CalendarDays className="h-3.5 w-3.5" />
-          "Nog iemand zoeken" betekent dat de plek nog openstaat. "Reactie ontvangen"
-          vraagt om actie van de sportschool. "Wacht op bevestiging" betekent dat een
-          kandidaat al is gekozen en de instructeur nog definitief moet bevestigen.
-        </span>
-      </div>
     </div>
   );
 }
