@@ -20,9 +20,15 @@ export const metadata: Metadata = {
   title: "Reviews",
 };
 
-export default async function ReviewsPage() {
+export default async function ReviewsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ view?: string }>;
+}) {
   const profile = await getSessionProfile();
   const supabase = await createClient();
+  const params = await searchParams;
+  const activeView = params.view === "given" ? "given" : "received";
 
   if (!profile || !supabase) {
     redirect("/login");
@@ -161,71 +167,100 @@ export default async function ReviewsPage() {
         </div>
       ) : null}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Ontvangen beoordelingen</CardTitle>
-          <CardDescription>
-            Beoordelingen worden zichtbaar nadat beide partijen hebben
-            beoordeeld.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          {received.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              Nog geen ontvangen beoordelingen.
-            </p>
-          ) : (
-            received.map((review) => (
-              <div
-                className="flex items-center justify-between rounded-lg border border-border p-3 text-sm"
-                key={review.id}
-              >
-                <div>
-                  <StarRow rating={review.rating} />
-                  <p className="text-xs text-muted-foreground">
-                    {review.job?.title} · {formatDate(review.created_at)}
-                  </p>
-                  {review.comment ? <p className="mt-1 text-sm">“{review.comment}”</p> : null}
-                </div>
-                <Badge variant="muted">
-                  {review.side === "instructor" ? "Instructeur" : "Organisatie"}
-                </Badge>
-              </div>
-            ))
-          )}
-        </CardContent>
-      </Card>
+      <div className="flex gap-1 rounded-lg border border-border bg-muted/40 p-1">
+        <Link
+          className={
+            activeView === "received"
+              ? "flex-1 rounded-md bg-background px-4 py-2 text-center text-sm font-semibold shadow-sm"
+              : "flex-1 rounded-md px-4 py-2 text-center text-sm font-medium text-muted-foreground hover:text-foreground"
+          }
+          href="/reviews?view=received"
+        >
+          Ontvangen ({received.length})
+        </Link>
+        <Link
+          className={
+            activeView === "given"
+              ? "flex-1 rounded-md bg-background px-4 py-2 text-center text-sm font-semibold shadow-sm"
+              : "flex-1 rounded-md px-4 py-2 text-center text-sm font-medium text-muted-foreground hover:text-foreground"
+          }
+          href="/reviews?view=given"
+        >
+          Gegeven ({given.length})
+        </Link>
+      </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Gegeven beoordelingen</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          {given.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              Nog geen beoordelingen gegeven.
-            </p>
-          ) : (
-            given.map((review) => (
-              <div
-                className="flex items-center justify-between rounded-lg border border-border p-3 text-sm"
-                key={review.id}
-              >
-                <div>
-                  <StarRow rating={review.rating} />
-                  <p className="text-xs text-muted-foreground">
-                    {review.job?.title} · {formatDate(review.created_at)}
-                  </p>
-                  {review.comment ? <p className="mt-1 text-sm">“{review.comment}”</p> : null}
+      {activeView === "received" ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Ontvangen beoordelingen</CardTitle>
+            <CardDescription>
+              Beoordelingen worden zichtbaar nadat beide partijen hebben
+              beoordeeld.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {received.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                Nog geen ontvangen beoordelingen.
+              </p>
+            ) : (
+              received.map((review) => (
+                <div
+                  className="flex items-center justify-between rounded-lg border border-border p-3 text-sm"
+                  key={review.id}
+                >
+                  <div>
+                    <StarRow rating={review.rating} />
+                    <p className="text-xs text-muted-foreground">
+                      {review.job?.title} · {formatDate(review.created_at)}
+                    </p>
+                    {review.comment ? (
+                      <p className="mt-1 text-sm">“{review.comment}”</p>
+                    ) : null}
+                  </div>
+                  <Badge variant="muted">Ontvangen</Badge>
                 </div>
-                {!review.released_at ? (
-                  <Badge variant="secondary">Wacht op tegenpartij</Badge>
-                ) : null}
-              </div>
-            ))
-          )}
-        </CardContent>
-      </Card>
+              ))
+            )}
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle>Gegeven beoordelingen</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {given.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                Nog geen beoordelingen gegeven.
+              </p>
+            ) : (
+              given.map((review) => (
+                <div
+                  className="flex items-center justify-between rounded-lg border border-border p-3 text-sm"
+                  key={review.id}
+                >
+                  <div>
+                    <StarRow rating={review.rating} />
+                    <p className="text-xs text-muted-foreground">
+                      {review.job?.title} · {formatDate(review.created_at)}
+                    </p>
+                    {review.comment ? (
+                      <p className="mt-1 text-sm">“{review.comment}”</p>
+                    ) : null}
+                  </div>
+                  {!review.released_at ? (
+                    <Badge variant="secondary">Wacht op tegenpartij</Badge>
+                  ) : (
+                    <Badge variant="muted">Gegeven</Badge>
+                  )}
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
