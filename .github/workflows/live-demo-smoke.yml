@@ -38,7 +38,7 @@ jobs:
             const urgencyHeading = main.getByRole("heading", { name: "Urgentie", exact: true });
             await urgencyHeading.waitFor();
 
-            const section = urgencyHeading.locator("..").locator("..");
+            const section = urgencyHeading.locator("xpath=ancestor::section[1]");
             const text = await section.innerText();
             console.log("URGENCY_TEXT", JSON.stringify(text));
 
