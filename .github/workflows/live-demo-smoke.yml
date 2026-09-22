@@ -1,4 +1,4 @@
-name: Candidate profile production check
+name: Candidate list clarity production check
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
       - qa/demo-live-check-20260921
 
 jobs:
-  candidate-profile:
+  candidate-list:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -17,86 +17,89 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
-      - name: Verify candidate profile on production
+      - name: Verify candidate list clarity on production
         env:
           BASE_URL: https://sportmatch-zzp.vercel.app
         run: |
-          cat > candidate-profile-check.mjs <<'EOF'
+          cat > candidate-list-check.mjs <<'EOF'
           import { chromium } from "@playwright/test";
 
           const browser = await chromium.launch({ headless: true });
-          const context = await browser.newContext();
-          const page = await context.newPage();
           const baseURL = process.env.BASE_URL;
 
-          try {
+          async function startSportschool(context) {
+            const page = await context.newPage();
             await page.goto(baseURL + "/demo", { waitUntil: "networkidle", timeout: 45000 });
             await page.getByRole("button", { name: "Start demo als sportschool" }).click();
             await page.waitForURL("**/dashboard", { timeout: 60000 });
+            return page;
+          }
 
-            await page.goto(baseURL + "/organisatie/opdrachten", {
+          try {
+            const desktop = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+            const page = await startSportschool(desktop);
+            await page.goto(baseURL + "/organisatie/kandidaten", {
               waitUntil: "networkidle",
               timeout: 45000,
             });
-            const reactions = page.getByRole("link", { name: /\d+ bekijken/ }).first();
-            await reactions.waitFor();
-            await reactions.click();
-            await page.waitForURL((url) =>
-              url.pathname === "/organisatie/kandidaten" && Boolean(url.searchParams.get("job")),
-              { timeout: 30000 },
-            );
-            const jobId = new URL(page.url()).searchParams.get("job");
+
+            const headings = [
+              "Reacties",
+              "Eerder mee samengewerkt",
+              "Passende instructeurs",
+              "Hoog beoordeeld",
+            ];
+            for (const heading of headings) {
+              await page.getByRole("heading", { name: heading, exact: true }).waitFor();
+            }
+            console.log("PASS clear candidate sections");
+
+            if (await page.getByText("Zo kies je sneller de juiste instructeur", { exact: true }).count()) {
+              throw new Error("Old explanatory candidate tip card is still visible");
+            }
+            console.log("PASS explanatory card removed");
 
             const profileLink = page.locator('a[href^="/organisatie/kandidaten/"]').first();
             await profileLink.waitFor();
-            const profileHref = await profileLink.getAttribute("href");
-            if (!profileHref || !profileHref.includes(`job=${jobId}`)) {
-              throw new Error("Candidate profile link did not preserve job context");
+            const candidateRow = profileLink.locator("xpath=ancestor::div[contains(@class,'px-5')][1]");
+            const rowText = await candidateRow.innerText();
+            if (!rowText.includes("reviews") || !rowText.includes("Betrouwbaarheid")) {
+              throw new Error("Candidate core review/reliability information is not grouped under the candidate");
             }
-            console.log("PASS candidate profile link", profileHref);
+            console.log("PASS candidate summary line", JSON.stringify(rowText));
 
-            await profileLink.click();
-            await page.waitForURL((url) =>
-              url.pathname.startsWith("/organisatie/kandidaten/") &&
-              url.searchParams.get("job") === jobId,
-              { timeout: 30000 },
-            );
+            await desktop.close();
 
-            for (const heading of ["Over mij", "Reviews", "Sporten & lesvormen", "Diploma’s"]) {
-              await page.getByRole("heading", { name: heading, exact: true }).waitFor();
+            const mobile = await browser.newContext({ viewport: { width: 390, height: 844 } });
+            const mobilePage = await startSportschool(mobile);
+            await mobilePage.goto(baseURL + "/organisatie/kandidaten", {
+              waitUntil: "networkidle",
+              timeout: 45000,
+            });
+            await mobilePage.getByRole("heading", { name: "Reacties", exact: true }).waitFor();
+
+            const overflow = await mobilePage.evaluate(() => ({
+              scrollWidth: document.documentElement.scrollWidth,
+              clientWidth: document.documentElement.clientWidth,
+            }));
+            if (overflow.scrollWidth > overflow.clientWidth + 2) {
+              throw new Error(`Mobile candidate page overflows horizontally: ${JSON.stringify(overflow)}`);
             }
-            await page.getByText("Beoordeling", { exact: true }).waitFor();
-            await page.getByText("Betrouwbaarheid", { exact: true }).waitFor();
-            await page.getByText("Reisafstand", { exact: true }).waitFor();
-            console.log("PASS candidate profile content", page.url());
+            console.log("PASS mobile no horizontal overflow", JSON.stringify(overflow));
 
-            for (const sensitive of ["E-mail", "Telefoon", "KvK-nummer", "Btw-nummer"]) {
-              if (await page.getByText(sensitive, { exact: true }).count()) {
-                throw new Error("Sensitive candidate field visible: " + sensitive);
-              }
+            const mobileProfile = mobilePage.getByRole("button", { name: "Profiel", exact: true }).first();
+            if (await mobileProfile.count()) {
+              await mobileProfile.waitFor();
+              console.log("PASS mobile candidate actions visible");
             }
-            console.log("PASS no sensitive candidate contact fields");
 
-            const back = page.getByRole("link", { name: "← Terug naar kandidaten" });
-            const backHref = await back.getAttribute("href");
-            if (!backHref || !backHref.includes(`job=${jobId}`)) {
-              throw new Error("Back link did not preserve candidate context");
-            }
-            await back.click();
-            await page.waitForURL((url) =>
-              url.pathname === "/organisatie/kandidaten" &&
-              url.searchParams.get("job") === jobId,
-              { timeout: 30000 },
-            );
-            console.log("PASS candidate context restored");
-
-            const logout = page.getByRole("button", { name: /uitloggen/i }).first();
+            const logout = mobilePage.getByRole("button", { name: /uitloggen/i }).first();
             await logout.click();
-            await page.waitForURL((url) => url.pathname === "/", { timeout: 30000 });
+            await mobilePage.waitForURL((url) => url.pathname === "/", { timeout: 30000 });
             console.log("PASS sportschool demo logout");
+            await mobile.close();
           } finally {
-            await context.close();
             await browser.close();
           }
           EOF
-          node candidate-profile-check.mjs
+          node candidate-list-check.mjs
