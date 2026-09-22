@@ -25,10 +25,16 @@ interface ReviewRow extends Review {
   job: { title: string; organization_id: string } | null;
 }
 
-export default async function OrganisatieReviewsPage() {
+export default async function OrganisatieReviewsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ view?: string }>;
+}) {
   const profile = await getSessionProfile();
   const orgContext = await getOrgContext();
   const supabase = await createClient();
+  const params = await searchParams;
+  const activeView = params.view === "given" ? "given" : "received";
 
   if (!profile || !supabase) {
     redirect("/login");
@@ -39,7 +45,8 @@ export default async function OrganisatieReviewsPage() {
   }
 
   const [
-    { data },
+    { data: receivedData },
+    { data: givenData },
     { data: completedJobs },
     { data: myReviews },
     { data: wholeConfirmations },
@@ -49,7 +56,15 @@ export default async function OrganisatieReviewsPage() {
       .from("reviews")
       .select("*, job:jobs!inner (title, organization_id)")
       .eq("job.organization_id", orgContext.organization.id)
+      .eq("side", "instructor")
       .not("released_at", "is", null)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("reviews")
+      .select("*, job:jobs!inner (title, organization_id)")
+      .eq("job.organization_id", orgContext.organization.id)
+      .eq("reviewer_id", profile.id)
+      .eq("side", "organization")
       .order("created_at", { ascending: false }),
     supabase
       .from("jobs")
@@ -76,10 +91,10 @@ export default async function OrganisatieReviewsPage() {
       .is("cancelled_at", null),
   ]);
 
-  const reviews = (data as unknown as ReviewRow[] | null) ?? [];
-  const receivedReviews = reviews.filter(
-    (review) => review.side === "instructor",
-  );
+  const receivedReviews =
+    (receivedData as unknown as ReviewRow[] | null) ?? [];
+  const givenReviews =
+    (givenData as unknown as ReviewRow[] | null) ?? [];
   const average =
     receivedReviews.length > 0
       ? (
@@ -157,40 +172,75 @@ export default async function OrganisatieReviewsPage() {
         </Card>
       </div>
 
+      <div className="flex gap-1 rounded-lg border border-border bg-muted/40 p-1">
+        <Link
+          className={
+            activeView === "received"
+              ? "flex-1 rounded-md bg-background px-4 py-2 text-center text-sm font-semibold shadow-sm"
+              : "flex-1 rounded-md px-4 py-2 text-center text-sm font-medium text-muted-foreground hover:text-foreground"
+          }
+          href="/organisatie/reviews?view=received"
+        >
+          Ontvangen ({receivedReviews.length})
+        </Link>
+        <Link
+          className={
+            activeView === "given"
+              ? "flex-1 rounded-md bg-background px-4 py-2 text-center text-sm font-semibold shadow-sm"
+              : "flex-1 rounded-md px-4 py-2 text-center text-sm font-medium text-muted-foreground hover:text-foreground"
+          }
+          href="/organisatie/reviews?view=given"
+        >
+          Gegeven ({givenReviews.length})
+        </Link>
+      </div>
+
       <Card>
         <CardHeader>
-          <CardTitle>Alle beoordelingen</CardTitle>
+          <CardTitle>
+            {activeView === "received"
+              ? "Ontvangen beoordelingen"
+              : "Gegeven beoordelingen"}
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
-          {reviews.length === 0 ? (
+          {(activeView === "received" ? receivedReviews : givenReviews).length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              Nog geen vrijgegeven beoordelingen.
+              {activeView === "received"
+                ? "Nog geen ontvangen beoordelingen."
+                : "Nog geen beoordelingen gegeven."}
             </p>
           ) : (
-            reviews.map((review) => (
-              <div
-                className="flex items-center justify-between rounded-lg border border-border p-3 text-sm"
-                key={review.id}
-              >
-                <div>
-                  <span className="text-warning">
-                    {"★".repeat(review.rating)}
-                    <span className="text-muted-foreground/40">
-                      {"★".repeat(5 - review.rating)}
+            (activeView === "received" ? receivedReviews : givenReviews).map(
+              (review) => (
+                <div
+                  className="flex items-center justify-between rounded-lg border border-border p-3 text-sm"
+                  key={review.id}
+                >
+                  <div>
+                    <span className="text-warning">
+                      {"★".repeat(review.rating)}
+                      <span className="text-muted-foreground/40">
+                        {"★".repeat(5 - review.rating)}
+                      </span>
                     </span>
-                  </span>
-                  <p className="text-xs text-muted-foreground">
-                    {review.job?.title} · {formatDate(review.created_at)}
-                  </p>
-                  {review.comment ? <p className="mt-1 text-sm">“{review.comment}”</p> : null}
+                    <p className="text-xs text-muted-foreground">
+                      {review.job?.title} · {formatDate(review.created_at)}
+                    </p>
+                    {review.comment ? (
+                      <p className="mt-1 text-sm">“{review.comment}”</p>
+                    ) : null}
+                  </div>
+                  {activeView === "given" && !review.released_at ? (
+                    <Badge variant="secondary">Wacht op tegenpartij</Badge>
+                  ) : (
+                    <Badge variant="muted">
+                      {activeView === "received" ? "Ontvangen" : "Gegeven"}
+                    </Badge>
+                  )}
                 </div>
-                <Badge variant="muted">
-                  {review.side === "instructor"
-                    ? "Van instructeur"
-                    : "Aan instructeur"}
-                </Badge>
-              </div>
-            ))
+              ),
+            )
           )}
         </CardContent>
       </Card>
