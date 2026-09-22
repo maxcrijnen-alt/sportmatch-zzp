@@ -160,7 +160,7 @@ export default async function MijnReactiesPage() {
           <CardContent className="space-y-2 pt-0">
             {confirmations.map((confirmation) => (
               <div
-                className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border p-3"
+                className="flex flex-wrap items-center justify-between gap-3 border-t border-border py-3 first:border-t-0 first:pt-0"
                 key={confirmation.id}
               >
                 <div>
@@ -216,7 +216,7 @@ export default async function MijnReactiesPage() {
           ) : (
             applications.map((application) => (
               <div
-                className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border p-3"
+                className="flex flex-wrap items-center justify-between gap-3 border-t border-border py-3 first:border-t-0 first:pt-0"
                 key={application.id}
               >
                 <div>
