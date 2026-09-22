@@ -1,4 +1,4 @@
-name: Sportschool urgency production check
+name: Review tabs production check
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
       - qa/demo-live-check-20260921
 
 jobs:
-  urgency:
+  review-tabs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -17,52 +17,54 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
-      - name: Verify sportschool urgency on production
+      - name: Verify review tabs on production
         env:
           BASE_URL: https://sportmatch-zzp.vercel.app
         run: |
-          cat > urgency-check.mjs <<'EOF'
+          cat > review-tabs-check.mjs <<'EOF'
           import { chromium } from "@playwright/test";
 
           const browser = await chromium.launch({ headless: true });
-          const context = await browser.newContext();
-          const page = await context.newPage();
           const baseURL = process.env.BASE_URL;
 
-          try {
-            await page.goto(baseURL + "/demo", { waitUntil: "networkidle", timeout: 45000 });
-            await page.getByRole("button", { name: "Start demo als sportschool" }).click();
-            await page.waitForURL("**/dashboard", { timeout: 60000 });
+          async function check(role, reviewsPath) {
+            const context = await browser.newContext();
+            const page = await context.newPage();
+            try {
+              await page.goto(baseURL + "/demo", { waitUntil: "networkidle", timeout: 45000 });
+              await page.getByRole("button", { name: "Start demo als " + role }).click();
+              await page.waitForURL("**/dashboard", { timeout: 60000 });
 
-            const main = page.locator("main");
-            const urgencyHeading = main.getByRole("heading", { name: "Urgentie", exact: true });
-            await urgencyHeading.waitFor();
+              await page.goto(baseURL + reviewsPath, { waitUntil: "networkidle", timeout: 45000 });
 
-            const section = urgencyHeading.locator("xpath=ancestor::section[1]");
-            const text = await section.innerText();
-            console.log("URGENCY_TEXT", JSON.stringify(text));
+              const receivedTab = page.getByRole("link", { name: /^Ontvangen \(/ });
+              const givenTab = page.getByRole("link", { name: /^Gegeven \(/ });
+              await receivedTab.waitFor();
+              await givenTab.waitFor();
+              await page.getByRole("heading", { name: "Ontvangen beoordelingen", exact: true }).waitFor();
+              console.log("PASS", role, "received tab", await receivedTab.innerText());
 
-            const jobLinks = section.locator('a[href^="/organisatie/opdrachten/"]');
-            const count = await jobLinks.count();
-            if (count < 1) {
-              throw new Error("Demo has no urgent assignment links");
+              await givenTab.click();
+              await page.waitForURL((url) =>
+                url.pathname === reviewsPath && url.searchParams.get("view") === "given",
+                { timeout: 30000 },
+              );
+              await page.getByRole("heading", { name: "Gegeven beoordelingen", exact: true }).waitFor();
+              console.log("PASS", role, "given tab", page.url());
+
+              const logout = page.getByRole("button", { name: /uitloggen/i }).first();
+              await logout.click();
+              await page.waitForURL((url) => url.pathname === "/", { timeout: 30000 });
+            } finally {
+              await context.close();
             }
+          }
 
-            const firstHref = await jobLinks.first().getAttribute("href");
-            if (!firstHref) throw new Error("Urgent assignment link has no href");
-            console.log("PASS urgency links", count, firstHref);
-
-            await jobLinks.first().click();
-            await page.waitForURL((url) => url.pathname === firstHref, { timeout: 30000 });
-            console.log("PASS urgent assignment opens", page.url());
-
-            const logout = page.getByRole("button", { name: /uitloggen/i }).first();
-            await logout.click();
-            await page.waitForURL((url) => url.pathname === "/", { timeout: 30000 });
-            console.log("PASS sportschool demo logout");
+          try {
+            await check("sportschool", "/organisatie/reviews");
+            await check("instructeur", "/reviews");
           } finally {
-            await context.close();
             await browser.close();
           }
           EOF
-          node urgency-check.mjs
+          node review-tabs-check.mjs
