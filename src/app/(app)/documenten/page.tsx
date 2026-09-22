@@ -52,7 +52,7 @@ export default async function DocumentenPage() {
   );
 
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-6 px-4 py-8">
+    <div className="mx-auto w-full max-w-3xl space-y-4 px-4 py-8">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Documenten</h1>
         <p className="text-sm text-muted-foreground">
@@ -62,7 +62,7 @@ export default async function DocumentenPage() {
       </div>
 
       {approvedTypes.size > 0 ? (
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-1.5">
           {Array.from(approvedTypes).map((docType) => (
             <Badge key={docType} variant="success">
               <BadgeCheck className="h-3 w-3" />
@@ -88,23 +88,25 @@ export default async function DocumentenPage() {
       ) : null}
 
       <Card>
-        <CardHeader>
-          <CardTitle>Nieuw document uploaden</CardTitle>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Nieuw document uploaden</CardTitle>
           <CardDescription>
-            Sportdiploma&apos;s, EHBO/BHV/AED, VOG en
-            aansprakelijkheidsverzekering.
+            Sportdiploma&apos;s, EHBO/BHV/AED, VOG en aansprakelijkheidsverzekering.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-0">
           <DocumentUploadForm userId={profile.id} />
         </CardContent>
       </Card>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Mijn documenten</CardTitle>
+        <CardHeader className="flex-row items-center justify-between space-y-0 pb-3">
+          <CardTitle className="text-base">Mijn documenten</CardTitle>
+          <span className="rounded-full border border-border px-2.5 py-1 text-xs font-semibold text-muted-foreground">
+            {documents.length}
+          </span>
         </CardHeader>
-        <CardContent className="space-y-2">
+        <CardContent className="space-y-0 pt-0">
           {documents.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               Nog geen documenten geüpload.
@@ -112,12 +114,12 @@ export default async function DocumentenPage() {
           ) : (
             documents.map((document) => (
               <div
-                className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border p-3"
+                className="flex flex-wrap items-center justify-between gap-3 border-t border-border py-3 first:border-t-0 first:pt-0"
                 key={document.id}
               >
-                <div className="flex items-center gap-3">
-                  <FileText className="h-5 w-5 text-muted-foreground" />
-                  <div>
+                <div className="flex min-w-0 items-center gap-3">
+                  <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  <div className="min-w-0">
                     <p className="text-sm font-medium">
                       {documentTypeLabels[document.doc_type]}
                     </p>
