@@ -83,6 +83,8 @@ export default async function OrganisatieOpdrachtenPage({
     .eq("organization_id", orgContext.organization.id)
     .order("created_at", { ascending: false });
 
+  query = query.eq("applications.status", "pending");
+
   if (selectedLocationId) {
     query = query.eq("location_id", selectedLocationId);
   }
@@ -253,7 +255,16 @@ export default async function OrganisatieOpdrachtenPage({
                   </TableCell>
                   <TableCell className="text-sm">{job.location?.name}</TableCell>
                   <TableCell className="text-sm">
-                    {job.applications?.[0]?.count ?? 0}
+                    {(job.applications?.[0]?.count ?? 0) > 0 && job.status === "open" ? (
+                      <Link
+                        className="font-medium text-primary hover:underline"
+                        href={`/organisatie/kandidaten?job=${job.id}${selectedLocationId ? `&location=${selectedLocationId}` : ""}`}
+                      >
+                        {job.applications?.[0]?.count ?? 0} bekijken
+                      </Link>
+                    ) : (
+                      job.applications?.[0]?.count ?? 0
+                    )}
                   </TableCell>
                   <TableCell>
                     <Badge variant={workflow.variant}>
