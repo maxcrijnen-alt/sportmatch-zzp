@@ -93,6 +93,13 @@ export default async function KandidatenPage({
     (location) => location.id === selectedLocationId,
   );
   const selectedJobId = params.job ?? null;
+  const candidateProfileHref = (instructorId: string) => {
+    const candidateParams = new URLSearchParams();
+    if (selectedJobId) candidateParams.set("job", selectedJobId);
+    if (selectedLocationId) candidateParams.set("location", selectedLocationId);
+    const query = candidateParams.toString();
+    return `/organisatie/kandidaten/${instructorId}${query ? `?${query}` : ""}`;
+  };
 
   let applicationsQuery = supabase
     .from("job_applications")
@@ -556,16 +563,19 @@ export default async function KandidatenPage({
               return (
                 <Card key={instructorId}>
                   <CardContent className="space-y-3 pt-5">
-                    <div className="flex items-center gap-3">
+                    <Link
+                      className="flex items-center gap-3 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                      href={candidateProfileHref(instructorId)}
+                    >
                       <Avatar name={instructor?.name ?? "?"} src={instructor?.avatar} />
                       <div>
-                        <p className="font-medium">{instructor?.name}</p>
+                        <p className="font-medium hover:text-primary">{instructor?.name}</p>
                         <p className="text-xs text-muted-foreground">
                           {stats?.avg_rating != null ? `★ ${stats.avg_rating} · ` : ""}
                           {stats?.review_count ?? 0} reviews · {stats?.completed_count ?? 0} afgerond
                         </p>
                       </div>
-                    </div>
+                    </Link>
                     {returningMatch ? (
                       <div className="space-y-2">
                         <p className="text-xs text-muted-foreground">
@@ -620,12 +630,19 @@ export default async function KandidatenPage({
                 key={application.id}
               >
                 <div className="flex items-center gap-3">
-                  <Avatar
-                    name={instructor?.name ?? "?"}
-                    src={instructor?.avatar}
-                  />
+                  <Link
+                    className="flex items-center gap-3 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    href={candidateProfileHref(application.instructor_id)}
+                  >
+                    <Avatar
+                      name={instructor?.name ?? "?"}
+                      src={instructor?.avatar}
+                    />
+                    <div>
+                      <p className="font-medium hover:text-primary">{instructor?.name}</p>
+                    </div>
+                  </Link>
                   <div>
-                    <p className="font-medium">{instructor?.name}</p>
                     <p className="text-sm text-muted-foreground">
                       Voor:{" "}
                       <Link
@@ -674,7 +691,22 @@ export default async function KandidatenPage({
               const stats = statsById.get(match.userId);
               return (
                 <Card key={match.userId}><CardContent className="space-y-3 pt-5">
-                  <div className="flex items-center gap-3"><Avatar name={instructor?.name ?? "?"} src={instructor?.avatar} /><div><p className="font-medium">{instructor?.name}</p>{match.isFirstJob ? <Badge variant="muted">Eerste klus</Badge> : <p className="text-xs text-muted-foreground">★ {stats?.avg_rating} · {stats?.review_count} reviews · {stats?.completed_count} afgerond</p>}</div></div>
+                  <Link
+                    className="flex items-center gap-3 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    href={candidateProfileHref(match.userId)}
+                  >
+                    <Avatar name={instructor?.name ?? "?"} src={instructor?.avatar} />
+                    <div>
+                      <p className="font-medium hover:text-primary">{instructor?.name}</p>
+                      {match.isFirstJob ? (
+                        <Badge variant="muted">Eerste klus</Badge>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">
+                          ★ {stats?.avg_rating} · {stats?.review_count} reviews · {stats?.completed_count} afgerond
+                        </p>
+                      )}
+                    </div>
+                  </Link>
                   <div className="flex flex-wrap gap-1.5">
                     <Badge variant="accent">Match {match.score}</Badge>
                     <Badge variant="outline">{match.lessonTypeName}</Badge>
@@ -724,15 +756,18 @@ export default async function KandidatenPage({
               return (
                 <Card key={match.userId}>
                   <CardContent className="space-y-3 pt-5">
-                    <div className="flex items-center gap-3">
+                    <Link
+                      className="flex items-center gap-3 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                      href={candidateProfileHref(match.userId)}
+                    >
                       <Avatar name={instructor?.name ?? "?"} src={instructor?.avatar} />
                       <div>
-                        <p className="font-medium">{instructor?.name}</p>
+                        <p className="font-medium hover:text-primary">{instructor?.name}</p>
                         <p className="text-xs text-muted-foreground">
                           ★ {stats?.avg_rating} · {stats?.review_count} reviews · {stats?.completed_count} afgerond
                         </p>
                       </div>
-                    </div>
+                    </Link>
                     <p className="text-xs text-muted-foreground">
                       Past bij {match.job.title} · {match.lessonTypeName}
                     </p>
