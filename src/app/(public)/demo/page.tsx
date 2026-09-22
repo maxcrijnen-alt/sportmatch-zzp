@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Building2, Dumbbell } from "lucide-react";
+import { RoleIcon } from "@/components/brand/role-icon";
 import { DemoStartButton } from "@/components/demo/demo-start-button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { startDemoAction } from "@/lib/demo/actions";
@@ -13,12 +13,10 @@ const demos = [
   {
     role: "organization",
     title: "Demo als sportschool",
-    icon: Building2,
   },
   {
     role: "instructor",
     title: "Demo als instructeur",
-    icon: Dumbbell,
   },
 ] as const;
 
@@ -53,15 +51,11 @@ export default async function DemoPage({
 
       <div className="mt-8 grid gap-5 md:grid-cols-2">
         {demos.map((demo) => {
-          const Icon = demo.icon;
-
           return (
             <Card className="h-full" key={demo.role}>
               <CardHeader>
                 <div className="flex items-center gap-3">
-                  <div className="rounded-md bg-primary/10 p-2 text-primary">
-                    <Icon className="h-6 w-6" />
-                  </div>
+                  <RoleIcon role={demo.role} />
                   <CardTitle>{demo.title}</CardTitle>
                 </div>
               </CardHeader>
