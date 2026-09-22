@@ -1,4 +1,4 @@
-name: Review tabs production check
+name: Agenda status indicator production check
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
       - qa/demo-live-check-20260921
 
 jobs:
-  review-tabs:
+  agenda-status:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -17,54 +17,59 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
-      - name: Verify review tabs on production
+      - name: Verify visual agenda states on production
         env:
           BASE_URL: https://sportmatch-zzp.vercel.app
         run: |
-          cat > review-tabs-check.mjs <<'EOF'
+          cat > agenda-status-check.mjs <<'EOF'
           import { chromium } from "@playwright/test";
 
           const browser = await chromium.launch({ headless: true });
+          const context = await browser.newContext();
+          const page = await context.newPage();
           const baseURL = process.env.BASE_URL;
 
-          async function check(role, reviewsPath) {
-            const context = await browser.newContext();
-            const page = await context.newPage();
-            try {
-              await page.goto(baseURL + "/demo", { waitUntil: "networkidle", timeout: 45000 });
-              await page.getByRole("button", { name: "Start demo als " + role }).click();
-              await page.waitForURL("**/dashboard", { timeout: 60000 });
-
-              await page.goto(baseURL + reviewsPath, { waitUntil: "networkidle", timeout: 45000 });
-
-              const receivedTab = page.getByRole("link", { name: /^Ontvangen \(/ });
-              const givenTab = page.getByRole("link", { name: /^Gegeven \(/ });
-              await receivedTab.waitFor();
-              await givenTab.waitFor();
-              await page.getByRole("heading", { name: "Ontvangen beoordelingen", exact: true }).waitFor();
-              console.log("PASS", role, "received tab", await receivedTab.innerText());
-
-              await givenTab.click();
-              await page.waitForURL((url) =>
-                url.pathname === reviewsPath && url.searchParams.get("view") === "given",
-                { timeout: 30000 },
-              );
-              await page.getByRole("heading", { name: "Gegeven beoordelingen", exact: true }).waitFor();
-              console.log("PASS", role, "given tab", page.url());
-
-              const logout = page.getByRole("button", { name: /uitloggen/i }).first();
-              await logout.click();
-              await page.waitForURL((url) => url.pathname === "/", { timeout: 30000 });
-            } finally {
-              await context.close();
-            }
-          }
-
           try {
-            await check("sportschool", "/organisatie/reviews");
-            await check("instructeur", "/reviews");
+            await page.goto(baseURL + "/demo", { waitUntil: "networkidle", timeout: 45000 });
+            await page.getByRole("button", { name: "Start demo als sportschool" }).click();
+            await page.waitForURL("**/dashboard", { timeout: 60000 });
+
+            await page.goto(baseURL + "/agenda", { waitUntil: "networkidle", timeout: 45000 });
+
+            const expected = [
+              ["Nog iemand zoeken", "red-"],
+              ["Reactie ontvangen", "amber-"],
+              ["Wacht op bevestiging", "amber-"],
+              ["Bevestigd", "emerald-"],
+            ];
+
+            for (const [label, tone] of expected) {
+              const indicator = page.locator(`[aria-label="${label}"]`).first();
+              await indicator.waitFor();
+              const square = indicator.locator("span").first();
+              const classes = await square.getAttribute("class");
+              if (!classes?.includes(tone)) {
+                throw new Error(`${label} has unexpected tone: ${classes}`);
+              }
+              console.log("PASS list status", label, tone);
+            }
+
+            await page.getByRole("button", { name: "Week", exact: true }).click();
+            const compactIndicators = page.locator(
+              '[aria-label="Nog iemand zoeken"], [aria-label="Reactie ontvangen"], [aria-label="Wacht op bevestiging"], [aria-label="Bevestigd"]',
+            );
+            if ((await compactIndicators.count()) < 1) {
+              throw new Error("No compact status indicators found in week view");
+            }
+            console.log("PASS week compact indicators", await compactIndicators.count());
+
+            const logout = page.getByRole("button", { name: /uitloggen/i }).first();
+            await logout.click();
+            await page.waitForURL((url) => url.pathname === "/", { timeout: 30000 });
+            console.log("PASS sportschool demo logout");
           } finally {
+            await context.close();
             await browser.close();
           }
           EOF
-          node review-tabs-check.mjs
+          node agenda-status-check.mjs
