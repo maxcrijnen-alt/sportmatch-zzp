@@ -30,7 +30,7 @@ const roleCards = [
     href: "/registreren?rol=instructeur",
     role: "instructor",
   },
-];
+] as const;
 
 const onboardingSteps = [
   "Eerst demo bekijken kan zonder eigen account.",
