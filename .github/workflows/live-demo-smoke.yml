@@ -93,10 +93,11 @@ jobs:
               console.log("PASS mobile candidate actions visible");
             }
 
-            const logout = mobilePage.getByRole("button", { name: /uitloggen/i }).first();
+            await mobilePage.getByRole("button", { name: "Meer", exact: true }).click();
+            const logout = mobilePage.getByRole("button", { name: /uitloggen/i }).last();
             await logout.click();
             await mobilePage.waitForURL((url) => url.pathname === "/", { timeout: 30000 });
-            console.log("PASS sportschool demo logout");
+            console.log("PASS sportschool demo mobile logout");
             await mobile.close();
           } finally {
             await browser.close();
