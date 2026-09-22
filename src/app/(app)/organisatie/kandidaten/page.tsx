@@ -547,9 +547,11 @@ export default async function KandidatenPage({
   };
 
   const sectionHeader = (title: string, count: number) => (
-    <div className="flex items-center justify-between gap-3 border-b border-border bg-muted/30 px-5 py-4">
+    <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
       <h2 className="font-semibold">{title}</h2>
-      <Badge variant="muted">{count}</Badge>
+      <span className="rounded-full border border-border px-2.5 py-1 text-xs font-semibold text-muted-foreground">
+        {count}
+      </span>
     </div>
   );
 
@@ -580,7 +582,7 @@ export default async function KandidatenPage({
         ) : null}
       </div>
 
-      <section className="overflow-hidden rounded-xl border border-border bg-card">
+      <section className="overflow-hidden rounded-lg border border-border bg-card">
         {sectionHeader("Reacties", applications.length)}
         {applications.length === 0 ? (
           <div className="flex flex-col items-center gap-3 px-5 py-10 text-center">
@@ -597,7 +599,7 @@ export default async function KandidatenPage({
             {applications.map((application) => {
               return (
                 <div
-                  className="flex flex-col gap-4 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
+                  className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
                   key={application.id}
                 >
                   {candidateIdentity(
@@ -621,7 +623,7 @@ export default async function KandidatenPage({
         )}
       </section>
 
-      <section className="overflow-hidden rounded-xl border border-border bg-card">
+      <section className="overflow-hidden rounded-lg border border-border bg-card">
         {sectionHeader("Eerder mee samengewerkt", workedBeforeIds.length)}
         {workedBeforeIds.length === 0 ? (
           <p className="px-5 py-6 text-sm text-muted-foreground">
@@ -634,7 +636,7 @@ export default async function KandidatenPage({
 
               return (
                 <div
-                  className="flex flex-col gap-4 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
+                  className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
                   key={instructorId}
                 >
                   {candidateIdentity(
@@ -658,7 +660,7 @@ export default async function KandidatenPage({
         )}
       </section>
 
-      <section className="overflow-hidden rounded-xl border border-border bg-card">
+      <section className="overflow-hidden rounded-lg border border-border bg-card">
         {sectionHeader("Passende instructeurs", visibleCandidateMatches.length)}
         {visibleCandidateMatches.length === 0 ? (
           <p className="px-5 py-6 text-sm text-muted-foreground">
@@ -669,22 +671,19 @@ export default async function KandidatenPage({
             {visibleCandidateMatches.map((match) => {
               return (
                 <div
-                  className="flex flex-col gap-4 px-5 py-4 lg:flex-row lg:items-center lg:justify-between"
+                  className="flex flex-col gap-3 px-4 py-3 lg:flex-row lg:items-center lg:justify-between"
                   key={match.userId}
                 >
                   {candidateIdentity(match.userId)}
 
-                  <div className="flex flex-1 flex-wrap gap-1.5 lg:justify-end">
-                    <Badge variant="accent">Match {match.score}</Badge>
-                    <Badge variant="outline">{match.lessonTypeName}</Badge>
-                    <Badge variant="outline">VOG ✓</Badge>
-                    <Badge variant="outline">
-                      {match.distanceKm == null ? "Afstand onbekend" : `${match.distanceKm} km`}
-                    </Badge>
-                    <Badge variant="outline">{match.yearsExperience} jaar ervaring</Badge>
-                    <Badge variant="outline">
-                      {match.availability === "available" ? "Beschikbaar" : "Beschikbaarheid onbekend"}
-                    </Badge>
+                  <div className="min-w-0 flex-1 lg:text-right">
+                    <div className="flex flex-wrap gap-1.5 lg:justify-end">
+                      <Badge variant="accent">Match {match.score}</Badge>
+                      <Badge variant="outline">{match.lessonTypeName}</Badge>
+                    </div>
+                    <p className="mt-1.5 text-xs text-muted-foreground">
+                      VOG ✓ · {match.distanceKm == null ? "Afstand onbekend" : `${match.distanceKm} km`} · {match.yearsExperience} jaar ervaring · {match.availability === "available" ? "Beschikbaar" : "Beschikbaarheid onbekend"}
+                    </p>
                   </div>
 
                   <div className="flex shrink-0 items-center gap-2">
@@ -702,7 +701,7 @@ export default async function KandidatenPage({
         )}
       </section>
 
-      <section className="overflow-hidden rounded-xl border border-border bg-card">
+      <section className="overflow-hidden rounded-lg border border-border bg-card">
         {sectionHeader("Hoog beoordeeld", highlyRatedMatches.length)}
         {highlyRatedMatches.length === 0 ? (
           <p className="px-5 py-6 text-sm text-muted-foreground">
@@ -713,7 +712,7 @@ export default async function KandidatenPage({
             {highlyRatedMatches.map((match) => {
               return (
                 <div
-                  className="flex flex-col gap-4 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
+                  className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
                   key={match.userId}
                 >
                   {candidateIdentity(
