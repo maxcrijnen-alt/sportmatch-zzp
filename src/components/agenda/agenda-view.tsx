@@ -67,11 +67,9 @@ function EventCard({
       href={event.detailHref}
     >
       <div className="flex items-start gap-2">
-        <JobStatusIndicator
-          className={compact ? "mt-0" : "mt-0.5"}
-          showLabel={false}
-          state={event.state}
-        />
+        {compact ? (
+          <JobStatusIndicator showLabel={false} state={event.state} />
+        ) : null}
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-start justify-between gap-2">
             <div className="min-w-0">
@@ -93,9 +91,7 @@ function EventCard({
                 {event.startTime.slice(0, 5)}–{event.endTime.slice(0, 5)}
               </p>
             </div>
-            {!compact ? (
-              <JobStatusIndicator state={event.state} />
-            ) : null}
+            {!compact ? <JobStatusIndicator state={event.state} /> : null}
           </div>
         </div>
       </div>
