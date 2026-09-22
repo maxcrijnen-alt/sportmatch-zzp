@@ -262,18 +262,6 @@ export default async function OpdrachtenPage({
               <Button className="w-full sm:w-auto" size="sm" type="submit" variant="outline">
                 Filteren
               </Button>
-              {hasFilters ? (
-                <Link href="/opdrachten">
-                  <Button
-                    className="w-full sm:w-auto"
-                    size="sm"
-                    type="button"
-                    variant="outline"
-                  >
-                    Reset
-                  </Button>
-                </Link>
-              ) : null}
             </div>
           </form>
           </CardContent>
@@ -285,7 +273,7 @@ export default async function OpdrachtenPage({
           <h2 className="text-lg font-semibold tracking-tight">
             Beschikbare opdrachten
           </h2>
-          <span className="text-sm font-medium text-muted-foreground">
+          <span className="rounded-full border border-border px-2.5 py-1 text-xs font-semibold text-muted-foreground">
             {filtered.length}
           </span>
         </div>
