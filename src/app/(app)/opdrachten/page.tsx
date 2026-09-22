@@ -58,22 +58,21 @@ export default async function OpdrachtenPage({
       showAll,
   );
 
-  const [{ jobs, matches }, sportsResult, applicationsResult] = await Promise.all([
-    fetchOpenJobsWithMatches(),
-    supabase.from("sports").select("*").eq("is_active", true).order("name"),
-    supabase
-      .from("job_applications")
-      .select("job_id")
-      .eq("instructor_id", profile.id),
-  ]);
-
-  const agendaEvents =
-    profile.role === "instructor"
-      ? await sportMatchAgendaProvider.listEvents({
-          role: "instructor",
-          userId: profile.id,
-        })
-      : [];
+  const [{ jobs, matches }, sportsResult, applicationsResult, agendaEvents] =
+    await Promise.all([
+      fetchOpenJobsWithMatches(),
+      supabase.from("sports").select("*").eq("is_active", true).order("name"),
+      supabase
+        .from("job_applications")
+        .select("job_id")
+        .eq("instructor_id", profile.id),
+      profile.role === "instructor"
+        ? sportMatchAgendaProvider.listEvents({
+            role: "instructor",
+            userId: profile.id,
+          })
+        : Promise.resolve([]),
+    ]);
 
   const sports = (sportsResult.data as Sport[] | null) ?? [];
   const appliedJobIds = new Set(
