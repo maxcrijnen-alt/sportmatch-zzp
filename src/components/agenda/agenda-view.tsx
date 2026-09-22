@@ -29,11 +29,11 @@ import {
   UserRound,
 } from "lucide-react";
 import { useMemo, useState } from "react";
-import { Badge } from "@/components/ui/badge";
+import { JobStatusIndicator } from "@/components/jobs/job-status-indicator";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import type { AgendaEvent, AgendaEventState } from "@/lib/agenda/types";
+import type { AgendaEvent } from "@/lib/agenda/types";
 import type { UserRole } from "@/types/database";
 
 type AgendaViewMode = "list" | "month" | "week" | "day";
@@ -43,27 +43,6 @@ const viewLabels: Record<AgendaViewMode, string> = {
   month: "Maand",
   week: "Week",
   day: "Dag",
-};
-
-const stateLabels: Record<AgendaEventState, string> = {
-  searching: "Nog iemand zoeken",
-  action_required: "Reactie ontvangen",
-  planned: "Wacht op bevestiging",
-  confirmed: "Bevestigd",
-  completed: "Afgerond",
-  cancelled: "Geannuleerd",
-};
-
-const stateVariants: Record<
-  AgendaEventState,
-  "warning" | "success" | "muted" | "destructive"
-> = {
-  searching: "muted",
-  action_required: "warning",
-  planned: "warning",
-  confirmed: "success",
-  completed: "muted",
-  cancelled: "destructive",
 };
 
 function EventCard({
@@ -87,26 +66,38 @@ function EventCard({
       )}
       href={event.detailHref}
     >
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div className="min-w-0">
-          <p
-            className={cn(
-              "font-medium",
-              compact ? "truncate text-xs" : "text-sm",
-              event.state === "cancelled" && "line-through",
-            )}
-          >
-            {event.title}
-          </p>
-          <p className={cn("text-muted-foreground", compact ? "text-[0.65rem]" : "mt-1 text-xs")}>
-            {event.startTime.slice(0, 5)}–{event.endTime.slice(0, 5)}
-          </p>
+      <div className="flex items-start gap-2">
+        <JobStatusIndicator
+          className={compact ? "mt-0" : "mt-0.5"}
+          showLabel={false}
+          state={event.state}
+        />
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <div className="min-w-0">
+              <p
+                className={cn(
+                  "font-medium",
+                  compact ? "truncate text-xs" : "text-sm",
+                  event.state === "cancelled" && "line-through",
+                )}
+              >
+                {event.title}
+              </p>
+              <p
+                className={cn(
+                  "text-muted-foreground",
+                  compact ? "text-[0.65rem]" : "mt-1 text-xs",
+                )}
+              >
+                {event.startTime.slice(0, 5)}–{event.endTime.slice(0, 5)}
+              </p>
+            </div>
+            {!compact ? (
+              <JobStatusIndicator state={event.state} />
+            ) : null}
+          </div>
         </div>
-        {!compact ? (
-          <Badge variant={stateVariants[event.state]}>
-            {stateLabels[event.state]}
-          </Badge>
-        ) : null}
       </div>
       {!compact ? (
         <div className="mt-3 grid gap-1 text-xs text-muted-foreground sm:grid-cols-2">
