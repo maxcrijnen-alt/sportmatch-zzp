@@ -31,7 +31,7 @@ export function ProfileForm({
   );
 
   return (
-    <form action={formAction} className="space-y-4">
+    <form action={formAction} className="space-y-3">
       {state.error ? (
         <Alert variant="destructive">
           <AlertDescription>{state.error}</AlertDescription>
@@ -43,8 +43,8 @@ export function ProfileForm({
         </Alert>
       ) : null}
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-2">
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="space-y-1.5">
           <Label htmlFor="fullName">Naam</Label>
           <Input
             defaultValue={profile.full_name}
@@ -53,7 +53,7 @@ export function ProfileForm({
             required
           />
         </div>
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <Label htmlFor="phone">Telefoonnummer</Label>
           <Input
             defaultValue={profile.phone}
@@ -63,7 +63,7 @@ export function ProfileForm({
             type="tel"
           />
         </div>
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <Label htmlFor="cityId">Woonplaats</Label>
           <Select
             id="cityId"
@@ -91,7 +91,7 @@ export function ProfileForm({
             />
           ) : null}
         </div>
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <Label htmlFor="email">E-mailadres</Label>
           <Input defaultValue={profile.email} disabled id="email" type="email" />
           <p className="text-xs text-muted-foreground">
