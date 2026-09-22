@@ -193,7 +193,8 @@ export function AgendaView({
           <Button
             aria-label="Vorige periode"
             onClick={() => move(-1)}
-            size="icon-sm"
+            className="h-8 w-8"
+            size="icon"
             variant="outline"
           >
             <ChevronLeft className="h-4 w-4" />
@@ -204,7 +205,8 @@ export function AgendaView({
           <Button
             aria-label="Volgende periode"
             onClick={() => move(1)}
-            size="icon-sm"
+            className="h-8 w-8"
+            size="icon"
             variant="outline"
           >
             <ChevronRight className="h-4 w-4" />
