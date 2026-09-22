@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
+  AlertTriangle,
   ArrowRight,
   CalendarCheck,
   Inbox,
@@ -69,7 +70,7 @@ export default async function DashboardPage({
 
     let jobsQuery = supabase
       .from("jobs")
-      .select("id, status")
+      .select("id, status, title, starts_on, start_time")
       .eq("organization_id", orgContext.organization.id)
       .eq("status", "open");
     let applicationsQuery = supabase
@@ -141,6 +142,44 @@ export default async function DashboardPage({
         !pendingApplicationJobIds.has(jobId) &&
         !pendingConfirmationJobIds.has(jobId),
     ).length;
+
+    const amsterdamDate = (offsetDays: number) => {
+      const date = new Date(Date.now() + offsetDays * 24 * 60 * 60 * 1000);
+      const parts = new Intl.DateTimeFormat("en-GB", {
+        timeZone: "Europe/Amsterdam",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      }).formatToParts(date);
+      const values = Object.fromEntries(
+        parts
+          .filter((part) => part.type !== "literal")
+          .map((part) => [part.type, part.value]),
+      );
+      return `${values.year}-${values.month}-${values.day}`;
+    };
+    const urgencyStart = amsterdamDate(0);
+    const urgencyEnd = amsterdamDate(7);
+
+    type OrganizationDashboardJob = {
+      id: string;
+      status: string;
+      title: string;
+      starts_on: string;
+      start_time: string;
+    };
+
+    const urgentJobs = (openJobs as OrganizationDashboardJob[])
+      .filter(
+        (job) =>
+          job.starts_on >= urgencyStart &&
+          job.starts_on <= urgencyEnd,
+      )
+      .sort((left, right) =>
+        `${left.starts_on}T${left.start_time}`.localeCompare(
+          `${right.starts_on}T${right.start_time}`,
+        ),
+      );
 
     const primaryAction =
       pendingConfirmationCount > 0
@@ -281,6 +320,60 @@ export default async function DashboardPage({
               </p>
             </Link>
           </div>
+        </section>
+
+        <section className="rounded-lg border border-destructive/25 bg-card">
+          <div className="flex items-center justify-between border-b border-border px-5 py-4">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              <h2 className="font-semibold">Urgentie</h2>
+            </div>
+            <span className="text-sm font-medium text-muted-foreground">
+              {urgentJobs.length}
+            </span>
+          </div>
+
+          {urgentJobs.length > 0 ? (
+            <div className="divide-y divide-border">
+              {urgentJobs.slice(0, 5).map((job) => {
+                const workflowLabel = pendingConfirmationJobIds.has(job.id)
+                  ? "Wacht op bevestiging"
+                  : pendingApplicationJobIds.has(job.id)
+                    ? "Reacties binnen"
+                    : "Nog zoeken";
+
+                return (
+                  <Link
+                    className="flex flex-col gap-2 px-5 py-4 transition-colors hover:bg-muted/50 sm:flex-row sm:items-center sm:justify-between"
+                    href={`/organisatie/opdrachten/${job.id}`}
+                    key={job.id}
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate font-medium">{job.title}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {formatDate(job.starts_on)} · {formatTime(job.start_time)}
+                      </p>
+                    </div>
+                    <span className="shrink-0 rounded-md border border-destructive/25 bg-destructive/5 px-2.5 py-1 text-xs font-medium text-destructive">
+                      {workflowLabel}
+                    </span>
+                  </Link>
+                );
+              })}
+              {urgentJobs.length > 5 ? (
+                <Link
+                  className="block px-5 py-3 text-sm font-medium text-primary hover:underline"
+                  href="/organisatie/opdrachten"
+                >
+                  Bekijk alle urgente opdrachten
+                </Link>
+              ) : null}
+            </div>
+          ) : (
+            <p className="px-5 py-4 text-sm text-muted-foreground">
+              Geen open opdrachten binnen 7 dagen.
+            </p>
+          )}
         </section>
       </div>
     );
