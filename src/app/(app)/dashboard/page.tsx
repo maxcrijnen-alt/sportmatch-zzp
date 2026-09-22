@@ -5,19 +5,11 @@ import {
   AlertTriangle,
   ArrowRight,
   CalendarCheck,
-  Inbox,
   ShieldCheck,
 } from "lucide-react";
 import { DashboardTodoList } from "@/components/dashboard/dashboard-todo-list";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { getSessionProfile } from "@/lib/auth/session";
 import { subscriptionGrantsAccess } from "@/lib/billing/access";
 import { getOrgContext } from "@/lib/org/context";
@@ -289,14 +281,14 @@ export default async function DashboardPage({
           </Alert>
         ) : null}
 
-        <section className="rounded-lg border border-primary/30 bg-primary/5 p-5">
+        <section className="rounded-lg border border-primary/30 bg-primary/5 p-4">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div className="max-w-2xl">
               <p className="text-sm font-medium text-primary">Wat vraagt aandacht?</p>
-              <h2 className="mt-1 text-xl font-semibold tracking-tight">
+              <h2 className="mt-1 text-lg font-semibold tracking-tight">
                 {primaryAction.title}
               </h2>
-              <p className="mt-2 text-sm leading-6 text-muted-foreground">
+              <p className="mt-1.5 text-sm leading-5 text-muted-foreground">
                 {primaryAction.text}
               </p>
             </div>
@@ -317,49 +309,40 @@ export default async function DashboardPage({
             </div>
           </div>
 
-          <div className="mt-5 grid gap-3 md:grid-cols-3">
+          <div className="mt-4 grid gap-2 md:grid-cols-3">
             <Link
-              className="rounded-lg border border-border bg-background p-4 transition-colors hover:border-primary/40 hover:bg-primary/5"
+              className="rounded-lg border border-border bg-background p-3 transition-colors hover:border-primary/40 hover:bg-primary/5"
               href="/organisatie/opdrachten"
             >
               <p className="text-sm font-medium text-muted-foreground">
                 Nog iemand zoeken
               </p>
-              <p className="mt-1 text-3xl font-bold tracking-tight">
+              <p className="mt-0.5 text-2xl font-bold tracking-tight">
                 {searchingJobCount}
-              </p>
-              <p className="mt-2 text-xs leading-5 text-muted-foreground">
-                Open opdrachten zonder reactie of gekozen instructeur.
               </p>
             </Link>
 
             <Link
-              className="rounded-lg border border-border bg-background p-4 transition-colors hover:border-primary/40 hover:bg-primary/5"
+              className="rounded-lg border border-border bg-background p-3 transition-colors hover:border-primary/40 hover:bg-primary/5"
               href="/organisatie/kandidaten"
             >
               <p className="text-sm font-medium text-muted-foreground">
                 Reacties te beoordelen
               </p>
-              <p className="mt-1 text-3xl font-bold tracking-tight">
+              <p className="mt-0.5 text-2xl font-bold tracking-tight">
                 {pendingApplicationCount}
-              </p>
-              <p className="mt-2 text-xs leading-5 text-muted-foreground">
-                Nieuwe reacties waarvoor je nog een keuze kunt maken.
               </p>
             </Link>
 
             <Link
-              className="rounded-lg border border-border bg-background p-4 transition-colors hover:border-primary/40 hover:bg-primary/5"
+              className="rounded-lg border border-border bg-background p-3 transition-colors hover:border-primary/40 hover:bg-primary/5"
               href="/organisatie/opdrachten"
             >
               <p className="text-sm font-medium text-muted-foreground">
                 Wacht op bevestiging
               </p>
-              <p className="mt-1 text-3xl font-bold tracking-tight">
+              <p className="mt-0.5 text-2xl font-bold tracking-tight">
                 {pendingConfirmationCount}
-              </p>
-              <p className="mt-2 text-xs leading-5 text-muted-foreground">
-                Gekozen instructeurs die nog definitief moeten bevestigen.
               </p>
             </Link>
           </div>
@@ -368,12 +351,12 @@ export default async function DashboardPage({
         <DashboardTodoList items={todoItems} />
 
         <section className="rounded-lg border border-destructive/25 bg-card">
-          <div className="flex items-center justify-between border-b border-border px-5 py-4">
+          <div className="flex items-center justify-between border-b border-border px-4 py-3">
             <div className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-destructive" />
               <h2 className="font-semibold">Urgentie</h2>
             </div>
-            <span className="text-sm font-medium text-muted-foreground">
+            <span className="rounded-full border border-border px-2.5 py-1 text-xs font-semibold text-muted-foreground">
               {urgentJobs.length}
             </span>
           </div>
@@ -389,7 +372,7 @@ export default async function DashboardPage({
 
                 return (
                   <Link
-                    className="flex flex-col gap-2 px-5 py-4 transition-colors hover:bg-muted/50 sm:flex-row sm:items-center sm:justify-between"
+                    className="flex flex-col gap-2 px-4 py-3 transition-colors hover:bg-muted/50 sm:flex-row sm:items-center sm:justify-between"
                     href={`/organisatie/opdrachten/${job.id}`}
                     key={job.id}
                   >
@@ -407,7 +390,7 @@ export default async function DashboardPage({
               })}
               {urgentJobs.length > 5 ? (
                 <Link
-                  className="block px-5 py-3 text-sm font-medium text-primary hover:underline"
+                  className="block px-4 py-3 text-sm font-medium text-primary hover:underline"
                   href="/organisatie/opdrachten"
                 >
                   Bekijk alle urgente opdrachten
@@ -415,7 +398,7 @@ export default async function DashboardPage({
               ) : null}
             </div>
           ) : (
-            <p className="px-5 py-4 text-sm text-muted-foreground">
+            <p className="px-4 py-3 text-sm text-muted-foreground">
               Geen open opdrachten binnen 7 dagen.
             </p>
           )}
@@ -698,14 +681,14 @@ export default async function DashboardPage({
         </Alert>
       ) : null}
 
-      <section className="rounded-lg border border-primary/30 bg-primary/5 p-5">
+      <section className="rounded-lg border border-primary/30 bg-primary/5 p-4">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="max-w-2xl">
             <p className="text-sm font-medium text-primary">Wat vraagt aandacht?</p>
-            <h2 className="mt-1 text-xl font-semibold tracking-tight">
+            <h2 className="mt-1 text-lg font-semibold tracking-tight">
               {primaryAction.title}
             </h2>
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">
+            <p className="mt-1.5 text-sm leading-5 text-muted-foreground">
               {primaryAction.text}
             </p>
           </div>
@@ -717,39 +700,33 @@ export default async function DashboardPage({
           </Link>
         </div>
 
-        <div className="mt-5 grid gap-3 md:grid-cols-3">
+        <div className="mt-4 grid gap-2 md:grid-cols-3">
           <Link
-            className="rounded-lg border border-border bg-background p-4 transition-colors hover:border-primary/40 hover:bg-primary/5"
+            className="rounded-lg border border-border bg-background p-3 transition-colors hover:border-primary/40 hover:bg-primary/5"
             href="/mijn-reacties"
           >
             <p className="text-sm font-medium text-muted-foreground">
               Uitnodigingen
             </p>
-            <p className="mt-1 text-3xl font-bold tracking-tight">
+            <p className="mt-0.5 text-2xl font-bold tracking-tight">
               {pendingInvitationCount}
-            </p>
-            <p className="mt-2 text-xs leading-5 text-muted-foreground">
-              Rechtstreekse verzoeken van sportscholen waarop je nog moet reageren.
             </p>
           </Link>
 
           <Link
-            className="rounded-lg border border-border bg-background p-4 transition-colors hover:border-primary/40 hover:bg-primary/5"
+            className="rounded-lg border border-border bg-background p-3 transition-colors hover:border-primary/40 hover:bg-primary/5"
             href="/mijn-reacties"
           >
             <p className="text-sm font-medium text-muted-foreground">
               Open reacties
             </p>
-            <p className="mt-1 text-3xl font-bold tracking-tight">
+            <p className="mt-0.5 text-2xl font-bold tracking-tight">
               {pendingApplicationCount}
-            </p>
-            <p className="mt-2 text-xs leading-5 text-muted-foreground">
-              Opdrachten waarop je hebt gereageerd en nog geen uitkomst hebt.
             </p>
           </Link>
 
           <Link
-            className="rounded-lg border border-border bg-background p-4 transition-colors hover:border-primary/40 hover:bg-primary/5"
+            className="rounded-lg border border-border bg-background p-3 transition-colors hover:border-primary/40 hover:bg-primary/5"
             href={
               firstPendingConfirmationJobId
                 ? `/opdrachten/${firstPendingConfirmationJobId}`
@@ -759,11 +736,8 @@ export default async function DashboardPage({
             <p className="text-sm font-medium text-muted-foreground">
               Wacht op jouw bevestiging
             </p>
-            <p className="mt-1 text-3xl font-bold tracking-tight">
+            <p className="mt-0.5 text-2xl font-bold tracking-tight">
               {pendingConfirmationCount}
-            </p>
-            <p className="mt-2 text-xs leading-5 text-muted-foreground">
-              Opdrachten waarvoor een sportschool jou al heeft gekozen.
             </p>
           </Link>
         </div>
@@ -772,7 +746,7 @@ export default async function DashboardPage({
       <DashboardTodoList items={todoItems} />
 
       <div className="grid gap-4 md:grid-cols-2">
-        <section className="rounded-lg border border-border bg-card p-5">
+        <section className="rounded-lg border border-border bg-card p-4">
           <div className="flex items-start gap-3">
             <CalendarCheck className="mt-0.5 h-5 w-5 text-primary" />
             <div className="min-w-0">
@@ -812,7 +786,7 @@ export default async function DashboardPage({
           </div>
         </section>
 
-        <section className="rounded-lg border border-border bg-card p-5">
+        <section className="rounded-lg border border-border bg-card p-4">
           <div className="flex items-start gap-3">
             <ShieldCheck
               className={`mt-0.5 h-5 w-5 ${
