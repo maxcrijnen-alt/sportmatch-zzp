@@ -137,13 +137,13 @@ export default async function OrganisatieReviewsPage({
 
       {pendingReviews.length > 0 ? (
         <Card className="border-warning/50 bg-warning/10">
-          <CardHeader>
-            <CardTitle>Je hebt nog een beoordeling openstaan</CardTitle>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Openstaande beoordeling</CardTitle>
             <CardDescription>
               Rond deze beoordeling af voordat je een nieuwe opdracht plaatst of kandidaat kiest.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-2">
+          <CardContent className="space-y-2 pt-0">
             {pendingReviews.map((job) => (
               <div className="flex items-center justify-between gap-3 rounded-md bg-background p-3" key={job.id as string}>
                 <span className="text-sm font-medium">{job.title as string}</span>
@@ -154,7 +154,7 @@ export default async function OrganisatieReviewsPage({
         </Card>
       ) : null}
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-2 sm:grid-cols-2">
         <Card>
           <CardHeader className="pb-2">
             <CardDescription>Gemiddelde ontvangen score</CardDescription>
@@ -172,12 +172,12 @@ export default async function OrganisatieReviewsPage({
         </Card>
       </div>
 
-      <div className="flex gap-1 rounded-lg border border-border bg-muted/40 p-1">
+      <div className="flex gap-1 rounded-md border border-border bg-muted/30 p-1">
         <Link
           className={
             activeView === "received"
-              ? "flex-1 rounded-md bg-background px-4 py-2 text-center text-sm font-semibold shadow-sm"
-              : "flex-1 rounded-md px-4 py-2 text-center text-sm font-medium text-muted-foreground hover:text-foreground"
+              ? "flex-1 rounded px-3 py-1.5 text-center text-sm font-semibold bg-background shadow-sm"
+              : "flex-1 rounded px-3 py-1.5 text-center text-sm font-medium text-muted-foreground hover:text-foreground"
           }
           href="/organisatie/reviews?view=received"
         >
@@ -186,8 +186,8 @@ export default async function OrganisatieReviewsPage({
         <Link
           className={
             activeView === "given"
-              ? "flex-1 rounded-md bg-background px-4 py-2 text-center text-sm font-semibold shadow-sm"
-              : "flex-1 rounded-md px-4 py-2 text-center text-sm font-medium text-muted-foreground hover:text-foreground"
+              ? "flex-1 rounded px-3 py-1.5 text-center text-sm font-semibold bg-background shadow-sm"
+              : "flex-1 rounded px-3 py-1.5 text-center text-sm font-medium text-muted-foreground hover:text-foreground"
           }
           href="/organisatie/reviews?view=given"
         >
@@ -196,14 +196,14 @@ export default async function OrganisatieReviewsPage({
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">
             {activeView === "received"
               ? "Ontvangen beoordelingen"
               : "Gegeven beoordelingen"}
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2">
+        <CardContent className="space-y-2 pt-0">
           {(activeView === "received" ? receivedReviews : givenReviews).length === 0 ? (
             <p className="text-sm text-muted-foreground">
               {activeView === "received"
@@ -214,10 +214,10 @@ export default async function OrganisatieReviewsPage({
             (activeView === "received" ? receivedReviews : givenReviews).map(
               (review) => (
                 <div
-                  className="flex items-center justify-between rounded-lg border border-border p-3 text-sm"
+                  className="flex items-start justify-between gap-3 rounded-lg border border-border p-3 text-sm"
                   key={review.id}
                 >
-                  <div>
+                  <div className="min-w-0">
                     <span className="text-warning">
                       {"★".repeat(review.rating)}
                       <span className="text-muted-foreground/40">
@@ -232,12 +232,10 @@ export default async function OrganisatieReviewsPage({
                     ) : null}
                   </div>
                   {activeView === "given" && !review.released_at ? (
-                    <Badge variant="secondary">Wacht op tegenpartij</Badge>
-                  ) : (
-                    <Badge variant="muted">
-                      {activeView === "received" ? "Ontvangen" : "Gegeven"}
+                    <Badge className="shrink-0" variant="secondary">
+                      Wacht op tegenpartij
                     </Badge>
-                  )}
+                  ) : null}
                 </div>
               ),
             )
