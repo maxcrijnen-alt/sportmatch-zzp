@@ -280,7 +280,7 @@ export async function createDemoSession(role: DemoRole): Promise<DemoCredentials
       throw new Error(organizationError?.message ?? "Demo-sportschool ontbreekt.");
     }
 
-    const [memberResult, locationResult] = await Promise.all([
+    const [memberResult, locationsResult] = await Promise.all([
       admin.from("organization_members").insert({
         organization_id: organization.id,
         user_id: ownerId,
@@ -289,21 +289,36 @@ export async function createDemoSession(role: DemoRole): Promise<DemoCredentials
       }),
       admin
         .from("organization_locations")
-        .insert({
-          organization_id: organization.id,
-          name: "Centrum",
-          street: "Sportlaan",
-          house_number: "10",
-          postal_code: "3511 AA",
-          city_id: city.id,
-        })
-        .select("id")
-        .single(),
+        .insert([
+          {
+            organization_id: organization.id,
+            name: "Centrum",
+            street: "Sportlaan",
+            house_number: "10",
+            postal_code: "3511 AA",
+            city_id: city.id,
+          },
+          {
+            organization_id: organization.id,
+            name: "Leidsche Rijn",
+            street: "Parklaan",
+            house_number: "25",
+            postal_code: "3541 AB",
+            city_id: city.id,
+          },
+        ])
+        .select("id, name"),
     ]);
     assertDatabaseResult(memberResult.error, "Demo-lidmaatschap ontbreekt");
-    const location = locationResult.data;
-    if (locationResult.error || !location) {
-      throw new Error(locationResult.error?.message ?? "Demo-vestiging ontbreekt.");
+    assertDatabaseResult(locationsResult.error, "Demo-vestigingen ontbreken");
+
+    const locations = locationsResult.data ?? [];
+    const centrumLocation = locations.find((location) => location.name === "Centrum");
+    const leidscheRijnLocation = locations.find(
+      (location) => location.name === "Leidsche Rijn",
+    );
+    if (!centrumLocation || !leidscheRijnLocation) {
+      throw new Error("Niet alle demo-vestigingen konden worden aangemaakt.");
     }
 
     const lessonTypeBySport = new Map<string, { id: string; name: string }>();
@@ -323,19 +338,20 @@ export async function createDemoSession(role: DemoRole): Promise<DemoCredentials
       "temporary",
       "permanent",
     ] as const;
+    const demoLocations = [centrumLocation, leidscheRijnLocation] as const;
     const openJobs = sports.map((sport, index) => {
       const lessonType = lessonTypeBySport.get(sport.id as string);
+      const jobLocation = demoLocations[index % demoLocations.length];
       return {
         organization_id: organization.id,
-        location_id: location.id,
+        location_id: jobLocation.id,
         created_by: ownerId,
         demo_session_id: sessionId,
         job_type: jobTypes[index % jobTypes.length],
         sport_id: sport.id,
         lesson_type_id: lessonType?.id ?? null,
         title: `${lessonType?.name ?? sport.name} gezocht`,
-        description:
-          "Een duidelijke demo-opdracht met materiaal op locatie en een vast aanspreekpunt.",
+        description: `Een duidelijke demo-opdracht bij vestiging ${jobLocation.name}, met materiaal op locatie en een vast aanspreekpunt.`,
         starts_on: futureDate(2 + index),
         start_time: index % 2 === 0 ? "18:00" : "19:00",
         end_time: index % 2 === 0 ? "19:00" : "20:30",
