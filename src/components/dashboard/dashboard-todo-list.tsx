@@ -10,18 +10,18 @@ export interface DashboardTodoItem {
 function DashboardTodoList({ items }: { items: DashboardTodoItem[] }) {
   return (
     <section className="rounded-lg border border-border bg-card">
-      <div className="flex items-center justify-between border-b border-border px-5 py-4">
+      <div className="flex items-center justify-between border-b border-border px-4 py-3">
         <div className="flex items-center gap-2">
           <ListTodo className="h-5 w-5 text-primary" />
           <h2 className="font-semibold">To do</h2>
         </div>
-        <span className="text-sm font-medium text-muted-foreground">
+        <span className="rounded-full border border-border px-2.5 py-1 text-xs font-semibold text-muted-foreground">
           {items.length}
         </span>
       </div>
 
       {items.length === 0 ? (
-        <div className="flex items-center gap-3 px-5 py-4">
+        <div className="flex items-center gap-3 px-4 py-3">
           <CheckCircle2 className="h-5 w-5 text-primary" />
           <p className="text-sm text-muted-foreground">
             Alles is bijgewerkt.
@@ -31,13 +31,13 @@ function DashboardTodoList({ items }: { items: DashboardTodoItem[] }) {
         <div className="divide-y divide-border">
           {items.map((item) => (
             <Link
-              className="flex items-center justify-between gap-4 px-5 py-4 transition-colors hover:bg-muted/50"
+              className="flex items-center justify-between gap-4 px-4 py-3 transition-colors hover:bg-muted/50"
               href={item.href}
               key={item.title}
             >
               <div className="min-w-0">
-                <p className="font-medium">{item.title}</p>
-                <p className="mt-1 text-sm leading-5 text-muted-foreground">
+                <p className="text-sm font-medium">{item.title}</p>
+                <p className="mt-0.5 text-xs leading-5 text-muted-foreground">
                   {item.description}
                 </p>
               </div>
