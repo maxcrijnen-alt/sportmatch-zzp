@@ -94,6 +94,8 @@ export default async function KandidatenPage({
     const query = candidateParams.toString();
     return `/organisatie/kandidaten/${instructorId}${query ? `?${query}` : ""}`;
   };
+  const candidateReviewsHref = (instructorId: string) =>
+    `${candidateProfileHref(instructorId)}#reviews`;
 
   let applicationsQuery = supabase
     .from("job_applications")
@@ -503,6 +505,47 @@ export default async function KandidatenPage({
     return `★ ${stats.avg_rating} · ${stats.review_count} reviews · Betrouwbaarheid ${stats.reliability_score != null ? `${stats.reliability_score}%` : "Nieuw"} · ${stats.completed_count} afgerond`;
   };
 
+  const candidateIdentity = (instructorId: string, subline?: string) => {
+    const instructor = namesById.get(instructorId);
+    const stats = statsById.get(instructorId);
+    const hasReviews =
+      Boolean(stats?.avg_rating != null) && Number(stats?.review_count ?? 0) > 0;
+
+    return (
+      <div className="flex min-w-0 items-center gap-3">
+        <Link
+          className="shrink-0 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          href={candidateProfileHref(instructorId)}
+        >
+          <Avatar name={instructor?.name ?? "?"} src={instructor?.avatar} />
+        </Link>
+        <div className="min-w-0">
+          <Link
+            className="block truncate font-medium hover:text-primary"
+            href={candidateProfileHref(instructorId)}
+          >
+            {instructor?.name}
+          </Link>
+          {hasReviews ? (
+            <Link
+              className="mt-0.5 block w-fit text-xs text-muted-foreground transition-colors hover:text-warning hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              href={candidateReviewsHref(instructorId)}
+            >
+              {statsLine(stats)}
+            </Link>
+          ) : (
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              {statsLine(stats)}
+            </p>
+          )}
+          {subline ? (
+            <p className="mt-1 text-xs text-muted-foreground">{subline}</p>
+          ) : null}
+        </div>
+      </div>
+    );
+  };
+
   const sectionHeader = (title: string, count: number) => (
     <div className="flex items-center justify-between gap-3 border-b border-border bg-muted/30 px-5 py-4">
       <h2 className="font-semibold">{title}</h2>
@@ -552,35 +595,17 @@ export default async function KandidatenPage({
         ) : (
           <div className="divide-y divide-border">
             {applications.map((application) => {
-              const instructor = namesById.get(application.instructor_id);
-              const stats = statsById.get(application.instructor_id);
-
               return (
                 <div
                   className="flex flex-col gap-4 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
                   key={application.id}
                 >
-                  <Link
-                    className="flex min-w-0 items-center gap-3 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                    href={candidateProfileHref(application.instructor_id)}
-                  >
-                    <Avatar
-                      name={instructor?.name ?? "?"}
-                      src={instructor?.avatar}
-                    />
-                    <div className="min-w-0">
-                      <p className="truncate font-medium hover:text-primary">
-                        {instructor?.name}
-                      </p>
-                      <p className="mt-0.5 text-xs text-muted-foreground">
-                        {statsLine(stats)}
-                      </p>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {application.job?.title} ·{" "}
-                        {application.job ? formatDate(application.job.starts_on) : ""}
-                      </p>
-                    </div>
-                  </Link>
+                  {candidateIdentity(
+                    application.instructor_id,
+                    application.job
+                      ? `${application.job.title} · ${formatDate(application.job.starts_on)}`
+                      : undefined,
+                  )}
                   <div className="flex shrink-0 items-center gap-2">
                     <Link href={candidateProfileHref(application.instructor_id)}>
                       <Button size="sm" variant="outline">Profiel</Button>
@@ -605,8 +630,6 @@ export default async function KandidatenPage({
         ) : (
           <div className="divide-y divide-border">
             {workedBeforeIds.map((instructorId) => {
-              const instructor = namesById.get(instructorId);
-              const stats = statsById.get(instructorId);
               const returningMatch = returningMatchesById.get(instructorId);
 
               return (
@@ -614,25 +637,10 @@ export default async function KandidatenPage({
                   className="flex flex-col gap-4 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
                   key={instructorId}
                 >
-                  <Link
-                    className="flex min-w-0 items-center gap-3 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                    href={candidateProfileHref(instructorId)}
-                  >
-                    <Avatar name={instructor?.name ?? "?"} src={instructor?.avatar} />
-                    <div className="min-w-0">
-                      <p className="truncate font-medium hover:text-primary">
-                        {instructor?.name}
-                      </p>
-                      <p className="mt-0.5 text-xs text-muted-foreground">
-                        {statsLine(stats)}
-                      </p>
-                      {returningMatch ? (
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          Past bij {returningMatch.job.title}
-                        </p>
-                      ) : null}
-                    </div>
-                  </Link>
+                  {candidateIdentity(
+                    instructorId,
+                    returningMatch ? `Past bij ${returningMatch.job.title}` : undefined,
+                  )}
                   <div className="flex shrink-0 items-center gap-2">
                     <Link href={candidateProfileHref(instructorId)}>
                       <Button size="sm" variant="outline">Profiel</Button>
@@ -659,28 +667,12 @@ export default async function KandidatenPage({
         ) : (
           <div className="divide-y divide-border">
             {visibleCandidateMatches.map((match) => {
-              const instructor = namesById.get(match.userId);
-              const stats = statsById.get(match.userId);
-
               return (
                 <div
                   className="flex flex-col gap-4 px-5 py-4 lg:flex-row lg:items-center lg:justify-between"
                   key={match.userId}
                 >
-                  <Link
-                    className="flex min-w-0 items-center gap-3 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                    href={candidateProfileHref(match.userId)}
-                  >
-                    <Avatar name={instructor?.name ?? "?"} src={instructor?.avatar} />
-                    <div className="min-w-0">
-                      <p className="truncate font-medium hover:text-primary">
-                        {instructor?.name}
-                      </p>
-                      <p className="mt-0.5 text-xs text-muted-foreground">
-                        {statsLine(stats)}
-                      </p>
-                    </div>
-                  </Link>
+                  {candidateIdentity(match.userId)}
 
                   <div className="flex flex-1 flex-wrap gap-1.5 lg:justify-end">
                     <Badge variant="accent">Match {match.score}</Badge>
@@ -719,31 +711,15 @@ export default async function KandidatenPage({
         ) : (
           <div className="divide-y divide-border">
             {highlyRatedMatches.map((match) => {
-              const instructor = namesById.get(match.userId);
-              const stats = statsById.get(match.userId);
-
               return (
                 <div
                   className="flex flex-col gap-4 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
                   key={match.userId}
                 >
-                  <Link
-                    className="flex min-w-0 items-center gap-3 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                    href={candidateProfileHref(match.userId)}
-                  >
-                    <Avatar name={instructor?.name ?? "?"} src={instructor?.avatar} />
-                    <div className="min-w-0">
-                      <p className="truncate font-medium hover:text-primary">
-                        {instructor?.name}
-                      </p>
-                      <p className="mt-0.5 text-xs text-muted-foreground">
-                        {statsLine(stats)}
-                      </p>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {match.job.title} · {match.lessonTypeName}
-                      </p>
-                    </div>
-                  </Link>
+                  {candidateIdentity(
+                    match.userId,
+                    `${match.job.title} · ${match.lessonTypeName}`,
+                  )}
                   <div className="flex shrink-0 items-center gap-2">
                     <Link href={candidateProfileHref(match.userId)}>
                       <Button size="sm" variant="outline">Profiel</Button>
