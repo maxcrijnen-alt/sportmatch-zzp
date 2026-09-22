@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Eye } from "lucide-react";
 import { AvatarUpload } from "@/components/profile/avatar-upload";
 import { InstructorDetailsForm } from "@/components/profile/instructor-details-form";
 import { ProfileForm } from "@/components/profile/profile-form";
@@ -146,9 +146,17 @@ export default async function ProfielPage() {
                 </p>
               ))}
             </div>
-            <Link href="/opdrachten">
-              <Button variant="outline">Bekijk passende opdrachten</Button>
-            </Link>
+            <div className="flex flex-wrap gap-2">
+              <Link href={`/organisatie/kandidaten/${profile.id}`}>
+                <Button>
+                  <Eye className="h-4 w-4" />
+                  Bekijk zoals sportscholen
+                </Button>
+              </Link>
+              <Link href="/opdrachten">
+                <Button variant="outline">Bekijk passende opdrachten</Button>
+              </Link>
+            </div>
           </CardContent>
         </Card>
       ) : null}
