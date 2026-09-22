@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { ArrowLeft, Star } from "lucide-react";
+import { ReviewFilters } from "@/components/reviews/review-filters";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -12,6 +13,7 @@ import {
 } from "@/components/ui/card";
 import { getSessionProfile } from "@/lib/auth/session";
 import { formatDate } from "@/lib/labels";
+import { filterAndSortReviews, parseReviewFilters } from "@/lib/reviews/filter";
 import { createClient } from "@/lib/supabase/server";
 import type { Review } from "@/types/database";
 
@@ -25,8 +27,10 @@ interface OrganizationReviewRow extends Review {
 
 export default async function OrganizationReviewsPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ stars?: string; sort?: string }>;
 }) {
   const profile = await getSessionProfile();
   const supabase = await createClient();
@@ -36,6 +40,7 @@ export default async function OrganizationReviewsPage({
   }
 
   const { id } = await params;
+  const query = await searchParams;
   const [{ data: organization }, { data: reviewData }] = await Promise.all([
     supabase
       .from("organizations")
@@ -57,6 +62,8 @@ export default async function OrganizationReviewsPage({
 
   const reviews =
     (reviewData as unknown as OrganizationReviewRow[] | null) ?? [];
+  const { stars: reviewStars, sort: reviewSort } = parseReviewFilters(query);
+  const visibleReviews = filterAndSortReviews(reviews, reviewStars, reviewSort);
   const average =
     reviews.length > 0
       ? (
@@ -110,12 +117,19 @@ export default async function OrganizationReviewsPage({
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          {reviews.length === 0 ? (
+          <ReviewFilters
+            resetHref={`/organisaties/${id}/reviews`}
+            sort={reviewSort}
+            stars={reviewStars}
+          />
+          {visibleReviews.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              Deze sportschool heeft nog geen vrijgegeven reviews.
+              {reviews.length === 0
+                ? "Deze sportschool heeft nog geen vrijgegeven reviews."
+                : "Geen reviews gevonden met deze filters."}
             </p>
           ) : (
-            reviews.map((review) => (
+            visibleReviews.map((review) => (
               <div
                 className="flex items-start justify-between gap-4 rounded-lg border border-border p-3"
                 key={review.id}
