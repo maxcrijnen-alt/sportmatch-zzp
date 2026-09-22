@@ -1,4 +1,4 @@
-name: Instructor dashboard production check
+name: Assignment candidate filter production check
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
       - qa/demo-live-check-20260921
 
 jobs:
-  instructor-dashboard:
+  candidate-filter:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -17,11 +17,11 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
-      - name: Verify instructor action dashboard on production
+      - name: Verify assignment reactions link on production
         env:
           BASE_URL: https://sportmatch-zzp.vercel.app
         run: |
-          cat > instructor-dashboard-check.mjs <<'EOF'
+          cat > candidate-filter-check.mjs <<'EOF'
           import { chromium } from "@playwright/test";
 
           const browser = await chromium.launch({ headless: true });
@@ -31,46 +31,41 @@ jobs:
 
           try {
             await page.goto(baseURL + "/demo", { waitUntil: "networkidle", timeout: 45000 });
-            await page.getByRole("button", { name: "Start demo als instructeur" }).click();
+            await page.getByRole("button", { name: "Start demo als sportschool" }).click();
             await page.waitForURL("**/dashboard", { timeout: 60000 });
 
-            const main = page.locator("main");
-            for (const label of [
-              "Uitnodigingen",
-              "Open reacties",
-              "Wacht op jouw bevestiging",
-              "Eerstvolgende bevestigde klus",
-              "Profiel & VOG",
-            ]) {
-              await main.getByText(label, { exact: true }).waitFor();
-              console.log("PASS dashboard item", label);
+            await page.goto(baseURL + "/organisatie/opdrachten", {
+              waitUntil: "networkidle",
+              timeout: 45000,
+            });
+
+            const reactionLink = page.getByRole("link", { name: /\d+ bekijken/ }).first();
+            await reactionLink.waitFor();
+            const href = await reactionLink.getAttribute("href");
+            if (!href || !href.includes("/organisatie/kandidaten?job=")) {
+              throw new Error("Reaction count does not link to filtered candidates");
             }
+            console.log("PASS reaction link", href);
 
-            const oldExplainer = main.getByText("Start hier als instructeur", { exact: true });
-            if (await oldExplainer.count()) {
-              throw new Error("Old instructor explainer is still visible");
-            }
+            const expectedJobId = new URL(href, baseURL).searchParams.get("job");
+            await reactionLink.click();
+            await page.waitForURL((url) =>
+              url.pathname === "/organisatie/kandidaten" &&
+              url.searchParams.get("job") === expectedJobId,
+              { timeout: 30000 },
+            );
 
-            await main.getByText("Wat vraagt aandacht?", { exact: true }).waitFor();
-            console.log("PASS action-focused instructor dashboard");
-
-            const counts = {};
-            for (const label of ["Uitnodigingen", "Open reacties", "Wacht op jouw bevestiging"]) {
-              const card = main.getByText(label, { exact: true }).locator("..");
-              counts[label] = await card.locator("p").nth(1).innerText();
-            }
-            console.log("COUNTS", JSON.stringify(counts));
-
-            const primaryLink = main.locator("section").first().getByRole("link").first();
-            console.log("PRIMARY_HREF", await primaryLink.getAttribute("href"));
+            await page.getByRole("heading", { name: /^Kandidaten · / }).waitFor();
+            await page.getByRole("link", { name: "Alle kandidaten" }).waitFor();
+            console.log("PASS filtered candidates page", page.url());
 
             const logout = page.getByRole("button", { name: /uitloggen/i }).first();
             await logout.click();
             await page.waitForURL((url) => url.pathname === "/", { timeout: 30000 });
-            console.log("PASS instructor demo logout");
+            console.log("PASS sportschool demo logout");
           } finally {
             await context.close();
             await browser.close();
           }
           EOF
-          node instructor-dashboard-check.mjs
+          node candidate-filter-check.mjs
