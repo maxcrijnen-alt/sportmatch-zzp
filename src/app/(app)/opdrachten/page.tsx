@@ -2,12 +2,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ArrowRight, CheckCircle2, SearchX } from "lucide-react";
+import { AgendaView } from "@/components/agenda/agenda-view";
 import { JobCard } from "@/components/jobs/job-card";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
+import { sportMatchAgendaProvider } from "@/lib/agenda/sportmatch-provider";
 import { getSessionProfile } from "@/lib/auth/session";
 import { jobTypeLabels } from "@/lib/labels";
 import { fetchOpenJobsWithMatches } from "@/lib/jobs/queries";
@@ -56,14 +58,21 @@ export default async function OpdrachtenPage({
       showAll,
   );
 
-  const [{ jobs, matches }, sportsResult, applicationsResult] = await Promise.all([
-    fetchOpenJobsWithMatches(),
-    supabase.from("sports").select("*").eq("is_active", true).order("name"),
-    supabase
-      .from("job_applications")
-      .select("job_id")
-      .eq("instructor_id", profile.id),
-  ]);
+  const [{ jobs, matches }, sportsResult, applicationsResult, agendaEvents] =
+    await Promise.all([
+      fetchOpenJobsWithMatches(),
+      supabase.from("sports").select("*").eq("is_active", true).order("name"),
+      supabase
+        .from("job_applications")
+        .select("job_id")
+        .eq("instructor_id", profile.id),
+      profile.role === "instructor"
+        ? sportMatchAgendaProvider.listEvents({
+            role: "instructor",
+            userId: profile.id,
+          })
+        : Promise.resolve([]),
+    ]);
 
   const sports = (sportsResult.data as Sport[] | null) ?? [];
   const appliedJobIds = new Set(
@@ -170,6 +179,23 @@ export default async function OpdrachtenPage({
           ))}
         </div>
       </div>
+
+      {profile.role === "instructor" ? (
+        <section className="space-y-3">
+          <div>
+            <h2 className="text-lg font-semibold tracking-tight">Mijn week</h2>
+            <p className="text-sm text-muted-foreground">
+              Je geplande, bevestigde en afgeronde opdrachten in weekoverzicht.
+            </p>
+          </div>
+          <AgendaView
+            defaultView="week"
+            events={agendaEvents}
+            exportHref="/agenda/export"
+            role="instructor"
+          />
+        </section>
+      ) : null}
 
       <Card>
         <CardContent className="pt-5">
