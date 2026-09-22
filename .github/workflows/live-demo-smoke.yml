@@ -1,4 +1,4 @@
-name: Agenda status indicator production check
+name: Candidate profile production check
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
       - qa/demo-live-check-20260921
 
 jobs:
-  agenda-status:
+  candidate-profile:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -17,11 +17,11 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
-      - name: Verify visual agenda states on production
+      - name: Verify candidate profile on production
         env:
           BASE_URL: https://sportmatch-zzp.vercel.app
         run: |
-          cat > agenda-status-check.mjs <<'EOF'
+          cat > candidate-profile-check.mjs <<'EOF'
           import { chromium } from "@playwright/test";
 
           const browser = await chromium.launch({ headless: true });
@@ -34,34 +34,61 @@ jobs:
             await page.getByRole("button", { name: "Start demo als sportschool" }).click();
             await page.waitForURL("**/dashboard", { timeout: 60000 });
 
-            await page.goto(baseURL + "/agenda", { waitUntil: "networkidle", timeout: 45000 });
-
-            const expected = [
-              ["Nog iemand zoeken", "red-"],
-              ["Reactie ontvangen", "amber-"],
-              ["Wacht op bevestiging", "amber-"],
-              ["Bevestigd", "emerald-"],
-            ];
-
-            for (const [label, tone] of expected) {
-              const indicator = page.locator(`[aria-label="${label}"]`).first();
-              await indicator.waitFor();
-              const square = indicator.locator("span").first();
-              const classes = await square.getAttribute("class");
-              if (!classes?.includes(tone)) {
-                throw new Error(`${label} has unexpected tone: ${classes}`);
-              }
-              console.log("PASS list status", label, tone);
-            }
-
-            await page.getByRole("button", { name: "Week", exact: true }).click();
-            const compactIndicators = page.locator(
-              '[aria-label="Nog iemand zoeken"], [aria-label="Reactie ontvangen"], [aria-label="Wacht op bevestiging"], [aria-label="Bevestigd"]',
+            await page.goto(baseURL + "/organisatie/opdrachten", {
+              waitUntil: "networkidle",
+              timeout: 45000,
+            });
+            const reactions = page.getByRole("link", { name: /\d+ bekijken/ }).first();
+            await reactions.waitFor();
+            await reactions.click();
+            await page.waitForURL((url) =>
+              url.pathname === "/organisatie/kandidaten" && Boolean(url.searchParams.get("job")),
+              { timeout: 30000 },
             );
-            if ((await compactIndicators.count()) < 1) {
-              throw new Error("No compact status indicators found in week view");
+            const jobId = new URL(page.url()).searchParams.get("job");
+
+            const profileLink = page.locator('a[href^="/organisatie/kandidaten/"]').first();
+            await profileLink.waitFor();
+            const profileHref = await profileLink.getAttribute("href");
+            if (!profileHref || !profileHref.includes(`job=${jobId}`)) {
+              throw new Error("Candidate profile link did not preserve job context");
             }
-            console.log("PASS week compact indicators", await compactIndicators.count());
+            console.log("PASS candidate profile link", profileHref);
+
+            await profileLink.click();
+            await page.waitForURL((url) =>
+              url.pathname.startsWith("/organisatie/kandidaten/") &&
+              url.searchParams.get("job") === jobId,
+              { timeout: 30000 },
+            );
+
+            for (const heading of ["Over mij", "Reviews", "Sporten & lesvormen", "Diploma’s"]) {
+              await page.getByRole("heading", { name: heading, exact: true }).waitFor();
+            }
+            await page.getByText("Beoordeling", { exact: true }).waitFor();
+            await page.getByText("Betrouwbaarheid", { exact: true }).waitFor();
+            await page.getByText("Reisafstand", { exact: true }).waitFor();
+            console.log("PASS candidate profile content", page.url());
+
+            for (const sensitive of ["E-mail", "Telefoon", "KvK-nummer", "Btw-nummer"]) {
+              if (await page.getByText(sensitive, { exact: true }).count()) {
+                throw new Error("Sensitive candidate field visible: " + sensitive);
+              }
+            }
+            console.log("PASS no sensitive candidate contact fields");
+
+            const back = page.getByRole("link", { name: "← Terug naar kandidaten" });
+            const backHref = await back.getAttribute("href");
+            if (!backHref || !backHref.includes(`job=${jobId}`)) {
+              throw new Error("Back link did not preserve candidate context");
+            }
+            await back.click();
+            await page.waitForURL((url) =>
+              url.pathname === "/organisatie/kandidaten" &&
+              url.searchParams.get("job") === jobId,
+              { timeout: 30000 },
+            );
+            console.log("PASS candidate context restored");
 
             const logout = page.getByRole("button", { name: /uitloggen/i }).first();
             await logout.click();
@@ -72,4 +99,4 @@ jobs:
             await browser.close();
           }
           EOF
-          node agenda-status-check.mjs
+          node candidate-profile-check.mjs
