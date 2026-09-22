@@ -202,7 +202,7 @@ export default async function OrganisatieOpdrachtenPage({
           <h2 className="text-lg font-semibold tracking-tight">
             Opdrachtenlijst
           </h2>
-          <span className="text-sm font-medium text-muted-foreground">
+          <span className="rounded-full border border-border px-2.5 py-1 text-xs font-semibold text-muted-foreground">
             {jobs.length}
           </span>
         </div>
@@ -223,7 +223,7 @@ export default async function OrganisatieOpdrachtenPage({
           </CardContent>
         </Card>
       ) : (
-        <Card>
+        <Card className="overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
