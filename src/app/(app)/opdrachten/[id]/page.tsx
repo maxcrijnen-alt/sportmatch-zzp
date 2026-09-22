@@ -549,7 +549,7 @@ export default async function OpdrachtDetailPage({
 
       {/* Reageren */}
       {job.status === "open" && !application && !isSelected && hasValidVog && !hasPendingReview ? (
-        <Card>
+        <Card id="aanmelden">
           <CardHeader>
             <CardTitle>Reageren op deze opdracht</CardTitle>
           </CardHeader>
