@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { CheckCircle2, Plus } from "lucide-react";
+import { AgendaView } from "@/components/agenda/agenda-view";
 import { JobStatusIndicator } from "@/components/jobs/job-status-indicator";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { sportMatchAgendaProvider } from "@/lib/agenda/sportmatch-provider";
 import { getSessionProfile } from "@/lib/auth/session";
 import { formatDate, formatTime, jobTypeLabels } from "@/lib/labels";
 import { getOrgContext } from "@/lib/org/context";
@@ -79,7 +81,19 @@ export default async function OrganisatieOpdrachtenPage({
     query = query.eq("location_id", selectedLocationId);
   }
 
-  const { data, error } = await query;
+  const [{ data, error }, agendaEvents] = await Promise.all([
+    query,
+    sportMatchAgendaProvider.listEvents({
+      role: "organization",
+      userId: profile.id,
+      organizationId: orgContext.organization.id,
+      locationId: selectedLocationId,
+      includeOpenPlanning: true,
+    }),
+  ]);
+  const agendaExportHref = selectedLocationId
+    ? `/agenda/export?location=${encodeURIComponent(selectedLocationId)}`
+    : "/agenda/export";
 
   if (error) {
     console.error("Opdrachtenoverzicht kon niet worden geladen", error.message);
@@ -171,6 +185,23 @@ export default async function OrganisatieOpdrachtenPage({
           </Button>
         </Link>
       </div>
+
+      <section className="space-y-3">
+        <div>
+          <h2 className="text-lg font-semibold tracking-tight">Weekoverzicht</h2>
+          <p className="text-sm text-muted-foreground">
+            {selectedLocation
+              ? `Planning en openstaande opdrachten van ${selectedLocation.name}.`
+              : "Planning en openstaande opdrachten van alle vestigingen."}
+          </p>
+        </div>
+        <AgendaView
+          defaultView="week"
+          events={agendaEvents}
+          exportHref={agendaExportHref}
+          role="organization"
+        />
+      </section>
 
       <Card className="border-primary/30 bg-primary/5">
         <CardContent className="pt-5">
