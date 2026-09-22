@@ -56,12 +56,19 @@ export default async function OpdrachtenPage({
       showAll,
   );
 
-  const [{ jobs, matches }, sportsResult] = await Promise.all([
+  const [{ jobs, matches }, sportsResult, applicationsResult] = await Promise.all([
     fetchOpenJobsWithMatches(),
     supabase.from("sports").select("*").eq("is_active", true).order("name"),
+    supabase
+      .from("job_applications")
+      .select("job_id")
+      .eq("instructor_id", profile.id),
   ]);
 
   const sports = (sportsResult.data as Sport[] | null) ?? [];
+  const appliedJobIds = new Set(
+    (applicationsResult.data ?? []).map((application) => application.job_id as string),
+  );
 
   const filtered = jobs
     .filter((job) => {
@@ -304,6 +311,12 @@ export default async function OpdrachtenPage({
         <div className="space-y-4">
           {filtered.map((job) => (
             <JobCard
+              actionHref={
+                appliedJobIds.has(job.id)
+                  ? `/opdrachten/${job.id}`
+                  : `/opdrachten/${job.id}#aanmelden`
+              }
+              actionLabel={appliedJobIds.has(job.id) ? "Reactie bekijken" : "Aanmelden"}
               href={`/opdrachten/${job.id}`}
               job={job}
               key={job.id}
