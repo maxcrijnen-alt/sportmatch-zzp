@@ -15,7 +15,6 @@ import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -204,10 +203,10 @@ export default async function CandidateProfilePage({
       </div>
 
       <Card>
-        <CardContent className="pt-6">
+        <CardContent className="p-5">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
             <Avatar
-              className="h-24 w-24 text-2xl"
+              className="h-20 w-20 text-xl"
               name={candidate.full_name}
               src={candidate.avatar_url}
             />
@@ -237,13 +236,13 @@ export default async function CandidateProfilePage({
                 </Badge>
               </div>
 
-              <div className="mt-5 grid gap-3 sm:grid-cols-3">
+              <div className="mt-4 grid gap-2 sm:grid-cols-3">
                 <Link
                   className="rounded-lg border border-border p-3 transition-colors hover:border-warning/60 hover:bg-warning/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                   href="#reviews"
                 >
                   <p className="text-xs text-muted-foreground">Beoordeling</p>
-                  <p className="mt-1 flex items-center gap-1 text-lg font-semibold">
+                  <p className="mt-1 flex items-center gap-1 text-base font-semibold">
                     <Star className="h-4 w-4 fill-warning text-warning" />
                     {stats?.avg_rating ?? "—"}
                   </p>
@@ -253,7 +252,7 @@ export default async function CandidateProfilePage({
                 </Link>
                 <div className="rounded-lg border border-border p-3">
                   <p className="text-xs text-muted-foreground">Betrouwbaarheid</p>
-                  <p className="mt-1 text-lg font-semibold">
+                  <p className="mt-1 text-base font-semibold">
                     {stats?.reliability_score != null
                       ? `${stats.reliability_score}%`
                       : "Nieuw"}
@@ -264,7 +263,7 @@ export default async function CandidateProfilePage({
                 </div>
                 <div className="rounded-lg border border-border p-3">
                   <p className="text-xs text-muted-foreground">Reisafstand</p>
-                  <p className="mt-1 text-lg font-semibold">
+                  <p className="mt-1 text-base font-semibold">
                     {details.travel_distance_km != null
                       ? `${details.travel_distance_km} km`
                       : "—"}
@@ -282,10 +281,10 @@ export default async function CandidateProfilePage({
       <div className="grid gap-6 md:grid-cols-[1.35fr_1fr]">
         <div className="space-y-6">
           <Card>
-            <CardHeader>
-              <CardTitle>Over mij</CardTitle>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Over mij</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-0">
               <p className="whitespace-pre-line text-sm leading-6 text-muted-foreground">
                 {details.work_experience?.trim() ||
                   "Deze instructeur heeft nog geen omschrijving toegevoegd."}
@@ -294,13 +293,10 @@ export default async function CandidateProfilePage({
           </Card>
 
           <Card className="scroll-mt-24" id="reviews">
-            <CardHeader>
-              <CardTitle>Ontvangen reviews</CardTitle>
-              <CardDescription>
-                Alle vrijgegeven beoordelingen van eerdere opdrachten.
-              </CardDescription>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Ontvangen reviews</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-3 pt-0">
               <ReviewFilters
                 hiddenParams={
                   isOwnPreview
@@ -351,10 +347,10 @@ export default async function CandidateProfilePage({
 
         <div className="space-y-6">
           <Card>
-            <CardHeader>
-              <CardTitle>Sporten & lesvormen</CardTitle>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Sporten & lesvormen</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 pt-0">
               <div>
                 <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                   Sporten
@@ -395,14 +391,14 @@ export default async function CandidateProfilePage({
           </Card>
 
           <Card>
-            <CardHeader>
-              <CardTitle>Diploma’s</CardTitle>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Diploma’s</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-3 pt-0">
               {(qualificationNamesResult.data ?? []).length > 0 ? (
                 (qualificationNamesResult.data ?? []).map((qualification) => (
                   <div
-                    className="flex items-start gap-2 rounded-lg border border-border p-3"
+                    className="flex items-start gap-2 border-b border-border py-3 last:border-b-0 first:pt-0"
                     key={qualification.id}
                   >
                     <Award className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
