@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { CheckCircle2, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { AgendaView } from "@/components/agenda/agenda-view";
 import { JobStatusIndicator } from "@/components/jobs/job-status-indicator";
 import { Badge } from "@/components/ui/badge";
@@ -32,12 +32,6 @@ interface JobRow extends Job {
   location: { name: string } | null;
   applications: { count: number }[];
 }
-
-const organizationJobFlow = [
-  "Plaats eerst één concrete opdracht met duidelijke vergoeding en tijden.",
-  "Bekijk reacties per opdracht en vergelijk kandidaten op beschikbaarheid en vertrouwen.",
-  "Sluit de opdracht zodra iemand bevestigd is, zodat het overzicht actueel blijft.",
-];
 
 export default async function OrganisatieOpdrachtenPage({
   searchParams,
@@ -203,28 +197,15 @@ export default async function OrganisatieOpdrachtenPage({
         />
       </section>
 
-      <Card className="border-primary/30 bg-primary/5">
-        <CardContent className="pt-5">
-          <p className="text-sm font-medium text-primary">
-            Startflow voor sportscholen
-          </p>
-          <p className="mt-1 text-sm leading-6 text-muted-foreground">
-            Dit overzicht laat zien wat openstaat, hoeveel reacties er zijn en
-            welke opdracht opvolging nodig heeft.
-          </p>
-          <div className="mt-4 grid gap-2 md:grid-cols-3">
-            {organizationJobFlow.map((item) => (
-              <p
-                className="flex gap-2 rounded-md border border-border bg-background p-3 text-sm leading-6"
-                key={item}
-              >
-                <CheckCircle2 className="mt-1 h-4 w-4 shrink-0 text-primary" />
-                <span>{item}</span>
-              </p>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+      <section className="space-y-3">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-lg font-semibold tracking-tight">
+            Opdrachtenlijst
+          </h2>
+          <span className="rounded-full border border-border px-2.5 py-1 text-xs font-semibold text-muted-foreground">
+            {jobs.length}
+          </span>
+        </div>
 
       {jobs.length === 0 ? (
         <Card>
@@ -242,7 +223,7 @@ export default async function OrganisatieOpdrachtenPage({
           </CardContent>
         </Card>
       ) : (
-        <Card>
+        <Card className="overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
@@ -307,6 +288,7 @@ export default async function OrganisatieOpdrachtenPage({
           </Table>
         </Card>
       )}
+      </section>
     </div>
   );
 }
