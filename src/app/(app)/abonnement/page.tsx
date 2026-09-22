@@ -41,9 +41,9 @@ function SubscriptionCard({
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="pb-3">
         <div className="flex items-center justify-between gap-3">
-          <CardTitle>{title}</CardTitle>
+          <CardTitle className="text-base">{title}</CardTitle>
           <Badge variant={hasAccess ? "success" : "destructive"}>
             {subscriptionStatusLabels[subscription.status]}
           </Badge>
@@ -52,10 +52,9 @@ function SubscriptionCard({
           {subscriptionStatusDescription(subscription)}
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-2 pt-0">
         <p className="text-sm text-muted-foreground">
-          {formatEuro(subscription.price_cents)} per maand (excl. btw),
-          maandelijks opzegbaar.
+          {formatEuro(subscription.price_cents)} per maand (excl. btw), maandelijks opzegbaar.
         </p>
         {canManage ? (
           <div className="flex flex-wrap gap-2">
@@ -143,7 +142,7 @@ export default async function AbonnementPage() {
       />
     ) : (
       <Card>
-        <CardContent className="py-8 text-center text-sm text-muted-foreground">
+        <CardContent className="py-6 text-center text-sm text-muted-foreground">
           Geen abonnement gevonden. Rond eerst je profiel af.
         </CardContent>
       </Card>
@@ -151,7 +150,7 @@ export default async function AbonnementPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-6 px-4 py-8">
+    <div className="mx-auto w-full max-w-3xl space-y-4 px-4 py-8">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Abonnement</h1>
         <p className="text-sm text-muted-foreground">
@@ -161,16 +160,16 @@ export default async function AbonnementPage() {
         </p>
       </div>
 
-      <Alert>
-        <AlertTitle>Toegang en looptijd</AlertTitle>
-        <AlertDescription>
+      <Alert className="py-3">
+        <AlertTitle className="text-sm">Toegang en looptijd</AlertTitle>
+        <AlertDescription className="text-xs leading-5">
           Bij een verlopen abonnement blijven bestaande afspraken zichtbaar,
           maar zijn reageren, chatten, plaatsen en bevestigen geblokkeerd. Bij
           een mislukte betaling geldt een hersteltermijn van 14 dagen.
         </AlertDescription>
       </Alert>
 
-      <div className="space-y-4">{cards}</div>
+      <div className="space-y-3">{cards}</div>
     </div>
   );
 }
