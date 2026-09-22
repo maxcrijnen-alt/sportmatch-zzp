@@ -9,6 +9,7 @@ import {
   MapPin,
   MessageSquare,
   Phone,
+  Star,
   Users,
 } from "lucide-react";
 import { ApplyForm } from "@/components/jobs/apply-form";
@@ -95,6 +96,7 @@ export default async function OpdrachtDetailPage({
     myQualificationsResult,
     contactResult,
     reviewsResult,
+    organizationReviewsResult,
     myReviewResult,
     validVogResult,
     pendingReviewResult,
@@ -129,6 +131,14 @@ export default async function OpdrachtDetailPage({
       .select("*")
       .eq("job_id", job.id)
       .not("released_at", "is", null),
+    job.organization?.id
+      ? supabase
+          .from("reviews")
+          .select("rating, job:jobs!inner(organization_id)")
+          .eq("job.organization_id", job.organization.id)
+          .eq("side", "instructor")
+          .not("released_at", "is", null)
+      : Promise.resolve({ data: [] }),
     supabase
       .from("reviews")
       .select("id")
@@ -160,6 +170,15 @@ export default async function OpdrachtDetailPage({
   const invitation = invitationResult.data as JobInvitation | null;
   const confirmation = confirmationResult.data as JobConfirmation | null;
   const releasedReviews = (reviewsResult.data as Review[] | null) ?? [];
+  const organizationReviews =
+    (organizationReviewsResult.data as { rating: number }[] | null) ?? [];
+  const organizationReviewAverage =
+    organizationReviews.length > 0
+      ? (
+          organizationReviews.reduce((sum, review) => sum + review.rating, 0) /
+          organizationReviews.length
+        ).toFixed(1)
+      : null;
   const hasReviewed = Boolean(myReviewResult.data);
   const hasValidVog = validVogResult.data === true;
   const hasPendingReview = pendingReviewResult.data === true;
@@ -252,10 +271,23 @@ export default async function OpdrachtDetailPage({
         </div>
         <h1 className="text-2xl font-bold tracking-tight">{job.title}</h1>
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
-          <span className="inline-flex items-center gap-1.5">
-            <Building2 className="h-4 w-4" />
-            {job.organization?.name}
-          </span>
+          {job.organization ? (
+            <Link
+              className="inline-flex items-center gap-1.5 transition-colors hover:text-foreground hover:underline"
+              href={`/organisaties/${job.organization.id}/reviews`}
+            >
+              <Building2 className="h-4 w-4" />
+              <span>{job.organization.name}</span>
+              {organizationReviewAverage ? (
+                <span className="inline-flex items-center gap-1 text-warning">
+                  <Star className="h-3.5 w-3.5 fill-warning" />
+                  {organizationReviewAverage} ({organizationReviews.length})
+                </span>
+              ) : (
+                <span className="text-xs text-muted-foreground">Nog geen reviews</span>
+              )}
+            </Link>
+          ) : null}
           <span className="inline-flex items-center gap-1.5">
             <MapPin className="h-4 w-4" />
             {job.location?.name} · {job.location?.city?.name}
