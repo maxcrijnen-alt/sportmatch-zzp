@@ -69,12 +69,15 @@ export default async function CandidateProfilePage({
   if (!sessionProfile || !supabase) {
     redirect("/login");
   }
-  if (!orgContext) {
-    redirect("/dashboard");
-  }
 
   const { id: instructorId } = await params;
   const query = await searchParams;
+  const isOwnPreview =
+    sessionProfile.role === "instructor" && instructorId === sessionProfile.id;
+
+  if (!orgContext && !isOwnPreview) {
+    redirect("/dashboard");
+  }
 
   const [
     profileResult,
@@ -181,10 +184,12 @@ export default async function CandidateProfilePage({
   const hasValidVog = vogResult.data === true;
 
   const backParams = new URLSearchParams();
-  if (query.job) backParams.set("job", query.job);
-  if (query.location) backParams.set("location", query.location);
+  if (!isOwnPreview && query.job) backParams.set("job", query.job);
+  if (!isOwnPreview && query.location) backParams.set("location", query.location);
   const backQuery = backParams.toString();
-  const backHref = `/organisatie/kandidaten${backQuery ? `?${backQuery}` : ""}`;
+  const backHref = isOwnPreview
+    ? "/profiel"
+    : `/organisatie/kandidaten${backQuery ? `?${backQuery}` : ""}`;
   const reviewResetHref = `/organisatie/kandidaten/${instructorId}${backQuery ? `?${backQuery}` : ""}#reviews`;
 
   return (
@@ -194,7 +199,7 @@ export default async function CandidateProfilePage({
           className="text-sm font-medium text-primary hover:underline"
           href={backHref}
         >
-          ← Terug naar kandidaten
+          {isOwnPreview ? "← Terug naar mijn profiel" : "← Terug naar kandidaten"}
         </Link>
       </div>
 
@@ -297,7 +302,11 @@ export default async function CandidateProfilePage({
             </CardHeader>
             <CardContent className="space-y-3">
               <ReviewFilters
-                hiddenParams={{ job: query.job, location: query.location }}
+                hiddenParams={
+                  isOwnPreview
+                    ? {}
+                    : { job: query.job, location: query.location }
+                }
                 resetHref={reviewResetHref}
                 sort={reviewSort}
                 stars={reviewStars}
@@ -417,7 +426,7 @@ export default async function CandidateProfilePage({
         </div>
       </div>
 
-      {query.job ? (
+      {!isOwnPreview && query.job ? (
         <div className="flex justify-end">
           <Link href={`/organisatie/opdrachten/${query.job}`}>
             <Button>Terug naar opdracht</Button>
