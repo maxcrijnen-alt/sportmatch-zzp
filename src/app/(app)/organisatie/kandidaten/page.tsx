@@ -70,7 +70,7 @@ const candidateReviewTips = [
 export default async function KandidatenPage({
   searchParams,
 }: {
-  searchParams: Promise<{ location?: string }>;
+  searchParams: Promise<{ location?: string; job?: string }>;
 }) {
   const profile = await getSessionProfile();
   const orgContext = await getOrgContext();
@@ -92,6 +92,8 @@ export default async function KandidatenPage({
   const selectedLocation = orgContext.locations.find(
     (location) => location.id === selectedLocationId,
   );
+  const selectedJobId = params.job ?? null;
+
   let applicationsQuery = supabase
     .from("job_applications")
     .select("*, job:jobs!inner (id, title, starts_on, organization_id, location_id)")
@@ -105,6 +107,24 @@ export default async function KandidatenPage({
       selectedLocationId,
     );
   }
+  if (selectedJobId) {
+    applicationsQuery = applicationsQuery.eq("job_id", selectedJobId);
+  }
+
+  let openJobsQuery = supabase
+    .from("jobs")
+    .select(
+      "id,title,sport_id,lesson_type_id,custom_lesson_type,location_id,starts_on,start_time,end_time",
+    )
+    .eq("organization_id", orgContext.organization.id)
+    .eq("status", "open");
+
+  if (selectedLocationId) {
+    openJobsQuery = openJobsQuery.eq("location_id", selectedLocationId);
+  }
+  if (selectedJobId) {
+    openJobsQuery = openJobsQuery.eq("id", selectedJobId);
+  }
 
   const [{ data }, priorResult, openJobsResult] = await Promise.all([
     applicationsQuery,
@@ -113,13 +133,7 @@ export default async function KandidatenPage({
       .select("instructor_id, job:jobs!inner(id,organization_id,location_id,status)")
       .eq("job.organization_id", orgContext.organization.id)
       .eq("job.status", "completed"),
-    supabase
-      .from("jobs")
-      .select(
-        "id,title,sport_id,lesson_type_id,custom_lesson_type,location_id,starts_on,start_time,end_time",
-      )
-      .eq("organization_id", orgContext.organization.id)
-      .eq("status", "open"),
+    openJobsQuery,
   ]);
 
   const applications = (data as unknown as ApplicationRow[] | null) ?? [];
@@ -133,6 +147,9 @@ export default async function KandidatenPage({
   );
   const openJobs = ((openJobsResult.data as OpenJobRow[] | null) ?? [])
     .filter((job) => !selectedLocationId || job.location_id === selectedLocationId);
+  const selectedJob = selectedJobId
+    ? openJobs.find((job) => job.id === selectedJobId) ?? null
+    : null;
   const openSportIds = Array.from(new Set(openJobs.map((job) => job.sport_id)));
   const { data: matchingSports } = openSportIds.length
     ? await supabase
@@ -479,12 +496,29 @@ export default async function KandidatenPage({
 
   return (
     <div className="mx-auto w-full max-w-4xl space-y-6 px-4 py-8">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Kandidaten</h1>
-        <p className="text-sm text-muted-foreground">
-          Alle openstaande reacties op jullie opdrachten, klaar om te
-          vergelijken{selectedLocation ? ` voor ${selectedLocation.name}` : ""}.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">
+            {selectedJob ? `Kandidaten · ${selectedJob.title}` : "Kandidaten"}
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            {selectedJob
+              ? "Reacties en passende instructeurs voor deze opdracht."
+              : `Alle openstaande reacties op jullie opdrachten, klaar om te vergelijken${selectedLocation ? ` voor ${selectedLocation.name}` : ""}.`}
+          </p>
+        </div>
+        {selectedJob ? (
+          <Link
+            className="text-sm font-medium text-primary hover:underline"
+            href={
+              selectedLocationId
+                ? `/organisatie/kandidaten?location=${selectedLocationId}`
+                : "/organisatie/kandidaten"
+            }
+          >
+            Alle kandidaten
+          </Link>
+        ) : null}
       </div>
 
       <Card className="border-primary/30 bg-primary/5">
