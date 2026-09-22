@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { ReviewFilters } from "@/components/reviews/review-filters";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -20,6 +21,7 @@ import {
 } from "@/components/ui/card";
 import { getSessionProfile } from "@/lib/auth/session";
 import { formatDate } from "@/lib/labels";
+import { filterAndSortReviews, parseReviewFilters } from "@/lib/reviews/filter";
 import { getOrgContext } from "@/lib/org/context";
 import { createClient } from "@/lib/supabase/server";
 import type { InstructorPublicStats, Review } from "@/types/database";
@@ -58,7 +60,7 @@ export default async function CandidateProfilePage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ job?: string; location?: string }>;
+  searchParams: Promise<{ job?: string; location?: string; stars?: string; sort?: string }>;
 }) {
   const sessionProfile = await getSessionProfile();
   const orgContext = await getOrgContext();
@@ -171,6 +173,8 @@ export default async function CandidateProfilePage({
     (reviewsResult.data as unknown as (Review & {
       job: { title: string } | null;
     })[] | null) ?? [];
+  const { stars: reviewStars, sort: reviewSort } = parseReviewFilters(query);
+  const visibleReviews = filterAndSortReviews(reviews, reviewStars, reviewSort);
   const age = calculateAge(details.birth_date as string | null);
   const cityName =
     candidate.custom_city || (cityResult.data?.name as string | undefined) || null;
@@ -181,6 +185,7 @@ export default async function CandidateProfilePage({
   if (query.location) backParams.set("location", query.location);
   const backQuery = backParams.toString();
   const backHref = `/organisatie/kandidaten${backQuery ? `?${backQuery}` : ""}`;
+  const reviewResetHref = `/organisatie/kandidaten/${instructorId}${backQuery ? `?${backQuery}` : ""}#reviews`;
 
   return (
     <div className="mx-auto w-full max-w-4xl space-y-6 px-4 py-8">
@@ -291,12 +296,20 @@ export default async function CandidateProfilePage({
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              {reviews.length === 0 ? (
+              <ReviewFilters
+                hiddenParams={{ job: query.job, location: query.location }}
+                resetHref={reviewResetHref}
+                sort={reviewSort}
+                stars={reviewStars}
+              />
+              {visibleReviews.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
-                  Nog geen ontvangen reviews.
+                  {reviews.length === 0
+                    ? "Nog geen ontvangen reviews."
+                    : "Geen reviews gevonden met deze filters."}
                 </p>
               ) : (
-                reviews.map((review) => (
+                visibleReviews.map((review) => (
                   <div
                     className="rounded-lg border border-border p-3"
                     key={review.id}
