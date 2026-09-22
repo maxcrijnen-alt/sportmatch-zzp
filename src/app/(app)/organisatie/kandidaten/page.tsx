@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { CheckCircle2, Users } from "lucide-react";
+import { Users } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { getSessionProfile } from "@/lib/auth/session";
 import { formatDate } from "@/lib/labels";
 import { getOrgContext } from "@/lib/org/context";
@@ -61,11 +60,6 @@ function distanceInKm(
   return Math.round(6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)) * 10) / 10;
 }
 
-const candidateReviewTips = [
-  "Vergelijk eerst beschikbaarheid, tarief en afstand voor de specifieke opdracht.",
-  "Gebruik badges, betrouwbaarheid en berichttekst als extra vertrouwen voordat je bevestigt.",
-  "Open de opdracht om de kandidaat in context te bekijken en de volgende stap te nemen.",
-];
 
 export default async function KandidatenPage({
   searchParams,
@@ -501,8 +495,23 @@ export default async function KandidatenPage({
     })
     .slice(0, 6);
 
+  const statsLine = (stats: InstructorPublicStats | null | undefined) => {
+    if (!stats || stats.avg_rating == null || Number(stats.review_count) === 0) {
+      return `Eerste klus · 0 reviews · Betrouwbaarheid ${stats?.reliability_score != null ? `${stats.reliability_score}%` : "Nieuw"}`;
+    }
+
+    return `★ ${stats.avg_rating} · ${stats.review_count} reviews · Betrouwbaarheid ${stats.reliability_score != null ? `${stats.reliability_score}%` : "Nieuw"} · ${stats.completed_count} afgerond`;
+  };
+
+  const sectionHeader = (title: string, count: number) => (
+    <div className="flex items-center justify-between gap-3 border-b border-border bg-muted/30 px-5 py-4">
+      <h2 className="font-semibold">{title}</h2>
+      <Badge variant="muted">{count}</Badge>
+    </div>
+  );
+
   return (
-    <div className="mx-auto w-full max-w-4xl space-y-6 px-4 py-8">
+    <div className="mx-auto w-full max-w-5xl space-y-6 px-4 py-8">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">
@@ -511,7 +520,7 @@ export default async function KandidatenPage({
           <p className="text-sm text-muted-foreground">
             {selectedJob
               ? "Reacties en passende instructeurs voor deze opdracht."
-              : `Alle openstaande reacties op jullie opdrachten, klaar om te vergelijken${selectedLocation ? ` voor ${selectedLocation.name}` : ""}.`}
+              : `Alle openstaande reacties${selectedLocation ? ` · ${selectedLocation.name}` : ""}`}
           </p>
         </div>
         {selectedJob ? (
@@ -528,256 +537,222 @@ export default async function KandidatenPage({
         ) : null}
       </div>
 
-      <Card className="border-primary/30 bg-primary/5">
-        <CardContent className="pt-5">
-          <p className="text-sm font-medium text-primary">
-            Zo kies je sneller de juiste instructeur
-          </p>
-          <div className="mt-4 grid gap-2 md:grid-cols-3">
-            {candidateReviewTips.map((tip) => (
-              <p
-                className="flex gap-2 rounded-md border border-border bg-background p-3 text-sm leading-6"
-                key={tip}
-              >
-                <CheckCircle2 className="mt-1 h-4 w-4 shrink-0 text-primary" />
-                <span>{tip}</span>
-              </p>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      <section className="space-y-3">
-        <div>
-          <h2 className="text-lg font-semibold">Eerder mee samengewerkt</h2>
-          <p className="text-sm text-muted-foreground">Instructeurs met een succesvol afgeronde opdracht bij jullie sportschool.</p>
-        </div>
-        {workedBeforeIds.length === 0 ? (
-          <p className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground">Nog geen eerdere samenwerkingen in deze selectie.</p>
-        ) : (
-          <div className="grid gap-3 sm:grid-cols-2">
-            {workedBeforeIds.map((instructorId) => {
-              const instructor = namesById.get(instructorId);
-              const stats = statsById.get(instructorId);
-              const returningMatch = returningMatchesById.get(instructorId);
-              return (
-                <Card key={instructorId}>
-                  <CardContent className="space-y-3 pt-5">
-                    <Link
-                      className="flex items-center gap-3 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                      href={candidateProfileHref(instructorId)}
-                    >
-                      <Avatar name={instructor?.name ?? "?"} src={instructor?.avatar} />
-                      <div>
-                        <p className="font-medium hover:text-primary">{instructor?.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {stats?.avg_rating != null ? `★ ${stats.avg_rating} · ` : ""}
-                          {stats?.review_count ?? 0} reviews · {stats?.completed_count ?? 0} afgerond
-                        </p>
-                      </div>
-                    </Link>
-                    {returningMatch ? (
-                      <div className="space-y-2">
-                        <p className="text-xs text-muted-foreground">
-                          Past bij {returningMatch.job.title}.
-                        </p>
-                        <Link href={`/organisatie/opdrachten/${returningMatch.job.id}`}>
-                          <Button size="sm" variant="outline">
-                            Opnieuw uitnodigen
-                          </Button>
-                        </Link>
-                      </div>
-                    ) : (
-                      <p className="text-xs text-muted-foreground">
-                        Momenteel geen passende open opdracht om voor uit te nodigen.
-                      </p>
-                    )}
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        )}
-      </section>
-
-      <section className="space-y-3">
-        <div><h2 className="text-lg font-semibold">Reacties</h2><p className="text-sm text-muted-foreground">Instructeurs die daadwerkelijk op een open opdracht hebben gereageerd.</p></div>
-      {applications.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
+      <section className="overflow-hidden rounded-xl border border-border bg-card">
+        {sectionHeader("Reacties", applications.length)}
+        {applications.length === 0 ? (
+          <div className="flex flex-col items-center gap-3 px-5 py-10 text-center">
             <Users className="h-8 w-8 text-muted-foreground" />
-            <div>
-              <p className="font-medium">Nog geen openstaande reacties</p>
-              <p className="mt-2 max-w-md text-sm leading-6 text-muted-foreground">
-                Plaats of verbeter je opdracht. Duidelijke tijden, vergoeding,
-                locatie en kwalificaties maken reageren makkelijker.
-              </p>
-            </div>
+            <p className="text-sm text-muted-foreground">
+              Nog geen openstaande reacties.
+            </p>
             <Link href="/organisatie/opdrachten/nieuw">
-              <Button variant="outline">Nieuwe opdracht</Button>
+              <Button size="sm" variant="outline">Nieuwe opdracht</Button>
             </Link>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="space-y-3">
-          {applications.map((application) => {
-            const instructor = namesById.get(application.instructor_id);
-            const stats = statsById.get(application.instructor_id);
+          </div>
+        ) : (
+          <div className="divide-y divide-border">
+            {applications.map((application) => {
+              const instructor = namesById.get(application.instructor_id);
+              const stats = statsById.get(application.instructor_id);
 
-            return (
-              <div
-                className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-card p-4"
-                key={application.id}
-              >
-                <div className="flex items-center gap-3">
+              return (
+                <div
+                  className="flex flex-col gap-4 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
+                  key={application.id}
+                >
                   <Link
-                    className="flex items-center gap-3 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    className="flex min-w-0 items-center gap-3 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                     href={candidateProfileHref(application.instructor_id)}
                   >
                     <Avatar
                       name={instructor?.name ?? "?"}
                       src={instructor?.avatar}
                     />
-                    <div>
-                      <p className="font-medium hover:text-primary">{instructor?.name}</p>
+                    <div className="min-w-0">
+                      <p className="truncate font-medium hover:text-primary">
+                        {instructor?.name}
+                      </p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        {statsLine(stats)}
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {application.job?.title} ·{" "}
+                        {application.job ? formatDate(application.job.starts_on) : ""}
+                      </p>
                     </div>
                   </Link>
-                  <div>
-                    <p className="text-sm text-muted-foreground">
-                      Voor:{" "}
-                      <Link
-                        className="text-primary hover:underline"
-                        href={`/organisatie/opdrachten/${application.job?.id}`}
-                      >
-                        {application.job?.title}
-                      </Link>{" "}
-                      · {application.job ? formatDate(application.job.starts_on) : ""}
-                    </p>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <Link href={candidateProfileHref(application.instructor_id)}>
+                      <Button size="sm" variant="outline">Profiel</Button>
+                    </Link>
+                    <Link href={`/organisatie/opdrachten/${application.job?.id}`}>
+                      <Button size="sm">Reactie bekijken</Button>
+                    </Link>
                   </div>
                 </div>
-                <div className="flex flex-wrap items-center gap-1.5">
-                  {stats?.avg_rating != null ? (
-                    <Badge variant="accent">★ {stats.avg_rating}</Badge>
-                  ) : (
-                    <Badge variant="muted">Eerste klus</Badge>
-                  )}
-                  {stats && stats.reliability_score != null ? (
-                    <Badge variant="outline">
-                      Betrouwbaarheid {stats.reliability_score}%
-                    </Badge>
-                  ) : null}
-                  {stats ? <Badge variant="outline">{stats.review_count} reviews · {stats.completed_count} afgerond</Badge> : null}
-                  <Link href={`/organisatie/opdrachten/${application.job?.id}`}>
-                    <Button size="sm" variant="outline">
-                      Bekijken
-                    </Button>
-                  </Link>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-      </section>
-
-      <section className="space-y-3">
-        <div><h2 className="text-lg font-semibold">Passende instructeurs</h2><p className="text-sm text-muted-foreground">Nog niet gereageerd, passend op sport, lesvorm, diploma&apos;s, VOG, afstand en eventuele beschikbaarheid. Een leeg beschikbaarheidsschema sluit niemand uit.</p></div>
-        {visibleCandidateMatches.length === 0 ? (
-          <p className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground">Geen extra passende instructeurs gevonden.</p>
-        ) : (
-          <div className="grid gap-3 sm:grid-cols-2">
-            {visibleCandidateMatches.map((match) => {
-              const instructor = namesById.get(match.userId);
-              const stats = statsById.get(match.userId);
-              return (
-                <Card key={match.userId}><CardContent className="space-y-3 pt-5">
-                  <Link
-                    className="flex items-center gap-3 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                    href={candidateProfileHref(match.userId)}
-                  >
-                    <Avatar name={instructor?.name ?? "?"} src={instructor?.avatar} />
-                    <div>
-                      <p className="font-medium hover:text-primary">{instructor?.name}</p>
-                      {match.isFirstJob ? (
-                        <Badge variant="muted">Eerste klus</Badge>
-                      ) : (
-                        <p className="text-xs text-muted-foreground">
-                          ★ {stats?.avg_rating} · {stats?.review_count} reviews · {stats?.completed_count} afgerond
-                        </p>
-                      )}
-                    </div>
-                  </Link>
-                  <div className="flex flex-wrap gap-1.5">
-                    <Badge variant="accent">Match {match.score}</Badge>
-                    <Badge variant="outline">{match.lessonTypeName}</Badge>
-                    <Badge variant="outline">VOG goedgekeurd</Badge>
-                    <Badge variant="outline">
-                      {match.distanceKm == null ? "Afstand onbekend" : `${match.distanceKm} km`}
-                    </Badge>
-                    <Badge variant="outline">{match.yearsExperience} jaar ervaring</Badge>
-                    {match.requiredQualifications > 0 ? (
-                      <Badge variant="outline">Diploma&apos;s compleet</Badge>
-                    ) : null}
-                    <Badge variant="outline">
-                      {match.availability === "available"
-                        ? "Beschikbaar volgens profiel"
-                        : "Beschikbaarheid niet ingevuld"}
-                    </Badge>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Beste match voor {match.job.title}.
-                  </p>
-                  <Link href={`/organisatie/opdrachten/${match.job.id}`}><Button size="sm" variant="outline">Bekijken en uitnodigen</Button></Link>
-                </CardContent></Card>
               );
             })}
           </div>
         )}
       </section>
 
-      <section className="space-y-3">
-        <div>
-          <h2 className="text-lg font-semibold">Hoog beoordeelde instructeurs</h2>
-          <p className="text-sm text-muted-foreground">
-            Passende instructeurs gerangschikt op echte beoordelingen en het
-            aantal ontvangen reviews. Nieuwe instructeurs blijven hierboven
-            zichtbaar als Eerste klus.
+      <section className="overflow-hidden rounded-xl border border-border bg-card">
+        {sectionHeader("Eerder mee samengewerkt", workedBeforeIds.length)}
+        {workedBeforeIds.length === 0 ? (
+          <p className="px-5 py-6 text-sm text-muted-foreground">
+            Nog geen eerdere samenwerkingen in deze selectie.
           </p>
-        </div>
+        ) : (
+          <div className="divide-y divide-border">
+            {workedBeforeIds.map((instructorId) => {
+              const instructor = namesById.get(instructorId);
+              const stats = statsById.get(instructorId);
+              const returningMatch = returningMatchesById.get(instructorId);
+
+              return (
+                <div
+                  className="flex flex-col gap-4 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
+                  key={instructorId}
+                >
+                  <Link
+                    className="flex min-w-0 items-center gap-3 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    href={candidateProfileHref(instructorId)}
+                  >
+                    <Avatar name={instructor?.name ?? "?"} src={instructor?.avatar} />
+                    <div className="min-w-0">
+                      <p className="truncate font-medium hover:text-primary">
+                        {instructor?.name}
+                      </p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        {statsLine(stats)}
+                      </p>
+                      {returningMatch ? (
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Past bij {returningMatch.job.title}
+                        </p>
+                      ) : null}
+                    </div>
+                  </Link>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <Link href={candidateProfileHref(instructorId)}>
+                      <Button size="sm" variant="outline">Profiel</Button>
+                    </Link>
+                    {returningMatch ? (
+                      <Link href={`/organisatie/opdrachten/${returningMatch.job.id}`}>
+                        <Button size="sm">Opnieuw uitnodigen</Button>
+                      </Link>
+                    ) : null}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </section>
+
+      <section className="overflow-hidden rounded-xl border border-border bg-card">
+        {sectionHeader("Passende instructeurs", visibleCandidateMatches.length)}
+        {visibleCandidateMatches.length === 0 ? (
+          <p className="px-5 py-6 text-sm text-muted-foreground">
+            Geen extra passende instructeurs gevonden.
+          </p>
+        ) : (
+          <div className="divide-y divide-border">
+            {visibleCandidateMatches.map((match) => {
+              const instructor = namesById.get(match.userId);
+              const stats = statsById.get(match.userId);
+
+              return (
+                <div
+                  className="flex flex-col gap-4 px-5 py-4 lg:flex-row lg:items-center lg:justify-between"
+                  key={match.userId}
+                >
+                  <Link
+                    className="flex min-w-0 items-center gap-3 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    href={candidateProfileHref(match.userId)}
+                  >
+                    <Avatar name={instructor?.name ?? "?"} src={instructor?.avatar} />
+                    <div className="min-w-0">
+                      <p className="truncate font-medium hover:text-primary">
+                        {instructor?.name}
+                      </p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        {statsLine(stats)}
+                      </p>
+                    </div>
+                  </Link>
+
+                  <div className="flex flex-1 flex-wrap gap-1.5 lg:justify-end">
+                    <Badge variant="accent">Match {match.score}</Badge>
+                    <Badge variant="outline">{match.lessonTypeName}</Badge>
+                    <Badge variant="outline">VOG ✓</Badge>
+                    <Badge variant="outline">
+                      {match.distanceKm == null ? "Afstand onbekend" : `${match.distanceKm} km`}
+                    </Badge>
+                    <Badge variant="outline">{match.yearsExperience} jaar ervaring</Badge>
+                    <Badge variant="outline">
+                      {match.availability === "available" ? "Beschikbaar" : "Beschikbaarheid onbekend"}
+                    </Badge>
+                  </div>
+
+                  <div className="flex shrink-0 items-center gap-2">
+                    <Link href={candidateProfileHref(match.userId)}>
+                      <Button size="sm" variant="outline">Profiel</Button>
+                    </Link>
+                    <Link href={`/organisatie/opdrachten/${match.job.id}`}>
+                      <Button size="sm">Uitnodigen</Button>
+                    </Link>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </section>
+
+      <section className="overflow-hidden rounded-xl border border-border bg-card">
+        {sectionHeader("Hoog beoordeeld", highlyRatedMatches.length)}
         {highlyRatedMatches.length === 0 ? (
-          <p className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground">
+          <p className="px-5 py-6 text-sm text-muted-foreground">
             Nog geen passende instructeurs met ontvangen reviews.
           </p>
         ) : (
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="divide-y divide-border">
             {highlyRatedMatches.map((match) => {
               const instructor = namesById.get(match.userId);
               const stats = statsById.get(match.userId);
+
               return (
-                <Card key={match.userId}>
-                  <CardContent className="space-y-3 pt-5">
-                    <Link
-                      className="flex items-center gap-3 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                      href={candidateProfileHref(match.userId)}
-                    >
-                      <Avatar name={instructor?.name ?? "?"} src={instructor?.avatar} />
-                      <div>
-                        <p className="font-medium hover:text-primary">{instructor?.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          ★ {stats?.avg_rating} · {stats?.review_count} reviews · {stats?.completed_count} afgerond
-                        </p>
-                      </div>
+                <div
+                  className="flex flex-col gap-4 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
+                  key={match.userId}
+                >
+                  <Link
+                    className="flex min-w-0 items-center gap-3 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    href={candidateProfileHref(match.userId)}
+                  >
+                    <Avatar name={instructor?.name ?? "?"} src={instructor?.avatar} />
+                    <div className="min-w-0">
+                      <p className="truncate font-medium hover:text-primary">
+                        {instructor?.name}
+                      </p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        {statsLine(stats)}
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {match.job.title} · {match.lessonTypeName}
+                      </p>
+                    </div>
+                  </Link>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <Link href={candidateProfileHref(match.userId)}>
+                      <Button size="sm" variant="outline">Profiel</Button>
                     </Link>
-                    <p className="text-xs text-muted-foreground">
-                      Past bij {match.job.title} · {match.lessonTypeName}
-                    </p>
                     <Link href={`/organisatie/opdrachten/${match.job.id}`}>
-                      <Button size="sm" variant="outline">
-                        Bekijken en uitnodigen
-                      </Button>
+                      <Button size="sm">Uitnodigen</Button>
                     </Link>
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               );
             })}
           </div>
