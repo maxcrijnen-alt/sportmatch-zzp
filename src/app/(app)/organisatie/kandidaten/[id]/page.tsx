@@ -113,8 +113,7 @@ export default async function CandidateProfilePage({
       .select("*, job:jobs(title)")
       .eq("reviewee_id", instructorId)
       .not("released_at", "is", null)
-      .order("created_at", { ascending: false })
-      .limit(6),
+      .order("created_at", { ascending: false }),
     supabase.rpc("instructor_public_stats", { target: instructorId }),
     supabase.rpc("has_valid_vog", { target_user: instructorId }),
   ]);
@@ -229,16 +228,19 @@ export default async function CandidateProfilePage({
               </div>
 
               <div className="mt-5 grid gap-3 sm:grid-cols-3">
-                <div className="rounded-lg border border-border p-3">
+                <Link
+                  className="rounded-lg border border-border p-3 transition-colors hover:border-warning/60 hover:bg-warning/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  href="#reviews"
+                >
                   <p className="text-xs text-muted-foreground">Beoordeling</p>
                   <p className="mt-1 flex items-center gap-1 text-lg font-semibold">
                     <Star className="h-4 w-4 fill-warning text-warning" />
                     {stats?.avg_rating ?? "—"}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {stats?.review_count ?? 0} reviews
+                    {stats?.review_count ?? 0} reviews bekijken
                   </p>
-                </div>
+                </Link>
                 <div className="rounded-lg border border-border p-3">
                   <p className="text-xs text-muted-foreground">Betrouwbaarheid</p>
                   <p className="mt-1 text-lg font-semibold">
