@@ -3,7 +3,6 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { ArrowLeft, Star } from "lucide-react";
 import { ReviewFilters } from "@/components/reviews/review-filters";
-import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
@@ -91,7 +90,7 @@ export default async function OrganizationReviewsPage({
         </p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-2 sm:grid-cols-2">
         <Card>
           <CardHeader className="pb-2">
             <CardDescription>Gemiddelde score</CardDescription>
@@ -110,13 +109,10 @@ export default async function OrganizationReviewsPage({
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Ontvangen reviews</CardTitle>
-          <CardDescription>
-            Alleen beoordelingen die na de dubbele beoordeling zijn vrijgegeven.
-          </CardDescription>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Ontvangen reviews</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="space-y-3 pt-0">
           <ReviewFilters
             resetHref={`/organisaties/${id}/reviews`}
             sort={reviewSort}
@@ -131,7 +127,7 @@ export default async function OrganizationReviewsPage({
           ) : (
             visibleReviews.map((review) => (
               <div
-                className="flex items-start justify-between gap-4 rounded-lg border border-border p-3"
+                className="rounded-lg border border-border p-3"
                 key={review.id}
               >
                 <div className="min-w-0">
@@ -148,9 +144,6 @@ export default async function OrganizationReviewsPage({
                     <p className="mt-2 text-sm leading-6">“{review.comment}”</p>
                   ) : null}
                 </div>
-                <Badge className="shrink-0" variant="muted">
-                  Ontvangen
-                </Badge>
               </div>
             ))
           )}
