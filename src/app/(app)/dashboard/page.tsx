@@ -8,6 +8,7 @@ import {
   Inbox,
   ShieldCheck,
 } from "lucide-react";
+import { DashboardTodoList } from "@/components/dashboard/dashboard-todo-list";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -87,13 +88,15 @@ export default async function DashboardPage({
       );
     }
 
-    const [jobsResult, subsResult, applicationsResult] = await Promise.all([
-      jobsQuery,
-      locationIds.length > 0
-        ? supabase.from("subscriptions").select("*").in("location_id", locationIds)
-        : Promise.resolve({ data: [] as Subscription[] }),
-      applicationsQuery,
-    ]);
+    const [jobsResult, subsResult, applicationsResult, pendingReviewResult] =
+      await Promise.all([
+        jobsQuery,
+        locationIds.length > 0
+          ? supabase.from("subscriptions").select("*").in("location_id", locationIds)
+          : Promise.resolve({ data: [] as Subscription[] }),
+        applicationsQuery,
+        supabase.rpc("has_pending_review", { target_user: profile.id }),
+      ]);
 
     const subscriptions = (subsResult.data as Subscription[] | null) ?? [];
     const hasInactiveLocation = subscriptions.some(
@@ -137,6 +140,7 @@ export default async function DashboardPage({
     const openJobCount = openJobs.length;
     const pendingApplicationCount = pendingApplications.length;
     const pendingConfirmationCount = pendingConfirmationJobIds.size;
+    const hasPendingReview = pendingReviewResult.data === true;
     const searchingJobCount = openJobIds.filter(
       (jobId) =>
         !pendingApplicationJobIds.has(jobId) &&
@@ -180,6 +184,45 @@ export default async function DashboardPage({
           `${right.starts_on}T${right.start_time}`,
         ),
       );
+
+    const todoItems = [
+      ...(hasPendingReview
+        ? [
+            {
+              title: "Beoordeling afronden",
+              description: "Er staat nog een verplichte review open.",
+              href: "/organisatie/reviews?view=given",
+            },
+          ]
+        : []),
+      ...(pendingApplicationCount > 0
+        ? [
+            {
+              title: "Reacties beoordelen",
+              description: `${pendingApplicationCount} ${pendingApplicationCount === 1 ? "reactie wacht" : "reacties wachten"} op beoordeling.`,
+              href: "/organisatie/kandidaten",
+            },
+          ]
+        : []),
+      ...(searchingJobCount > 0
+        ? [
+            {
+              title: "Open opdrachten opvolgen",
+              description: `${searchingJobCount} ${searchingJobCount === 1 ? "opdracht heeft" : "opdrachten hebben"} nog geen reactie of gekozen instructeur.`,
+              href: "/organisatie/opdrachten",
+            },
+          ]
+        : []),
+      ...(hasInactiveLocation
+        ? [
+            {
+              title: "Abonnement vestiging controleren",
+              description: "Minimaal één vestiging heeft geen actieve toegang.",
+              href: "/abonnement",
+            },
+          ]
+        : []),
+    ];
 
     const primaryAction =
       pendingConfirmationCount > 0
@@ -322,6 +365,8 @@ export default async function DashboardPage({
           </div>
         </section>
 
+        <DashboardTodoList items={todoItems} />
+
         <section className="rounded-lg border border-destructive/25 bg-card">
           <div className="flex items-center justify-between border-b border-border px-5 py-4">
             <div className="flex items-center gap-2">
@@ -390,6 +435,7 @@ export default async function DashboardPage({
     confirmedJobsResult,
     vogResult,
     instructorProfileResult,
+    pendingReviewResult,
   ] = await Promise.all([
     supabase
       .from("subscriptions")
@@ -445,6 +491,7 @@ export default async function DashboardPage({
       )
       .eq("user_id", profile.id)
       .maybeSingle(),
+    supabase.rpc("has_pending_review", { target_user: profile.id }),
   ]);
 
   const subscription = subscriptionResult.data as Subscription | null;
@@ -506,6 +553,60 @@ export default async function DashboardPage({
     !instructorDetails?.hourly_rate_cents ||
     !instructorDetails?.travel_distance_km ||
     !instructorDetails?.work_experience;
+  const hasPendingReview = pendingReviewResult.data === true;
+
+  const todoItems = [
+    ...(hasPendingReview
+      ? [
+          {
+            title: "Beoordeling afronden",
+            description: "Er staat nog een verplichte review open.",
+            href: "/reviews?view=given",
+          },
+        ]
+      : []),
+    ...(pendingInvitationCount > 0
+      ? [
+          {
+            title: "Uitnodiging beantwoorden",
+            description: `${pendingInvitationCount} ${pendingInvitationCount === 1 ? "uitnodiging wacht" : "uitnodigingen wachten"} op jouw reactie.`,
+            href: "/mijn-reacties",
+          },
+        ]
+      : []),
+    ...(pendingConfirmationCount > 0
+      ? [
+          {
+            title: "Opdracht bevestigen",
+            description: `${pendingConfirmationCount} ${pendingConfirmationCount === 1 ? "opdracht wacht" : "opdrachten wachten"} op jouw definitieve bevestiging.`,
+            href: firstPendingConfirmationJobId
+              ? `/opdrachten/${firstPendingConfirmationJobId}`
+              : "/mijn-reacties",
+          },
+        ]
+      : []),
+    ...(!vogValid
+      ? [
+          {
+            title: "VOG regelen",
+            description:
+              latestVog?.status === "pending"
+                ? "Je VOG wacht nog op controle."
+                : "Er is nog geen geldige, goedgekeurde VOG.",
+            href: "/documenten",
+          },
+        ]
+      : []),
+    ...(profileNeedsAttention
+      ? [
+          {
+            title: "Profiel aanvullen",
+            description: "Je basisprofiel mist nog informatie voor betere matching.",
+            href: "/profiel",
+          },
+        ]
+      : []),
+  ];
 
   const primaryAction =
     pendingInvitationCount > 0
@@ -667,6 +768,8 @@ export default async function DashboardPage({
           </Link>
         </div>
       </section>
+
+      <DashboardTodoList items={todoItems} />
 
       <div className="grid gap-4 md:grid-cols-2">
         <section className="rounded-lg border border-border bg-card p-5">
