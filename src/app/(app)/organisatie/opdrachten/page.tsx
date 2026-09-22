@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { CheckCircle2, Plus } from "lucide-react";
+import { JobStatusIndicator } from "@/components/jobs/job-status-indicator";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -14,11 +15,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { getSessionProfile } from "@/lib/auth/session";
-import { formatDate, formatTime, jobStatusLabels, jobTypeLabels } from "@/lib/labels";
+import { formatDate, formatTime, jobTypeLabels } from "@/lib/labels";
 import { getOrgContext } from "@/lib/org/context";
 import { resolveLocationFilter } from "@/lib/org/location-filter";
 import { createClient } from "@/lib/supabase/server";
-import type { Job, JobStatus } from "@/types/database";
+import type { Job } from "@/types/database";
 
 export const metadata: Metadata = {
   title: "Opdrachten beheren",
@@ -29,17 +30,6 @@ interface JobRow extends Job {
   location: { name: string } | null;
   applications: { count: number }[];
 }
-
-const statusVariant: Record<
-  JobStatus,
-  "secondary" | "success" | "muted" | "destructive" | "outline"
-> = {
-  open: "secondary",
-  confirmed: "success",
-  completed: "muted",
-  cancelled: "destructive",
-  closed: "outline",
-};
 
 const organizationJobFlow = [
   "Plaats eerst één concrete opdracht met duidelijke vergoeding en tijden.",
@@ -139,23 +129,29 @@ export default async function OrganisatieOpdrachtenPage({
     return priority(left) >= 4 ? -dateDifference : dateDifference;
   });
 
-  const workflowStatus = (job: JobRow) => {
+  const workflowState = (job: JobRow) => {
     const applicationCount = job.applications?.[0]?.count ?? 0;
 
     if (job.status === "open" && pendingConfirmationJobIds.has(job.id)) {
-      return { label: "Wacht op bevestiging", variant: "warning" as const };
+      return "planned" as const;
     }
     if (job.status === "open" && applicationCount > 0) {
-      return { label: "Reacties bekijken", variant: "warning" as const };
+      return "action_required" as const;
     }
     if (job.status === "open") {
-      return { label: "Nog zoeken", variant: "secondary" as const };
+      return "searching" as const;
+    }
+    if (job.status === "confirmed") {
+      return "confirmed" as const;
+    }
+    if (job.status === "completed") {
+      return "completed" as const;
+    }
+    if (job.status === "cancelled") {
+      return "cancelled" as const;
     }
 
-    return {
-      label: jobStatusLabels[job.status],
-      variant: statusVariant[job.status],
-    };
+    return null;
   };
 
   return (
@@ -229,7 +225,7 @@ export default async function OrganisatieOpdrachtenPage({
             </TableHeader>
             <TableBody>
               {jobs.map((job) => {
-                const workflow = workflowStatus(job);
+                const state = workflowState(job);
 
                 return (
                 <TableRow key={job.id}>
@@ -267,9 +263,11 @@ export default async function OrganisatieOpdrachtenPage({
                     )}
                   </TableCell>
                   <TableCell>
-                    <Badge variant={workflow.variant}>
-                      {workflow.label}
-                    </Badge>
+                    {state ? (
+                      <JobStatusIndicator state={state} />
+                    ) : (
+                      <Badge variant="outline">Gesloten</Badge>
+                    )}
                   </TableCell>
                 </TableRow>
                 );
