@@ -26,7 +26,7 @@ function Logo({
     <span className={cn("inline-flex items-center", className)}>
       <Image
         alt={BRAND.name}
-        className={cn("h-11 w-auto", markClassName)}
+        className={cn("h-14 w-auto", markClassName)}
         height={263}
         src="/sportmatch-logo.svg"
         width={480}
