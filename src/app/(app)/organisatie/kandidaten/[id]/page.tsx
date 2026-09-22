@@ -283,11 +283,11 @@ export default async function CandidateProfilePage({
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="scroll-mt-24" id="reviews">
             <CardHeader>
-              <CardTitle>Reviews</CardTitle>
+              <CardTitle>Ontvangen reviews</CardTitle>
               <CardDescription>
-                Meest recente vrijgegeven beoordelingen.
+                Alle vrijgegeven beoordelingen van eerdere opdrachten.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
