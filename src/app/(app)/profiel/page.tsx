@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { CheckCircle2, Eye } from "lucide-react";
+import { Eye } from "lucide-react";
 import { AvatarUpload } from "@/components/profile/avatar-upload";
 import { InstructorDetailsForm } from "@/components/profile/instructor-details-form";
 import { ProfileForm } from "@/components/profile/profile-form";
@@ -26,12 +26,6 @@ import type {
 export const metadata: Metadata = {
   title: "Profiel",
 };
-
-const instructorProfileTips = [
-  "Woonplaats en reisafstand bepalen welke opdrachten standaard zichtbaar zijn.",
-  "Tarief en ervaring helpen sportscholen sneller beoordelen of je past.",
-  "Specialisaties en statussen zorgen dat de juiste lessen en invaldiensten bovenaan komen.",
-];
 
 export default async function ProfielPage() {
   const profile = await getSessionProfile();
@@ -84,14 +78,13 @@ export default async function ProfielPage() {
     if (details) {
       instructorSection = (
         <Card>
-          <CardHeader>
-            <CardTitle>Instructeursgegevens</CardTitle>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Instructeursgegevens</CardTitle>
             <CardDescription>
-              Tarief, reisafstand, statussen en specialisaties bepalen welke
-              opdrachten je ziet.
+              Tarief, reisafstand, statussen en specialisaties.
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-0">
             <InstructorDetailsForm
               details={details}
               lessonTypes={(lessonTypesResult.data as LessonType[]) ?? []}
@@ -117,59 +110,39 @@ export default async function ProfielPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-6 px-4 py-8">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Profiel</h1>
-        <p className="text-sm text-muted-foreground">
-          Beheer je gegevens en verbeter wat anderen van je profiel zien.
-        </p>
+    <div className="mx-auto w-full max-w-3xl space-y-4 px-4 py-8">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Profiel</h1>
+          <p className="text-sm text-muted-foreground">
+            Beheer je gegevens en verbeter wat anderen van je profiel zien.
+          </p>
+        </div>
+        {profile.role === "instructor" ? (
+          <div className="flex flex-wrap gap-2">
+            <Link href={`/organisatie/kandidaten/${profile.id}`}>
+              <Button size="sm">
+                <Eye className="h-4 w-4" />
+                Bekijk zoals sportscholen
+              </Button>
+            </Link>
+            <Link href="/opdrachten">
+              <Button size="sm" variant="outline">
+                Passende opdrachten
+              </Button>
+            </Link>
+          </div>
+        ) : null}
       </div>
 
-      {profile.role === "instructor" ? (
-        <Card className="border-primary/30 bg-primary/5">
-          <CardHeader>
-            <CardTitle className="text-xl">Maak je profiel matchbaar</CardTitle>
-            <CardDescription>
-              Een compleet profiel zorgt dat je sneller passende opdrachten ziet
-              en dat sportscholen jouw reactie beter kunnen beoordelen.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-2 sm:grid-cols-3">
-              {instructorProfileTips.map((tip) => (
-                <p
-                  className="flex gap-2 rounded-md border border-border bg-background p-3 text-sm leading-6"
-                  key={tip}
-                >
-                  <CheckCircle2 className="mt-1 h-4 w-4 shrink-0 text-primary" />
-                  <span>{tip}</span>
-                </p>
-              ))}
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Link href={`/organisatie/kandidaten/${profile.id}`}>
-                <Button>
-                  <Eye className="h-4 w-4" />
-                  Bekijk zoals sportscholen
-                </Button>
-              </Link>
-              <Link href="/opdrachten">
-                <Button variant="outline">Bekijk passende opdrachten</Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-      ) : null}
-
       <Card>
-        <CardHeader>
-          <CardTitle>Persoonlijke gegevens</CardTitle>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Persoonlijke gegevens</CardTitle>
           <CardDescription>
-            Telefoonnummer en e-mailadres worden pas met de andere partij
-            gedeeld na een bevestigde opdracht.
+            Contactgegevens worden pas gedeeld na een bevestigde opdracht.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-4 pt-0">
           <AvatarUpload
             avatarUrl={profile.avatar_url}
             name={profile.full_name}
