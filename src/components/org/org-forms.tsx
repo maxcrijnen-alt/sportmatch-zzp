@@ -123,14 +123,14 @@ export function AddLocationForm({ cities }: { cities: City[] }) {
   );
 
   return (
-    <form action={formAction} className="space-y-4">
+    <form action={formAction} className="space-y-3">
       <StateAlerts state={state} />
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-2">
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="space-y-1.5">
           <Label htmlFor="location-name">Naam vestiging</Label>
           <Input id="location-name" name="name" required />
         </div>
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <Label htmlFor="location-city">Plaats</Label>
           <Select defaultValue="" id="location-city" name="cityId" required>
             <option disabled value="">
@@ -143,16 +143,16 @@ export function AddLocationForm({ cities }: { cities: City[] }) {
             ))}
           </Select>
         </div>
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <Label htmlFor="location-street">Straat</Label>
           <Input id="location-street" name="street" required />
         </div>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
             <Label htmlFor="location-number">Nr.</Label>
             <Input id="location-number" name="houseNumber" required />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label htmlFor="location-postal">Postcode</Label>
             <Input id="location-postal" name="postalCode" required />
           </div>
@@ -162,7 +162,7 @@ export function AddLocationForm({ cities }: { cities: City[] }) {
         Elke vestiging krijgt automatisch 30 dagen gratis proefperiode; daarna
         € 5 per maand (excl. btw).
       </p>
-      <Button disabled={isPending} type="submit">
+      <Button disabled={isPending} size="sm" type="submit">
         {isPending ? "Toevoegen…" : "Vestiging toevoegen"}
       </Button>
     </form>
