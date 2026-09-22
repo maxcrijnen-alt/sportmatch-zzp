@@ -93,7 +93,7 @@ jobs:
               console.log("PASS mobile candidate actions visible");
             }
 
-            await mobilePage.getByRole("button", { name: "Meer", exact: true }).click();
+            await mobilePage.getByRole("button", { name: "Meer navigatie", exact: true }).click();
             const logout = mobilePage.getByRole("button", { name: /uitloggen/i }).last();
             await logout.click();
             await mobilePage.waitForURL((url) => url.pathname === "/", { timeout: 30000 });
