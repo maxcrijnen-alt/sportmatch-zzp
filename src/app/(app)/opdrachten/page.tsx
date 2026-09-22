@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowRight, CheckCircle2, SearchX } from "lucide-react";
+import { ArrowRight, SearchX } from "lucide-react";
 import { AgendaView } from "@/components/agenda/agenda-view";
 import { JobCard } from "@/components/jobs/job-card";
 import { Button } from "@/components/ui/button";
@@ -28,12 +28,6 @@ interface Filters {
   minbedrag?: string;
   weergave?: string;
 }
-
-const selectionTips = [
-  "Je profiel, specialisaties, reisafstand en tarief bepalen welke opdrachten bovenaan staan.",
-  "Controleer sport, datum, locatie, vergoeding en vereiste kwalificaties voordat je reageert.",
-  "Open een opdrachtkaart om matchscore, details, contactafspraken en reactieflow te zien.",
-];
 
 export default async function OpdrachtenPage({
   searchParams,
@@ -143,40 +137,11 @@ export default async function OpdrachtenPage({
               Profiel en tarief
             </Button>
           </Link>
-          {hasFilters ? (
-            <Link href="/opdrachten">
-              <Button className="w-full sm:w-auto" variant="outline">
-                Filters wissen
-              </Button>
-            </Link>
-          ) : null}
           <Link href="/opdrachten?weergave=alles">
             <Button className="w-full sm:w-auto" variant="outline">
               Alle opdrachten
             </Button>
           </Link>
-        </div>
-      </div>
-
-      <div className="rounded-lg border border-primary/30 bg-primary/5 p-4">
-        <p className="text-sm font-medium text-primary">
-          Start hier: van profiel naar passende opdracht
-        </p>
-        <p className="mt-1 text-sm leading-6 text-muted-foreground">
-          Begin met opdrachten die passen bij je profiel. Zie je te weinig of
-          klopt de match niet? Controleer dan je specialisaties, reisafstand en
-          tarief op je profiel en gebruik daarna de filters hieronder.
-        </p>
-        <div className="mt-4 grid gap-2 md:grid-cols-3">
-          {selectionTips.map((tip) => (
-            <p
-              className="flex gap-2 rounded-md border border-border bg-background p-3 text-sm leading-6"
-              key={tip}
-            >
-              <CheckCircle2 className="mt-1 h-4 w-4 shrink-0 text-primary" />
-              <span>{tip}</span>
-            </p>
-          ))}
         </div>
       </div>
 
@@ -197,8 +162,20 @@ export default async function OpdrachtenPage({
         </section>
       ) : null}
 
-      <Card>
-        <CardContent className="pt-5">
+      <section className="space-y-3">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-lg font-semibold tracking-tight">Filters</h2>
+          {hasFilters ? (
+            <Link
+              className="text-sm font-medium text-primary hover:underline"
+              href="/opdrachten"
+            >
+              Wissen
+            </Link>
+          ) : null}
+        </div>
+        <Card>
+          <CardContent className="pt-5">
           <form className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6" method="get">
             <div className="space-y-1.5">
               <Label className="text-xs" htmlFor="sport">
@@ -299,8 +276,19 @@ export default async function OpdrachtenPage({
               ) : null}
             </div>
           </form>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </section>
+
+      <section className="space-y-3">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-lg font-semibold tracking-tight">
+            Beschikbare opdrachten
+          </h2>
+          <span className="text-sm font-medium text-muted-foreground">
+            {filtered.length}
+          </span>
+        </div>
 
       {filtered.length === 0 ? (
         <Card>
@@ -351,6 +339,7 @@ export default async function OpdrachtenPage({
           ))}
         </div>
       )}
+      </section>
     </div>
   );
 }
