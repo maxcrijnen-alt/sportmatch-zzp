@@ -129,13 +129,15 @@ export function AgendaView({
   role,
   exportHref,
   highlightedJobId,
+  defaultView = "list",
 }: {
   events: AgendaEvent[];
   role: Extract<UserRole, "instructor" | "organization">;
   exportHref: string;
   highlightedJobId?: string;
+  defaultView?: AgendaViewMode;
 }) {
-  const [view, setView] = useState<AgendaViewMode>("list");
+  const [view, setView] = useState<AgendaViewMode>(defaultView);
   const [cursor, setCursor] = useState(() => {
     const highlighted = events.find((event) => event.jobId === highlightedJobId);
     return highlighted ? parseISO(highlighted.date) : new Date();
