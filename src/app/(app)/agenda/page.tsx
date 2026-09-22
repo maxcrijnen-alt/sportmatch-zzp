@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { CalendarDays } from "lucide-react";
 import { AgendaView } from "@/components/agenda/agenda-view";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { getSessionProfile } from "@/lib/auth/session";
 import { sportMatchAgendaProvider } from "@/lib/agenda/sportmatch-provider";
 import { getOrgContext } from "@/lib/org/context";
@@ -54,7 +52,7 @@ export default async function AgendaPage({ searchParams }: AgendaPageProps) {
     : "/agenda/export";
 
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-6 px-4 py-8">
+    <div className="mx-auto w-full max-w-7xl space-y-4 px-4 py-8">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Agenda</h1>
         <p className="text-sm text-muted-foreground">
@@ -65,17 +63,6 @@ export default async function AgendaPage({ searchParams }: AgendaPageProps) {
             : "Al je voorlopige, bevestigde en afgeronde opdrachten in één overzicht."}
         </p>
       </div>
-
-      <Alert>
-        <CalendarDays className="h-4 w-4" />
-        <AlertTitle>Automatisch bijgewerkt</AlertTitle>
-        <AlertDescription>
-          De agenda wordt rechtstreeks opgebouwd uit opdrachten, reacties en
-          bevestigingen in SportMatch. Daardoor zie je ook wanneer je nog iemand
-          zoekt, wanneer er een reactie klaarstaat en wanneer een gekozen
-          instructeur nog moet bevestigen. Er wordt geen losse kopie bijgehouden.
-        </AlertDescription>
-      </Alert>
 
       <AgendaView
         events={events}
