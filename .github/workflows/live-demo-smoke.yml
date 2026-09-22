@@ -1,4 +1,4 @@
-name: Assignment candidate filter production check
+name: Sportschool urgency production check
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
       - qa/demo-live-check-20260921
 
 jobs:
-  candidate-filter:
+  urgency:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -17,11 +17,11 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
-      - name: Verify assignment reactions link on production
+      - name: Verify sportschool urgency on production
         env:
           BASE_URL: https://sportmatch-zzp.vercel.app
         run: |
-          cat > candidate-filter-check.mjs <<'EOF'
+          cat > urgency-check.mjs <<'EOF'
           import { chromium } from "@playwright/test";
 
           const browser = await chromium.launch({ headless: true });
@@ -34,30 +34,27 @@ jobs:
             await page.getByRole("button", { name: "Start demo als sportschool" }).click();
             await page.waitForURL("**/dashboard", { timeout: 60000 });
 
-            await page.goto(baseURL + "/organisatie/opdrachten", {
-              waitUntil: "networkidle",
-              timeout: 45000,
-            });
+            const main = page.locator("main");
+            const urgencyHeading = main.getByRole("heading", { name: "Urgentie", exact: true });
+            await urgencyHeading.waitFor();
 
-            const reactionLink = page.getByRole("link", { name: /\d+ bekijken/ }).first();
-            await reactionLink.waitFor();
-            const href = await reactionLink.getAttribute("href");
-            if (!href || !href.includes("/organisatie/kandidaten?job=")) {
-              throw new Error("Reaction count does not link to filtered candidates");
+            const section = urgencyHeading.locator("..").locator("..");
+            const text = await section.innerText();
+            console.log("URGENCY_TEXT", JSON.stringify(text));
+
+            const jobLinks = section.locator('a[href^="/organisatie/opdrachten/"]');
+            const count = await jobLinks.count();
+            if (count < 1) {
+              throw new Error("Demo has no urgent assignment links");
             }
-            console.log("PASS reaction link", href);
 
-            const expectedJobId = new URL(href, baseURL).searchParams.get("job");
-            await reactionLink.click();
-            await page.waitForURL((url) =>
-              url.pathname === "/organisatie/kandidaten" &&
-              url.searchParams.get("job") === expectedJobId,
-              { timeout: 30000 },
-            );
+            const firstHref = await jobLinks.first().getAttribute("href");
+            if (!firstHref) throw new Error("Urgent assignment link has no href");
+            console.log("PASS urgency links", count, firstHref);
 
-            await page.getByRole("heading", { name: /^Kandidaten · / }).waitFor();
-            await page.getByRole("link", { name: "Alle kandidaten" }).waitFor();
-            console.log("PASS filtered candidates page", page.url());
+            await jobLinks.first().click();
+            await page.waitForURL((url) => url.pathname === firstHref, { timeout: 30000 });
+            console.log("PASS urgent assignment opens", page.url());
 
             const logout = page.getByRole("button", { name: /uitloggen/i }).first();
             await logout.click();
@@ -68,4 +65,4 @@ jobs:
             await browser.close();
           }
           EOF
-          node candidate-filter-check.mjs
+          node urgency-check.mjs
