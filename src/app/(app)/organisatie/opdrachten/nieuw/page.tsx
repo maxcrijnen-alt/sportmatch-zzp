@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { CheckCircle2 } from "lucide-react";
 import {
   CreateJobForm,
   type JobFormDefaults,
@@ -31,13 +30,6 @@ import type {
 export const metadata: Metadata = {
   title: "Nieuwe opdracht",
 };
-
-const strongJobChecklist = [
-  "Kies sport, soort opdracht, datum, begin- en eindtijd zo concreet mogelijk.",
-  "Zet vergoeding, locatie en contactpersoon direct duidelijk in de opdracht.",
-  "Voeg vereiste diploma's of ervaring toe als die echt nodig zijn.",
-  "Beschrijf kort wat de instructeur vooraf moet weten om snel ja of nee te zeggen.",
-];
 
 export default async function NieuweOpdrachtPage({
   searchParams,
@@ -183,34 +175,13 @@ export default async function NieuweOpdrachtPage({
   }
 
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-6 px-4 py-8">
+    <div className="mx-auto w-full max-w-3xl space-y-4 px-4 py-8">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Nieuwe opdracht</h1>
         <p className="text-sm text-muted-foreground">
           Plaats een opdracht of vacature voor {orgContext.organization.name}.
         </p>
       </div>
-
-      <Card className="border-primary/30 bg-primary/5">
-        <CardHeader>
-          <CardTitle className="text-xl">Maak je opdracht direct boekbaar</CardTitle>
-          <CardDescription>
-            Hoe concreter de opdracht, hoe sneller instructeurs kunnen reageren
-            met een bruikbaar antwoord.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-2 sm:grid-cols-2">
-          {strongJobChecklist.map((item) => (
-            <p
-              className="flex gap-2 rounded-md border border-border bg-background p-3 text-sm leading-6"
-              key={item}
-            >
-              <CheckCircle2 className="mt-1 h-4 w-4 shrink-0 text-primary" />
-              <span>{item}</span>
-            </p>
-          ))}
-        </CardContent>
-      </Card>
 
       {activeLocations.length === 0 ? (
         <Alert variant="warning">
@@ -222,16 +193,16 @@ export default async function NieuweOpdrachtPage({
           </AlertDescription>
         </Alert>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {templates.length > 0 ? (
             <Card>
-              <CardHeader>
+              <CardHeader className="pb-3">
                 <CardTitle className="text-base">Start vanuit een sjabloon</CardTitle>
                 <CardDescription>
                   De datum blijft leeg; les- en bloktijden uit het sjabloon kun je aanpassen.
                 </CardDescription>
               </CardHeader>
-              <CardContent className="flex flex-wrap gap-2">
+              <CardContent className="flex flex-wrap gap-2 pt-0">
                 {templates.map((template) => (
                   <Link href={`/organisatie/opdrachten/nieuw?template=${template.id}`} key={template.id}>
                     <Button size="sm" variant="outline">{template.name}</Button>
@@ -241,14 +212,10 @@ export default async function NieuweOpdrachtPage({
             </Card>
           ) : null}
           <Card>
-          <CardHeader>
-            <CardTitle>Opdrachtgegevens</CardTitle>
-            <CardDescription>
-              Vul de basis compleet in: daarna kun je reacties vergelijken op
-              beschikbaarheid, tarief, afstand en vertrouwen.
-            </CardDescription>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Opdrachtgegevens</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-0">
             <CreateJobForm
               defaultContactName={profile.full_name}
               locations={activeLocations}
