@@ -62,7 +62,7 @@ export default async function MedewerkersPage() {
   const isOwner = orgContext.memberRole === "owner";
 
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-6 px-4 py-8">
+    <div className="mx-auto w-full max-w-3xl space-y-4 px-4 py-8">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Medewerkers</h1>
         <p className="text-sm text-muted-foreground">
@@ -71,10 +71,13 @@ export default async function MedewerkersPage() {
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Team van {orgContext.organization.name}</CardTitle>
+        <CardHeader className="flex-row items-center justify-between space-y-0 pb-3">
+          <CardTitle className="text-base">Team van {orgContext.organization.name}</CardTitle>
+          <span className="rounded-full border border-border px-2.5 py-1 text-xs font-semibold text-muted-foreground">
+            {members.length}
+          </span>
         </CardHeader>
-        <CardContent className="space-y-2">
+        <CardContent className="space-y-0 pt-0">
           {members.map((member) => {
             const name = member.user_id
               ? (namesById.get(member.user_id) ?? "Onbekend")
@@ -82,13 +85,13 @@ export default async function MedewerkersPage() {
 
             return (
               <div
-                className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border p-3"
+                className="flex flex-wrap items-center justify-between gap-3 border-t border-border py-3 first:border-t-0 first:pt-0"
                 key={member.id}
               >
-                <div className="flex items-center gap-3">
+                <div className="flex min-w-0 items-center gap-3">
                   <Avatar name={name} size="sm" />
-                  <div>
-                    <p className="text-sm font-medium">{name}</p>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium">{name}</p>
                     <p className="text-xs text-muted-foreground">
                       {orgMemberRoleLabels[member.member_role]}
                     </p>
@@ -114,14 +117,13 @@ export default async function MedewerkersPage() {
 
       {isOwner ? (
         <Card>
-          <CardHeader>
-            <CardTitle>Medewerker uitnodigen</CardTitle>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Medewerker uitnodigen</CardTitle>
             <CardDescription>
-              De medewerker registreert zich met dit e-mailadres (als
-              “organisatie”) en accepteert daarna de uitnodiging.
+              Nodig een collega uit met het e-mailadres waarmee die zich registreert.
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-0">
             <InviteMemberForm />
           </CardContent>
         </Card>

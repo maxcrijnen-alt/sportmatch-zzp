@@ -176,10 +176,10 @@ export function InviteMemberForm() {
   );
 
   return (
-    <form action={formAction} className="space-y-4">
+    <form action={formAction} className="space-y-3">
       <StateAlerts state={state} />
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-2">
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="space-y-1.5">
           <Label htmlFor="invite-email">E-mailadres medewerker</Label>
           <Input
             id="invite-email"
@@ -189,7 +189,7 @@ export function InviteMemberForm() {
             type="email"
           />
         </div>
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <Label htmlFor="invite-role">Rol</Label>
           <Select defaultValue="planner" id="invite-role" name="memberRole">
             {(
@@ -202,7 +202,7 @@ export function InviteMemberForm() {
           </Select>
         </div>
       </div>
-      <Button disabled={isPending} type="submit">
+      <Button disabled={isPending} size="sm" type="submit">
         {isPending ? "Uitnodigen…" : "Medewerker uitnodigen"}
       </Button>
     </form>
