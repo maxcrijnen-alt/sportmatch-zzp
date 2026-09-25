@@ -89,7 +89,7 @@ export default async function OrganizationStatisticsPage({
   ];
 
   return (
-    <div className="mx-auto w-full max-w-5xl space-y-6 px-4 py-8">
+    <div className="mx-auto w-full max-w-5xl space-y-4 px-4 py-8">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Statistieken</h1>
         <p className="text-sm text-muted-foreground">
@@ -99,19 +99,21 @@ export default async function OrganizationStatisticsPage({
         </p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
         {cards.map((card) => (
           <Card key={card.label}>
-            <CardHeader>
-              <card.icon className="h-5 w-5 text-primary" />
-              <CardDescription>{card.label}</CardDescription>
-              <CardTitle className="text-3xl">{card.value}</CardTitle>
+            <CardHeader className="gap-1 p-3">
+              <div className="flex items-center justify-between gap-3">
+                <CardDescription className="text-xs">{card.label}</CardDescription>
+                <card.icon className="h-4 w-4 text-primary" />
+              </div>
+              <CardTitle className="text-2xl">{card.value}</CardTitle>
             </CardHeader>
           </Card>
         ))}
       </div>
 
-      <p className="text-xs text-muted-foreground">
+      <p className="text-xs leading-5 text-muted-foreground">
         Alleen gegevens die in SportMatch zijn vastgelegd tellen mee. Externe
         planning- of omzetgegevens worden niet geschat.
       </p>
