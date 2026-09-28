@@ -13,13 +13,12 @@ const roleStyles: Record<
 > = {
   organization: {
     src: "/sportmatch-role-organization.svg",
-    className:
-      "bg-emerald-500/10 ring-1 ring-inset ring-emerald-600/15",
+    className: "bg-emerald-500/10",
     imageClassName: "h-5 w-7",
   },
   instructor: {
     src: "/sportmatch-role-instructor.svg",
-    className: "bg-red-500/10 ring-1 ring-inset ring-red-600/15",
+    className: "bg-red-500/10",
     imageClassName: "h-6 w-6",
   },
 };
