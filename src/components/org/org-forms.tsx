@@ -47,14 +47,14 @@ export function OrganizationForm({
   );
 
   return (
-    <form action={formAction} className="space-y-4">
+    <form action={formAction} className="space-y-3">
       <StateAlerts state={state} />
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-2">
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="space-y-1.5">
           <Label htmlFor="name">Bedrijfsnaam</Label>
           <Input defaultValue={organization.name} id="name" name="name" required />
         </div>
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <Label htmlFor="kvkNumber">KvK-nummer</Label>
           <Input
             defaultValue={organization.kvk_number}
@@ -62,7 +62,7 @@ export function OrganizationForm({
             name="kvkNumber"
           />
         </div>
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <Label htmlFor="contactName">Contactpersoon</Label>
           <Input
             defaultValue={organization.contact_name}
@@ -71,7 +71,7 @@ export function OrganizationForm({
             required
           />
         </div>
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <Label htmlFor="contactEmail">Contact e-mailadres</Label>
           <Input
             defaultValue={organization.contact_email}
@@ -81,7 +81,7 @@ export function OrganizationForm({
             type="email"
           />
         </div>
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <Label htmlFor="contactPhone">Telefoonnummer</Label>
           <Input
             defaultValue={organization.contact_phone}
@@ -91,7 +91,7 @@ export function OrganizationForm({
             type="tel"
           />
         </div>
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <Label htmlFor="billingEmail">Factuur e-mailadres (optioneel)</Label>
           <Input
             defaultValue={organization.billing_email}
@@ -100,7 +100,7 @@ export function OrganizationForm({
             type="email"
           />
         </div>
-        <div className="space-y-2 sm:col-span-2">
+        <div className="space-y-1.5 sm:col-span-2">
           <Label htmlFor="billingReference">Factuurreferentie (optioneel)</Label>
           <Input
             defaultValue={organization.billing_reference}
@@ -109,7 +109,7 @@ export function OrganizationForm({
           />
         </div>
       </div>
-      <Button disabled={isPending} type="submit">
+      <Button disabled={isPending} size="sm" type="submit">
         {isPending ? "Opslaan…" : "Opslaan"}
       </Button>
     </form>
@@ -228,9 +228,9 @@ export function ConversionFeeForm({
   }
 
   return (
-    <form action={formAction} className="space-y-4">
+    <form action={formAction} className="space-y-3">
       <StateAlerts state={state} />
-      <div className="space-y-2">
+      <div className="space-y-1.5">
         <Label htmlFor="fee-instructor">Instructeur</Label>
         <Select defaultValue="" id="fee-instructor" name="instructorId" required>
           <option disabled value="">
@@ -243,7 +243,7 @@ export function ConversionFeeForm({
           ))}
         </Select>
       </div>
-      <div className="space-y-2">
+      <div className="space-y-1.5">
         <Label htmlFor="fee-note">Toelichting (optioneel)</Label>
         <Textarea
           id="fee-note"
@@ -252,7 +252,7 @@ export function ConversionFeeForm({
           rows={2}
         />
       </div>
-      <Button disabled={isPending} type="submit" variant="outline">
+      <Button disabled={isPending} size="sm" type="submit" variant="outline">
         {isPending ? "Melden…" : "Vaste aanname melden"}
       </Button>
     </form>
