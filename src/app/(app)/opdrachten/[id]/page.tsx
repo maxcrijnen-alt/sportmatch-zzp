@@ -251,9 +251,9 @@ export default async function OpdrachtDetailPage({
     .maybeSingle();
 
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-6 px-4 py-8">
-      <div className="space-y-3">
-        <div className="flex flex-wrap items-center gap-2">
+    <div className="mx-auto w-full max-w-3xl space-y-4 px-4 py-8">
+      <div className="space-y-2">
+        <div className="flex flex-wrap items-center gap-1.5">
           <Badge
             variant={
               job.job_type === "urgent_substitute" ? "destructive" : "secondary"
@@ -276,7 +276,7 @@ export default async function OpdrachtDetailPage({
               className="inline-flex items-center gap-1.5 transition-colors hover:text-foreground hover:underline"
               href={`/organisaties/${job.organization.id}/reviews`}
             >
-              <Building2 className="h-4 w-4" />
+              <Building2 className="h-3.5 w-3.5" />
               <span>{job.organization.name}</span>
               {organizationReviewAverage ? (
                 <span className="inline-flex items-center gap-1 text-warning">
@@ -289,33 +289,33 @@ export default async function OpdrachtDetailPage({
             </Link>
           ) : null}
           <span className="inline-flex items-center gap-1.5">
-            <MapPin className="h-4 w-4" />
+            <MapPin className="h-3.5 w-3.5" />
             {job.location?.name} · {job.location?.city?.name}
           </span>
           <span className="inline-flex items-center gap-1.5">
-            <CalendarDays className="h-4 w-4" />
+            <CalendarDays className="h-3.5 w-3.5" />
             {formatDate(job.starts_on)}
           </span>
           <span className="inline-flex items-center gap-1.5">
-            <Clock className="h-4 w-4" />
+            <Clock className="h-3.5 w-3.5" />
             {formatTime(job.start_time)}–{formatTime(job.end_time)}
           </span>
           {job.expected_participants ? (
             <span className="inline-flex items-center gap-1.5">
-              <Users className="h-4 w-4" />~{job.expected_participants} deelnemers
+              <Users className="h-3.5 w-3.5" />~{job.expected_participants} deelnemers
             </span>
           ) : null}
         </div>
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Vergoeding</CardTitle>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Vergoeding</CardTitle>
           <CardDescription className="text-base font-medium text-foreground">
             {describePay(job)}
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4 text-sm">
+        <CardContent className="space-y-3 pt-0 text-sm">
           <p className="whitespace-pre-line text-muted-foreground">
             {job.description}
           </p>
@@ -361,8 +361,8 @@ export default async function OpdrachtDetailPage({
 
       {cancellation ? (
         <Card>
-          <CardHeader>
-            <CardTitle>Annuleringsregistratie</CardTitle>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Annuleringsregistratie</CardTitle>
             <CardDescription>
               {cancellation.force_majeure_claimed
                 ? cancellation.force_majeure_status === "pending_review"
@@ -373,7 +373,7 @@ export default async function OpdrachtDetailPage({
                 : "De normale annuleringsregeling is geregistreerd."}
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-2 text-sm">
+          <CardContent className="space-y-2 pt-0 text-sm">
             <p>{cancellation.reason}</p>
             <p className="font-medium">
               Vergoeding: {formatEuro(cancellation.compensation_amount_cents ?? 0)}
@@ -401,18 +401,18 @@ export default async function OpdrachtDetailPage({
       {/* Uitnodiging */}
       {invitation?.status === "pending" && hasValidVog && !hasPendingReview ? (
         <Card className="border-primary">
-          <CardHeader>
-            <CardTitle>Je bent uitgenodigd!</CardTitle>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Je bent uitgenodigd!</CardTitle>
             <CardDescription>
               {invitation.message || "De organisatie nodigt je uit voor deze opdracht."}
             </CardDescription>
           </CardHeader>
-          <CardContent className="flex gap-2">
+          <CardContent className="flex gap-2 pt-0">
             <form action={respondInvitationAction.bind(null, invitation.id, true)}>
-              <Button type="submit">Accepteren</Button>
+              <Button size="sm" type="submit">Accepteren</Button>
             </form>
             <form action={respondInvitationAction.bind(null, invitation.id, false)}>
-              <Button type="submit" variant="outline">
+              <Button size="sm" type="submit" variant="outline">
                 Afslaan
               </Button>
             </form>
@@ -445,15 +445,15 @@ export default async function OpdrachtDetailPage({
       {/* Bevestiging gevraagd */}
       {isSelected ? (
         <Card className="border-primary">
-          <CardHeader>
-            <CardTitle>De organisatie heeft jou gekozen 🎉</CardTitle>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">De organisatie heeft jou gekozen 🎉</CardTitle>
             <CardDescription>
               Controleer de samenvatting en bevestig om de opdracht definitief te
               maken.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="rounded-lg bg-muted p-4 text-sm">
+          <CardContent className="space-y-3 pt-0">
+            <div className="rounded-lg bg-muted p-3 text-sm">
               <p className="font-medium">Samenvatting van de afspraak</p>
               <ul className="mt-2 space-y-1 text-muted-foreground">
                 <li>Opdracht: {job.title}</li>
@@ -501,35 +501,35 @@ export default async function OpdrachtDetailPage({
       {/* Bevestigd: contact + acties */}
       {isConfirmedForMe ? (
         <Card className="border-primary">
-          <CardHeader>
-            <CardTitle>Opdracht bevestigd</CardTitle>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Opdracht bevestigd</CardTitle>
             <CardDescription>
               Contactgegevens van de organisatie zijn nu zichtbaar.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-3 pt-0">
             {contact ? (
               <div className="space-y-1 text-sm">
                 <p className="font-medium">{contact.full_name}</p>
                 <p className="inline-flex items-center gap-2 text-muted-foreground">
-                  <Mail className="h-4 w-4" /> {contact.email}
+                  <Mail className="h-3.5 w-3.5" /> {contact.email}
                 </p>
                 <br />
                 <p className="inline-flex items-center gap-2 text-muted-foreground">
-                  <Phone className="h-4 w-4" /> {contact.phone}
+                  <Phone className="h-3.5 w-3.5" /> {contact.phone}
                 </p>
               </div>
             ) : null}
             {chat ? (
               <Link href={`/berichten/${chat.id}`}>
-                <Button variant="outline">
-                  <MessageSquare className="h-4 w-4" /> Naar de chat
+                <Button size="sm" variant="outline">
+                  <MessageSquare className="h-3.5 w-3.5" /> Naar de chat
                 </Button>
               </Link>
             ) : null}
             {job.status === "confirmed" ||
             (job.status === "open" && activeSegmentConfirmations.some((item) => item.confirmed_at)) ? (
-              <div className="space-y-4 border-t border-border pt-4">
+              <div className="space-y-3 border-t border-border pt-3">
                 {segments.length === 0 ? (
                   <div>
                     <p className="mb-2 text-sm font-medium">
@@ -551,10 +551,10 @@ export default async function OpdrachtDetailPage({
       {/* Review na afronding */}
       {job.status === "completed" && isConfirmedForMe && !hasReviewed ? (
         <Card>
-          <CardHeader>
-            <CardTitle>Beoordeel de organisatie</CardTitle>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Beoordeel de organisatie</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-0">
             <ReviewForm jobId={job.id} />
           </CardContent>
         </Card>
@@ -562,10 +562,10 @@ export default async function OpdrachtDetailPage({
 
       {releasedReviews.length > 0 ? (
         <Card>
-          <CardHeader>
-            <CardTitle>Beoordelingen</CardTitle>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Beoordelingen</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2 text-sm">
+          <CardContent className="space-y-2 pt-0 text-sm">
             {releasedReviews.map((review) => (
               <p key={review.id}>
                 {"★".repeat(review.rating)}
@@ -582,10 +582,10 @@ export default async function OpdrachtDetailPage({
       {/* Reageren */}
       {job.status === "open" && !application && !isSelected && hasValidVog && !hasPendingReview ? (
         <Card id="aanmelden">
-          <CardHeader>
-            <CardTitle>Reageren op deze opdracht</CardTitle>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Reageren op deze opdracht</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-0">
             <ApplyForm
               jobId={job.id}
               partialAllowed={job.partial_block_allowed}
@@ -603,13 +603,13 @@ export default async function OpdrachtDetailPage({
       {/* Mijn reactie + tegenvoorstellen */}
       {application ? (
         <Card>
-          <CardHeader>
-            <CardTitle>Jouw reactie</CardTitle>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Jouw reactie</CardTitle>
             <CardDescription>
               Status: {applicationStatusLabels[application.status]}
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-3 pt-0">
             {application.message ? (
               <p className="text-sm text-muted-foreground">
                 “{application.message}”
@@ -617,11 +617,11 @@ export default async function OpdrachtDetailPage({
             ) : null}
 
             {counteroffers.length > 0 ? (
-              <div className="space-y-2">
-                <p className="text-sm font-medium">Tegenvoorstellen</p>
+              <div className="space-y-0">
+                <p className="pb-2 text-sm font-medium">Tegenvoorstellen</p>
                 {counteroffers.map((offer) => (
                   <div
-                    className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border p-3 text-sm"
+                    className="flex flex-wrap items-center justify-between gap-2 border-t border-border py-2.5 text-sm first:border-t-0"
                     key={offer.id}
                   >
                     <div>
@@ -678,7 +678,7 @@ export default async function OpdrachtDetailPage({
             {job.status === "open" &&
             application.status === "pending" &&
             (job.pay_is_negotiable || true) ? (
-              <div className="border-t border-border pt-4">
+              <div className="border-t border-border pt-3">
                 <p className="mb-2 text-sm font-medium">Tegenvoorstel doen</p>
                 <CounterofferForm applicationId={application.id} />
               </div>
