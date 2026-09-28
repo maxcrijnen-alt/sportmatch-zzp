@@ -27,21 +27,21 @@ export function OrganizationOnboardingForm({ cities }: { cities: City[] }) {
   );
 
   return (
-    <form action={formAction} className="space-y-6">
+    <form action={formAction} className="space-y-3">
       {state.error ? (
         <Alert variant="destructive">
           <AlertDescription>{state.error}</AlertDescription>
         </Alert>
       ) : null}
 
-      <fieldset className="space-y-4">
+      <fieldset className="space-y-3">
         <legend className="text-sm font-semibold">Organisatie</legend>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-2">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="space-y-1.5">
             <Label htmlFor="name">Bedrijfsnaam</Label>
             <Input id="name" name="name" placeholder="FitZone Utrecht" required />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label htmlFor="orgType">Type organisatie</Label>
             <Select defaultValue="" id="orgType" name="orgType" required>
               <option disabled value="">
@@ -54,11 +54,11 @@ export function OrganizationOnboardingForm({ cities }: { cities: City[] }) {
               ))}
             </Select>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label htmlFor="kvkNumber">KvK-nummer (indien beschikbaar)</Label>
             <Input id="kvkNumber" name="kvkNumber" placeholder="12345678" />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label htmlFor="contactPhone">Telefoonnummer</Label>
             <Input
               autoComplete="tel"
@@ -72,14 +72,14 @@ export function OrganizationOnboardingForm({ cities }: { cities: City[] }) {
         </div>
       </fieldset>
 
-      <fieldset className="space-y-4">
+      <fieldset className="space-y-3">
         <legend className="text-sm font-semibold">Eerste vestiging</legend>
         <p className="text-xs text-muted-foreground">
           Elke vestiging heeft een eigen abonnement (€ 5 per maand na de gratis
           proefperiode). Meer vestigingen toevoegen kan later.
         </p>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-2">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="space-y-1.5">
             <Label htmlFor="locationName">Naam vestiging</Label>
             <Input
               id="locationName"
@@ -88,7 +88,7 @@ export function OrganizationOnboardingForm({ cities }: { cities: City[] }) {
               required
             />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label htmlFor="cityId">Plaats</Label>
             <Select defaultValue="" id="cityId" name="cityId" required>
               <option disabled value="">
@@ -101,16 +101,16 @@ export function OrganizationOnboardingForm({ cities }: { cities: City[] }) {
               ))}
             </Select>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label htmlFor="street">Straat</Label>
             <Input id="street" name="street" required />
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label htmlFor="houseNumber">Nr.</Label>
               <Input id="houseNumber" name="houseNumber" required />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label htmlFor="postalCode">Postcode</Label>
               <Input id="postalCode" name="postalCode" placeholder="1234 AB" required />
             </div>
@@ -118,7 +118,7 @@ export function OrganizationOnboardingForm({ cities }: { cities: City[] }) {
         </div>
       </fieldset>
 
-      <Button className="w-full sm:w-auto" disabled={isPending} size="lg" type="submit">
+      <Button className="w-full sm:w-auto" disabled={isPending} type="submit">
         {isPending ? "Opslaan…" : "Organisatie aanmaken"}
       </Button>
     </form>

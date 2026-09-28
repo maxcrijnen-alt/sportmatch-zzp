@@ -69,7 +69,7 @@ export default async function OrganisatiePage() {
   const fees = (feesData as ConversionFee[] | null) ?? [];
 
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-6 px-4 py-8">
+    <div className="mx-auto w-full max-w-3xl space-y-4 px-4 py-8">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">
           {orgContext.organization.name}
@@ -84,46 +84,48 @@ export default async function OrganisatiePage() {
         </p>
       </div>
 
-      <div className="grid gap-4">
-        <Card>
-          <CardHeader>
-            <Building2 className="mb-1 h-6 w-6 text-primary" />
-            <CardTitle>Vestigingen ({orgContext.locations.length})</CardTitle>
-            <CardDescription>
-              Beheer je locaties en hun abonnementen.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Link href="/organisatie/vestigingen">
-              <Button variant="outline">Vestigingen beheren</Button>
-            </Link>
-          </CardContent>
-        </Card>
-      </div>
+      <Card>
+        <CardContent className="flex flex-wrap items-center justify-between gap-3 p-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="rounded-md bg-primary/10 p-2 text-primary">
+              <Building2 className="h-4 w-4" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-medium">Vestigingen</p>
+              <p className="text-xs text-muted-foreground">
+                {orgContext.locations.length} locatie{orgContext.locations.length === 1 ? "" : "s"} · beheer locaties en abonnementen.
+              </p>
+            </div>
+          </div>
+          <Link href="/organisatie/vestigingen">
+            <Button size="sm" variant="outline">Beheren</Button>
+          </Link>
+        </CardContent>
+      </Card>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Organisatiegegevens</CardTitle>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Organisatiegegevens</CardTitle>
           <CardDescription>
             Contactgegevens worden pas met instructeurs gedeeld na een
             bevestigde opdracht.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-0">
           <OrganizationForm organization={orgContext.organization} />
         </CardContent>
       </Card>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Vaste aanname melden</CardTitle>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Vaste aanname melden</CardTitle>
           <CardDescription>
             Heb je een instructeur die je via het platform hebt leren kennen
             binnen 6 maanden vast aangenomen? Meld het hier. Er geldt een
             eenmalige conversievergoeding van € 50 (excl. btw).
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-3 pt-0">
           {knownInstructors.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               Zodra je bevestigde opdrachten met instructeurs hebt gehad, kun je
@@ -134,11 +136,11 @@ export default async function OrganisatiePage() {
           )}
 
           {fees.length > 0 ? (
-            <div className="space-y-2 border-t border-border pt-4">
-              <p className="text-sm font-medium">Eerdere meldingen</p>
+            <div className="space-y-0 border-t border-border pt-3">
+              <p className="pb-2 text-sm font-medium">Eerdere meldingen</p>
               {fees.map((fee) => (
                 <div
-                  className="flex items-center justify-between rounded-lg border border-border p-3 text-sm"
+                  className="flex items-center justify-between gap-3 border-t border-border py-2.5 text-sm first:border-t-0"
                   key={fee.id}
                 >
                   <span className="text-muted-foreground">
