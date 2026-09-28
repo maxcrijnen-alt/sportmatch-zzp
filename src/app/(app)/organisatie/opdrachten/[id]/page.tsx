@@ -307,9 +307,9 @@ export default async function OrganisatieOpdrachtDetailPage({
   );
 
   return (
-    <div className="mx-auto w-full max-w-4xl space-y-6 px-4 py-8">
-      <div className="space-y-3">
-        <div className="flex flex-wrap items-center gap-2">
+    <div className="mx-auto w-full max-w-4xl space-y-4 px-4 py-8">
+      <div className="space-y-2">
+        <div className="flex flex-wrap items-center gap-1.5">
           <Badge
             variant={
               job.job_type === "urgent_substitute" ? "destructive" : "secondary"
@@ -328,15 +328,15 @@ export default async function OrganisatieOpdrachtDetailPage({
         <h1 className="text-2xl font-bold tracking-tight">{job.title}</h1>
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
           <span className="inline-flex items-center gap-1.5">
-            <MapPin className="h-4 w-4" />
+            <MapPin className="h-3.5 w-3.5" />
             {job.location?.name}
           </span>
           <span className="inline-flex items-center gap-1.5">
-            <CalendarDays className="h-4 w-4" />
+            <CalendarDays className="h-3.5 w-3.5" />
             {formatDate(job.starts_on)}
           </span>
           <span className="inline-flex items-center gap-1.5">
-            <Clock className="h-4 w-4" />
+            <Clock className="h-3.5 w-3.5" />
             {formatTime(job.start_time)}–{formatTime(job.end_time)}
           </span>
           <span className="font-medium text-foreground">{describePay(job)}</span>
@@ -364,8 +364,8 @@ export default async function OrganisatieOpdrachtDetailPage({
 
       {cancellation ? (
         <Card>
-          <CardHeader>
-            <CardTitle>Annuleringsregistratie</CardTitle>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Annuleringsregistratie</CardTitle>
             <CardDescription>
               {cancellation.force_majeure_claimed
                 ? cancellation.force_majeure_status === "pending_review"
@@ -376,10 +376,10 @@ export default async function OrganisatieOpdrachtDetailPage({
                 : "De normale annuleringsregeling is geregistreerd."}
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-2 text-sm">
+          <CardContent className="space-y-0 pt-0 text-sm">
             {cancellations.map((item) => (
               <div
-                className="rounded-md border border-border p-3"
+                className="border-t border-border py-3 first:border-t-0 first:pt-0"
                 key={item.id}
               >
                 <p className="font-medium">
@@ -410,29 +410,29 @@ export default async function OrganisatieOpdrachtDetailPage({
       {/* Bevestigde instructeur */}
       {confirmation?.confirmed_at ? (
         <Card className="border-primary">
-          <CardHeader>
-            <CardTitle>Bevestigde instructeur</CardTitle>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Bevestigde instructeur</CardTitle>
             <CardDescription>
               {confirmedApplication?.instructor?.full_name ??
                 "De opdracht is bevestigd."}
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-3 pt-0">
             {contact ? (
               <div className="space-y-1 text-sm">
                 <p className="font-medium">{contact.full_name}</p>
                 <p className="inline-flex items-center gap-2 text-muted-foreground">
-                  <Mail className="h-4 w-4" /> {contact.email}
+                  <Mail className="h-3.5 w-3.5" /> {contact.email}
                 </p>
                 <br />
                 <p className="inline-flex items-center gap-2 text-muted-foreground">
-                  <Phone className="h-4 w-4" /> {contact.phone}
+                  <Phone className="h-3.5 w-3.5" /> {contact.phone}
                 </p>
               </div>
             ) : null}
 
             {job.status === "confirmed" ? (
-              <div className="flex flex-wrap gap-2 border-t border-border pt-4">
+              <div className="flex flex-wrap gap-2 border-t border-border pt-3">
                 <form action={completeJobAction.bind(null, job.id)}>
                   <Button size="sm" type="submit">
                     Opdracht afronden
@@ -448,15 +448,15 @@ export default async function OrganisatieOpdrachtDetailPage({
 
       {activeSegmentConfirmations.length > 0 ? (
         <Card className="border-primary">
-          <CardHeader>
-            <CardTitle>Toewijzing lessenblok</CardTitle>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Toewijzing lessenblok</CardTitle>
             <CardDescription>
               {confirmedSegmentInstructorIds.length > 0
                 ? `${confirmedSegmentInstructorIds.length} instructeur${confirmedSegmentInstructorIds.length === 1 ? "" : "s"} definitief ingepland.`
                 : "De gekozen instructeur(s) moeten de lesonderdelen nog bevestigen."}
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-3 pt-0">
             <div className="space-y-2 text-sm">
               {activeSegmentConfirmations.map((segmentConfirmation) => {
                 const segment = job.segments.find(
@@ -467,7 +467,7 @@ export default async function OrganisatieOpdrachtDetailPage({
                 );
                 return (
                   <div
-                    className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border p-3"
+                    className="flex flex-wrap items-center justify-between gap-2 border-t border-border py-2.5 first:border-t-0 first:pt-0"
                     key={segmentConfirmation.id}
                   >
                     <span>
@@ -491,7 +491,7 @@ export default async function OrganisatieOpdrachtDetailPage({
             </div>
 
             {contacts.length > 0 ? (
-              <div className="grid gap-3 border-t border-border pt-4 sm:grid-cols-2">
+              <div className="grid gap-3 border-t border-border pt-3 sm:grid-cols-2">
                 {contacts.map((item) => (
                   <div className="text-sm" key={`${item.email}-${item.phone}`}>
                     <p className="font-medium">{item.full_name}</p>
@@ -503,7 +503,7 @@ export default async function OrganisatieOpdrachtDetailPage({
             ) : null}
 
             {job.status === "confirmed" || confirmedSegmentInstructorIds.length > 0 ? (
-              <div className="flex flex-wrap gap-2 border-t border-border pt-4">
+              <div className="flex flex-wrap gap-2 border-t border-border pt-3">
                 {job.status === "confirmed" ? (
                   <form action={completeJobAction.bind(null, job.id)}>
                     <Button size="sm" type="submit">
@@ -521,16 +521,16 @@ export default async function OrganisatieOpdrachtDetailPage({
       {/* Vervangingsvoorstellen */}
       {replacements.length > 0 ? (
         <Card>
-          <CardHeader>
-            <CardTitle>Vervangingsvoorstellen</CardTitle>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Vervangingsvoorstellen</CardTitle>
             <CardDescription>
               Jij bepaalt of een vervanger geschikt is.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-0 pt-0">
             {replacements.map((replacement) => (
               <div
-                className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border p-3 text-sm"
+                className="flex flex-wrap items-center justify-between gap-3 border-t border-border py-3 text-sm first:border-t-0 first:pt-0"
                 key={replacement.id}
               >
                 <div>
@@ -596,7 +596,7 @@ export default async function OrganisatieOpdrachtDetailPage({
           <CardHeader>
             <CardTitle>Beoordeel de instructeur</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-0">
             <ReviewForm jobId={job.id} />
           </CardContent>
         </Card>
@@ -646,14 +646,16 @@ export default async function OrganisatieOpdrachtDetailPage({
 
       {/* Kandidaten */}
       <Card>
-        <CardHeader>
-          <CardTitle>Kandidaten ({applications.length})</CardTitle>
-          <CardDescription>
-            Vergelijk kandidaten op beoordeling, ervaring en betrouwbaarheid.
-            Jij kiest wie het beste past.
-          </CardDescription>
+        <CardHeader className="flex-row items-center justify-between space-y-0 pb-3">
+          <div>
+            <CardTitle className="text-base">Kandidaten</CardTitle>
+            <CardDescription>Reacties op deze opdracht.</CardDescription>
+          </div>
+          <span className="rounded-full border border-border px-2.5 py-1 text-xs font-semibold text-muted-foreground">
+            {applications.length}
+          </span>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-0 pt-0">
           {applications.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               Nog geen reacties. Nodig hieronder zelf instructeurs uit.
@@ -670,17 +672,17 @@ export default async function OrganisatieOpdrachtDetailPage({
 
               return (
                 <div
-                  className="space-y-3 rounded-lg border border-border p-4"
+                  className="space-y-2.5 border-t border-border py-3 first:border-t-0 first:pt-0"
                   key={application.id}
                 >
                   <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div className="flex items-center gap-3">
+                    <div className="flex min-w-0 items-center gap-3">
                       <Avatar
                         name={application.instructor?.full_name ?? "?"}
                         src={application.instructor?.avatar_url}
                       />
-                      <div>
-                        <p className="font-medium">
+                      <div className="min-w-0">
+                        <p className="truncate font-medium">
                           {application.instructor?.full_name}
                         </p>
                         <p className="text-xs text-muted-foreground">
@@ -719,7 +721,7 @@ export default async function OrganisatieOpdrachtDetailPage({
                   </div>
 
                   {application.message ? (
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm leading-5 text-muted-foreground">
                       “{application.message}”
                     </p>
                   ) : null}
@@ -783,7 +785,7 @@ export default async function OrganisatieOpdrachtDetailPage({
                   {job.status === "open" &&
                   application.status === "pending" &&
                   (job.segments.length === 0 || selectableSegmentIds.length > 0) ? (
-                    <div className="flex flex-wrap gap-2 border-t border-border pt-3">
+                    <div className="flex flex-wrap gap-2 border-t border-border pt-2.5">
                       <SelectCandidateForm
                         applicationId={application.id}
                         candidateName={
@@ -812,8 +814,8 @@ export default async function OrganisatieOpdrachtDetailPage({
       {/* Uitnodigen */}
       {job.status === "open" ? (
         <Card>
-          <CardHeader>
-            <CardTitle>Instructeurs uitnodigen</CardTitle>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Instructeurs uitnodigen</CardTitle>
             <CardDescription>
               Instructeurs met {job.sport?.name ?? "deze sport"} als
               specialisatie.
@@ -825,12 +827,12 @@ export default async function OrganisatieOpdrachtDetailPage({
                 Geen extra suggesties gevonden.
               </p>
             ) : (
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid gap-2 sm:grid-cols-2">
                 {suggestions.map((suggestion) => {
                   const stats = statsByInstructor.get(suggestion.user_id);
                   return (
                     <div
-                      className="flex items-center justify-between gap-3 rounded-lg border border-border p-3"
+                      className="flex items-center justify-between gap-3 rounded-md border border-border p-2.5"
                       key={suggestion.user_id}
                     >
                       <div className="flex items-center gap-3">
@@ -871,7 +873,7 @@ export default async function OrganisatieOpdrachtDetailPage({
       {/* Chats voor deze opdracht */}
       <Alert>
         <AlertDescription className="flex items-center gap-2">
-          <MessageSquare className="h-4 w-4" />
+          <MessageSquare className="h-3.5 w-3.5" />
           Alle gesprekken met kandidaten vind je onder{" "}
           <Link className="font-medium text-primary hover:underline" href="/berichten">
             Berichten
