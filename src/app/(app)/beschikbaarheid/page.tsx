@@ -66,7 +66,7 @@ export default async function BeschikbaarheidPage() {
   const exceptions = (exceptionsResult.data as Exception[] | null) ?? [];
 
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-6 px-4 py-8">
+    <div className="mx-auto w-full max-w-3xl space-y-4 px-4 py-8">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Beschikbaarheid</h1>
         <p className="text-sm text-muted-foreground">
@@ -76,22 +76,22 @@ export default async function BeschikbaarheidPage() {
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Wekelijkse beschikbaarheid</CardTitle>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Wekelijkse beschikbaarheid</CardTitle>
           <CardDescription>
             Organisaties zien deze tijden bij je profiel.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-3 pt-0">
           {rules.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               Nog geen beschikbaarheid ingesteld.
             </p>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-0">
               {rules.map((rule) => (
                 <div
-                  className="flex items-center justify-between rounded-lg border border-border px-3 py-2 text-sm"
+                  className="flex items-center justify-between gap-3 border-t border-border py-2.5 text-sm first:border-t-0 first:pt-0"
                   key={rule.id}
                 >
                   <span>
@@ -105,7 +105,7 @@ export default async function BeschikbaarheidPage() {
                       type="submit"
                       variant="ghost"
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                   </form>
                 </div>
@@ -117,22 +117,22 @@ export default async function BeschikbaarheidPage() {
       </Card>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Uitzonderingen</CardTitle>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Uitzonderingen</CardTitle>
           <CardDescription>
             Datums waarop je niet beschikbaar bent (vakantie, afspraken).
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-3 pt-0">
           {exceptions.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               Geen geblokkeerde datums.
             </p>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-0">
               {exceptions.map((exception) => (
                 <div
-                  className="flex items-center justify-between rounded-lg border border-border px-3 py-2 text-sm"
+                  className="flex items-center justify-between gap-3 border-t border-border py-2.5 text-sm first:border-t-0 first:pt-0"
                   key={exception.id}
                 >
                   <span>
@@ -158,7 +158,7 @@ export default async function BeschikbaarheidPage() {
                       type="submit"
                       variant="ghost"
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                   </form>
                 </div>
