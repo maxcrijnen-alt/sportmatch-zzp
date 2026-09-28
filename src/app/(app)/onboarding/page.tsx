@@ -122,13 +122,13 @@ export default async function OnboardingPage() {
     }[]) ?? [];
 
   return (
-    <div className="mx-auto grid w-full max-w-5xl gap-8 px-4 py-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
-      <aside className="space-y-5">
-        <div className="space-y-3">
+    <div className="mx-auto grid w-full max-w-5xl gap-5 px-4 py-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
+      <aside className="space-y-4">
+        <div className="space-y-2">
           <p className="text-sm font-medium text-primary">
             Stap 2 van 2: profiel afronden
           </p>
-          <h1 className="text-3xl font-bold tracking-tight">
+          <h1 className="text-2xl font-bold tracking-tight">
             {isOrganization
               ? "Richt je sportschool klaar voor je eerste opdracht."
               : "Maak je instructeursprofiel klaar voor passende opdrachten."}
@@ -140,38 +140,38 @@ export default async function OnboardingPage() {
           </p>
         </div>
 
-        <div className="rounded-lg border border-primary/30 bg-primary/5 p-4">
+        <div className="rounded-lg border border-primary/30 bg-primary/5 p-3">
           <p className="font-medium">
             {isOrganization
               ? "Wat moet nu echt af?"
               : "Wat maakt je direct vindbaar?"}
           </p>
-          <div className="mt-3 space-y-2">
+          <div className="mt-2 space-y-1.5">
             {valueChecklist.map((item) => (
               <p className="flex gap-2 text-sm leading-6 text-muted-foreground" key={item}>
-                <CheckCircle2 className="mt-1 h-4 w-4 shrink-0 text-primary" />
+                <CheckCircle2 className="mt-1 h-3.5 w-3.5 shrink-0 text-primary" />
                 <span>{item}</span>
               </p>
             ))}
           </div>
         </div>
 
-        <div className="grid gap-3">
+        <div className="overflow-hidden rounded-lg border border-border bg-card px-3">
           {steps.map((step) => {
             const Icon = step.icon;
 
             return (
               <div
-                className="rounded-lg border border-border bg-card p-4"
+                className="border-t border-border py-3 first:border-t-0"
                 key={step.title}
               >
                 <div className="flex items-start gap-3">
-                  <div className="rounded-md bg-primary/10 p-2 text-primary">
-                    <Icon className="h-5 w-5" />
+                  <div className="rounded-md bg-primary/10 p-1.5 text-primary">
+                    <Icon className="h-4 w-4" />
                   </div>
                   <div>
                     <h2 className="font-semibold">{step.title}</h2>
-                    <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                    <p className="mt-0.5 text-sm leading-5 text-muted-foreground">
                       {step.text}
                     </p>
                   </div>
@@ -181,12 +181,12 @@ export default async function OnboardingPage() {
           })}
         </div>
 
-        <div className="rounded-lg border border-border bg-muted/40 p-4">
+        <div className="rounded-lg border border-border bg-muted/40 p-3">
           <p className="flex gap-2 text-sm font-medium">
-            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+            <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
             Je kunt later alles aanpassen
           </p>
-          <p className="mt-2 text-sm leading-6 text-muted-foreground">
+          <p className="mt-1.5 text-sm leading-5 text-muted-foreground">
             Deze onboarding zet alleen de basis goed. Details zoals extra
             vestigingen, documenten en beschikbaarheid kun je daarna
             rustig aanvullen vanuit je dashboard.
@@ -194,21 +194,21 @@ export default async function OnboardingPage() {
         </div>
       </aside>
 
-      <div className="space-y-6">
+      <div className="space-y-4">
         {invites.length > 0 ? (
           <Card className="border-primary">
-            <CardHeader>
-              <CardTitle className="text-lg">Je bent uitgenodigd</CardTitle>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Je bent uitgenodigd</CardTitle>
               <CardDescription>
                 Sluit je aan bij een bestaande organisatie in plaats van een
                 nieuwe aan te maken.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-2">
+            <CardContent className="space-y-0 pt-0">
               {invites.map((invite) => (
                 <form
                   action={acceptOrgInviteAction.bind(null, invite.id)}
-                  className="flex items-center justify-between gap-3 rounded-lg border border-border p-3"
+                  className="flex items-center justify-between gap-3 border-t border-border py-3 first:border-t-0 first:pt-0"
                   key={invite.id}
                 >
                   <p className="text-sm font-medium">
@@ -224,8 +224,8 @@ export default async function OnboardingPage() {
         ) : null}
 
         <Card>
-          <CardHeader>
-            <CardTitle className="text-xl">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">
               {isOrganization
                 ? "Richt je organisatie in"
                 : "Maak je instructeursprofiel af"}
@@ -236,7 +236,7 @@ export default async function OnboardingPage() {
                 : "Na opslaan kom je op je dashboard en kun je passende opdrachten openen."}
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-0">
             {isOrganization ? (
               <OrganizationOnboardingForm cities={(cities as City[]) ?? []} />
             ) : (
