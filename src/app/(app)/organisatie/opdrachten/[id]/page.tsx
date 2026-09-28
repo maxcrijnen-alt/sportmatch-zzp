@@ -593,8 +593,8 @@ export default async function OrganisatieOpdrachtDetailPage({
       {/* Review */}
       {job.status === "completed" && confirmation && !hasReviewed ? (
         <Card>
-          <CardHeader>
-            <CardTitle>Beoordeel de instructeur</CardTitle>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Beoordeel de instructeur</CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
             <ReviewForm jobId={job.id} />
@@ -821,7 +821,7 @@ export default async function OrganisatieOpdrachtDetailPage({
               specialisatie.
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-0">
             {suggestions.length === 0 ? (
               <p className="text-sm text-muted-foreground">
                 Geen extra suggesties gevonden.
