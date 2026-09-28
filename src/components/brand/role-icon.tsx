@@ -1,4 +1,4 @@
-import { Building2, Dumbbell } from "lucide-react";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 type RoleIconRole = "organization" | "instructor";
@@ -6,18 +6,21 @@ type RoleIconRole = "organization" | "instructor";
 const roleStyles: Record<
   RoleIconRole,
   {
-    icon: typeof Building2;
+    src: string;
     className: string;
+    imageClassName: string;
   }
 > = {
   organization: {
-    icon: Building2,
+    src: "/sportmatch-role-organization.svg",
     className:
-      "bg-emerald-500/10 text-emerald-600 ring-1 ring-inset ring-emerald-600/15",
+      "bg-emerald-500/10 ring-1 ring-inset ring-emerald-600/15",
+    imageClassName: "h-5 w-7",
   },
   instructor: {
-    icon: Dumbbell,
-    className: "bg-red-500/10 text-red-600 ring-1 ring-inset ring-red-600/15",
+    src: "/sportmatch-role-instructor.svg",
+    className: "bg-red-500/10 ring-1 ring-inset ring-red-600/15",
+    imageClassName: "h-6 w-6",
   },
 };
 
@@ -30,18 +33,33 @@ function RoleIcon({
   className?: string;
   iconClassName?: string;
 }) {
-  const { icon: Icon, className: roleClassName } = roleStyles[role];
+  const roleStyle = roleStyles[role];
 
   return (
     <span
       aria-hidden="true"
       className={cn(
         "inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg",
-        roleClassName,
+        roleStyle.className,
         className,
       )}
     >
-      <Icon className={cn("h-5 w-5", iconClassName)} />
+      <span
+        className={cn(
+          "relative inline-flex items-center justify-center",
+          roleStyle.imageClassName,
+          iconClassName,
+        )}
+      >
+        <Image
+          alt=""
+          aria-hidden="true"
+          className="h-full w-full object-contain"
+          fill
+          sizes="32px"
+          src={roleStyle.src}
+        />
+      </span>
     </span>
   );
 }
