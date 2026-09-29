@@ -80,7 +80,7 @@ export default async function KandidatenPage({
     redirect("/login");
   }
 
-  if (!orgContext) {
+  if (!orgContext || profile.role !== "organization") {
     redirect("/dashboard");
   }
 

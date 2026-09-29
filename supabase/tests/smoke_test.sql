@@ -776,6 +776,18 @@ select public.set_instructor_connection(
   '10000000-0000-0000-0000-000000000001',
   '00000000-0000-0000-0000-000000000006', true
 );
+do $$
+begin
+  begin
+    perform public.set_instructor_connection(
+      '10000000-0000-0000-0000-000000000001',
+      '00000000-0000-0000-0000-000000000007', true
+    );
+    raise exception 'FAIL: niet-instructeur kon aan poule worden toegevoegd';
+  exception when others then
+    if sqlerrm like 'FAIL:%' then raise; end if;
+  end;
+end $$;
 
 -- Een andere sportschool mag de rijen niet lezen of verwijderen.
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000007', false);
@@ -792,6 +804,15 @@ begin
   if v_deleted <> 0 then
     raise exception 'FAIL: andere organisatie kan poule verwijderen';
   end if;
+  begin
+    insert into public.organization_instructor_connections
+      (organization_id, instructor_id, created_by)
+    values ('10000000-0000-0000-0000-000000000001',
+            '00000000-0000-0000-0000-000000000004', auth.uid());
+    raise exception 'FAIL: andere organisatie kon direct aan poule toevoegen';
+  exception when others then
+    if sqlerrm like 'FAIL:%' then raise; end if;
+  end;
   begin
     perform public.set_instructor_connection(
       '10000000-0000-0000-0000-000000000001',
