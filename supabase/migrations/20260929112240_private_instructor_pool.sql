@@ -163,7 +163,7 @@ begin
   if public.has_pending_review(auth.uid()) then
     raise exception 'Je hebt nog een beoordeling openstaan. Rond die eerst af.';
   end if;
-  if not public.location_has_access(v_job.location_id) then
+  if not private.location_has_access(v_job.location_id) then
     raise exception 'Het abonnement voor deze vestiging is niet actief.';
   end if;
 
