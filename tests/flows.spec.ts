@@ -109,6 +109,26 @@ test("sportschooldemo bevat kandidaten, agenda en alle berichtfilters", async ({
   await closeDemo(page);
 });
 
+test("mobiel meer-menu sluit na navigatie", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await startDemo(page, "sportschool");
+
+  const moreButton = page.getByRole("button", { name: "Meer navigatie" });
+  await expect(moreButton).toBeVisible();
+  await moreButton.click();
+
+  const moreMenu = page.locator('section[aria-label="Meer navigatie"]');
+  await expect(moreMenu).toBeVisible();
+  await expect(moreButton).toHaveAttribute("aria-expanded", "true");
+
+  await moreMenu.getByRole("link", { name: "Berichten" }).click();
+  await page.waitForURL("**/berichten**");
+
+  await expect(moreMenu).toHaveCount(0);
+  await expect(moreButton).toHaveAttribute("aria-expanded", "false");
+  await closeDemo(page);
+});
+
 test("sportschool kan een instructeur in de private poule bewaren en verwijderen", async ({
   page,
 }) => {
