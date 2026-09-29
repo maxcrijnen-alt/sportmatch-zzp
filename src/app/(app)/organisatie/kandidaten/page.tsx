@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Users } from "lucide-react";
+import { InviteForm } from "@/components/jobs/invite-form";
+import { ConnectionButton } from "@/components/org/connection-button";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,7 +12,11 @@ import { formatDate } from "@/lib/labels";
 import { getOrgContext } from "@/lib/org/context";
 import { resolveLocationFilter } from "@/lib/org/location-filter";
 import { createClient } from "@/lib/supabase/server";
-import type { InstructorPublicStats, JobApplication } from "@/types/database";
+import type {
+  InstructorPublicStats,
+  JobApplication,
+  OrganizationInstructorConnection,
+} from "@/types/database";
 
 export const metadata: Metadata = {
   title: "Kandidaten",
@@ -74,7 +80,7 @@ export default async function KandidatenPage({
     redirect("/login");
   }
 
-  if (!orgContext) {
+  if (!orgContext || profile.role !== "organization") {
     redirect("/dashboard");
   }
 
@@ -129,7 +135,14 @@ export default async function KandidatenPage({
     openJobsQuery = openJobsQuery.eq("id", selectedJobId);
   }
 
-  const [{ data }, priorResult, openJobsResult] = await Promise.all([
+  const [
+    { data },
+    priorResult,
+    openJobsResult,
+    connectionsResult,
+    jobInvitationsResult,
+    jobApplicationsResult,
+  ] = await Promise.all([
     applicationsQuery,
     supabase
       .from("job_confirmations")
@@ -137,8 +150,29 @@ export default async function KandidatenPage({
       .eq("job.organization_id", orgContext.organization.id)
       .eq("job.status", "completed"),
     openJobsQuery,
+    supabase
+      .from("organization_instructor_connections")
+      .select("instructor_id, created_at")
+      .eq("organization_id", orgContext.organization.id)
+      .order("created_at", { ascending: false }),
+    selectedJobId
+      ? supabase.from("job_invitations").select("instructor_id").eq("job_id", selectedJobId)
+      : Promise.resolve({ data: [] }),
+    selectedJobId
+      ? supabase.from("job_applications").select("instructor_id").eq("job_id", selectedJobId)
+      : Promise.resolve({ data: [] }),
   ]);
 
+  const poolIds = (
+    (connectionsResult.data as Pick<OrganizationInstructorConnection, "instructor_id" | "created_at">[] | null) ?? []
+  ).map((connection) => connection.instructor_id);
+  const poolSet = new Set(poolIds);
+  const alreadyInvitedOrApplied = new Set([
+    ...((jobInvitationsResult.data as { instructor_id: string }[] | null) ?? [])
+      .map((row) => row.instructor_id),
+    ...((jobApplicationsResult.data as { instructor_id: string }[] | null) ?? [])
+      .map((row) => row.instructor_id),
+  ]);
   const applications = (data as unknown as ApplicationRow[] | null) ?? [];
 
   const workedBeforeIds = Array.from(
@@ -179,6 +213,7 @@ export default async function KandidatenPage({
       ...applications.map((application) => application.instructor_id),
       ...workedBeforeIds,
       ...validVogIds,
+      ...poolIds,
     ]),
   );
 
@@ -207,6 +242,8 @@ export default async function KandidatenPage({
       });
     }
   }
+
+  const visiblePoolIds = poolIds.filter((instructorId) => namesById.has(instructorId));
 
   const statsEntries = await Promise.all(
     instructorIds.map(async (instructorId) => {
@@ -556,7 +593,7 @@ export default async function KandidatenPage({
   );
 
   return (
-    <div className="mx-auto w-full max-w-5xl space-y-6 px-4 py-8">
+    <div className="mx-auto w-full max-w-5xl space-y-4 px-4 py-8">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">
@@ -608,17 +645,67 @@ export default async function KandidatenPage({
                       ? `${application.job.title} · ${formatDate(application.job.starts_on)}`
                       : undefined,
                   )}
-                  <div className="flex shrink-0 items-center gap-2">
+                  <div className="flex shrink-0 flex-wrap items-center gap-2">
                     <Link href={candidateProfileHref(application.instructor_id)}>
                       <Button size="sm" variant="outline">Profiel</Button>
                     </Link>
                     <Link href={`/organisatie/opdrachten/${application.job?.id}`}>
                       <Button size="sm">Reactie bekijken</Button>
                     </Link>
+                    <ConnectionButton
+                      initialConnected={poolSet.has(application.instructor_id)}
+                      instructorId={application.instructor_id}
+                      key={`${application.instructor_id}-${poolSet.has(application.instructor_id)}`}
+                    />
                   </div>
                 </div>
               );
             })}
+          </div>
+        )}
+      </section>
+
+      <section className="overflow-hidden rounded-lg border border-border bg-card">
+        <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
+          <div>
+            <h2 className="font-semibold">Mijn poule</h2>
+            <p className="text-xs text-muted-foreground">
+              Opgeslagen instructeurs van jouw sportschool.
+            </p>
+          </div>
+          <span className="rounded-full border border-border px-2.5 py-1 text-xs font-semibold text-muted-foreground">
+            {visiblePoolIds.length}
+          </span>
+        </div>
+        {visiblePoolIds.length === 0 ? (
+          <p className="px-5 py-6 text-sm text-muted-foreground">
+            Nog geen instructeurs opgeslagen.
+          </p>
+        ) : (
+          <div className="divide-y divide-border">
+            {visiblePoolIds.map((instructorId) => (
+              <div
+                className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+                key={instructorId}
+              >
+                {candidateIdentity(instructorId)}
+                <div className="flex shrink-0 flex-wrap items-center gap-2">
+                  <Link href={candidateProfileHref(instructorId)}>
+                    <Button size="sm" variant="outline">Profiel</Button>
+                  </Link>
+                  {selectedJob && !alreadyInvitedOrApplied.has(instructorId) ? (
+                    <InviteForm instructorId={instructorId} jobId={selectedJob.id} />
+                  ) : selectedJob && alreadyInvitedOrApplied.has(instructorId) ? (
+                    <Badge variant="muted">Al betrokken</Badge>
+                  ) : null}
+                  <ConnectionButton
+                    initialConnected
+                    instructorId={instructorId}
+                    key={`${instructorId}-true`}
+                  />
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </section>
@@ -643,7 +730,7 @@ export default async function KandidatenPage({
                     instructorId,
                     returningMatch ? `Past bij ${returningMatch.job.title}` : undefined,
                   )}
-                  <div className="flex shrink-0 items-center gap-2">
+                  <div className="flex shrink-0 flex-wrap items-center gap-2">
                     <Link href={candidateProfileHref(instructorId)}>
                       <Button size="sm" variant="outline">Profiel</Button>
                     </Link>
@@ -652,6 +739,11 @@ export default async function KandidatenPage({
                         <Button size="sm">Opnieuw uitnodigen</Button>
                       </Link>
                     ) : null}
+                    <ConnectionButton
+                      initialConnected={poolSet.has(instructorId)}
+                      instructorId={instructorId}
+                      key={`${instructorId}-${poolSet.has(instructorId)}`}
+                    />
                   </div>
                 </div>
               );
@@ -686,13 +778,18 @@ export default async function KandidatenPage({
                     </p>
                   </div>
 
-                  <div className="flex shrink-0 items-center gap-2">
+                  <div className="flex shrink-0 flex-wrap items-center gap-2">
                     <Link href={candidateProfileHref(match.userId)}>
                       <Button size="sm" variant="outline">Profiel</Button>
                     </Link>
                     <Link href={`/organisatie/opdrachten/${match.job.id}`}>
                       <Button size="sm">Uitnodigen</Button>
                     </Link>
+                    <ConnectionButton
+                      initialConnected={poolSet.has(match.userId)}
+                      instructorId={match.userId}
+                      key={`${match.userId}-${poolSet.has(match.userId)}`}
+                    />
                   </div>
                 </div>
               );
@@ -719,13 +816,18 @@ export default async function KandidatenPage({
                     match.userId,
                     `${match.job.title} · ${match.lessonTypeName}`,
                   )}
-                  <div className="flex shrink-0 items-center gap-2">
+                  <div className="flex shrink-0 flex-wrap items-center gap-2">
                     <Link href={candidateProfileHref(match.userId)}>
                       <Button size="sm" variant="outline">Profiel</Button>
                     </Link>
                     <Link href={`/organisatie/opdrachten/${match.job.id}`}>
                       <Button size="sm">Uitnodigen</Button>
                     </Link>
+                    <ConnectionButton
+                      initialConnected={poolSet.has(match.userId)}
+                      instructorId={match.userId}
+                      key={`${match.userId}-${poolSet.has(match.userId)}`}
+                    />
                   </div>
                 </div>
               );

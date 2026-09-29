@@ -662,6 +662,407 @@ begin
   end if;
 end $$;
 
+-- ===== Private poule: RLS, idempotentie en bestaande uitnodigingsflow =====
+reset role;
+insert into auth.users (id, email, raw_user_meta_data) values
+  ('00000000-0000-0000-0000-000000000004', 'poule-geldig@test.nl',
+   '{"role":"instructor","full_name":"Gina Geldig"}'),
+  ('00000000-0000-0000-0000-000000000005', 'poule-uitgenodigd@test.nl',
+   '{"role":"instructor","full_name":"Udo Uitgenodigd"}'),
+  ('00000000-0000-0000-0000-000000000006', 'poule-geen-vog@test.nl',
+   '{"role":"instructor","full_name":"Vera Zonder Vog"}'),
+  ('00000000-0000-0000-0000-000000000007', 'andere-school@test.nl',
+   '{"role":"organization","full_name":"Andere School"}');
+
+insert into public.instructor_profiles (user_id) values
+  ('00000000-0000-0000-0000-000000000004'),
+  ('00000000-0000-0000-0000-000000000005'),
+  ('00000000-0000-0000-0000-000000000006');
+
+insert into public.document_uploads
+  (user_id, doc_type, storage_path, original_filename, status, expires_at)
+values
+  ('00000000-0000-0000-0000-000000000004', 'vog',
+   'tests/poule-geldig.pdf', 'poule-geldig.pdf', 'approved', current_date + 365),
+  ('00000000-0000-0000-0000-000000000005', 'vog',
+   'tests/poule-uitgenodigd.pdf', 'poule-uitgenodigd.pdf', 'approved', current_date + 365);
+
+insert into public.organizations
+  (id, name, org_type, created_by, contact_name, contact_email, contact_phone)
+values
+  ('10000000-0000-0000-0000-000000000002', 'Andere School', 'gym',
+   '00000000-0000-0000-0000-000000000007',
+   'Andere School', 'ander@test.nl', '0301234568');
+insert into public.organization_members (organization_id, user_id, member_role)
+values ('10000000-0000-0000-0000-000000000002',
+        '00000000-0000-0000-0000-000000000007', 'owner');
+insert into public.organization_locations (id, organization_id, name, city_id)
+values ('20000000-0000-0000-0000-000000000002',
+        '10000000-0000-0000-0000-000000000002', 'Andere vestiging',
+        (select id from public.cities where name = 'Utrecht'));
+
+insert into public.jobs
+  (id, organization_id, location_id, created_by, job_type, sport_id, title,
+   starts_on, start_time, end_time, pay_type, pay_amount_cents)
+values
+  ('30000000-0000-0000-0000-000000000007',
+   '10000000-0000-0000-0000-000000000001',
+   '20000000-0000-0000-0000-000000000001',
+   '00000000-0000-0000-0000-000000000002', 'one_time',
+   (select id from public.sports where slug = 'fitness'),
+   'Poule uitnodiging', current_date + 30, '10:00', '11:00', 'fixed', 7500),
+  ('30000000-0000-0000-0000-000000000008',
+   '10000000-0000-0000-0000-000000000002',
+   '20000000-0000-0000-0000-000000000002',
+   '00000000-0000-0000-0000-000000000007', 'one_time',
+   (select id from public.sports where slug = 'fitness'),
+   'Andere opdracht', current_date + 30, '12:00', '13:00', 'fixed', 7500);
+
+set role authenticated;
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000002', false);
+select set_config('request.jwt.claim.email', 'sportschool@test.nl', false);
+
+select public.set_instructor_connection(
+  '10000000-0000-0000-0000-000000000001',
+  '00000000-0000-0000-0000-000000000004', true
+);
+select public.set_instructor_connection(
+  '10000000-0000-0000-0000-000000000001',
+  '00000000-0000-0000-0000-000000000004', true
+);
+do $$
+begin
+  if (select count(*) from public.organization_instructor_connections
+      where organization_id = '10000000-0000-0000-0000-000000000001'
+        and instructor_id = '00000000-0000-0000-0000-000000000004') <> 1 then
+    raise exception 'FAIL: dubbele connectie of niet opgeslagen';
+  end if;
+  if exists (
+    select 1 from public.notifications
+    where user_id = '00000000-0000-0000-0000-000000000004'
+  ) or exists (
+    select 1 from public.chats
+    where instructor_id = '00000000-0000-0000-0000-000000000004'
+  ) then
+    raise exception 'FAIL: connectie stuurde melding of maakte chat';
+  end if;
+end $$;
+
+select public.set_instructor_connection(
+  '10000000-0000-0000-0000-000000000001',
+  '00000000-0000-0000-0000-000000000004', false
+);
+select public.set_instructor_connection(
+  '10000000-0000-0000-0000-000000000001',
+  '00000000-0000-0000-0000-000000000004', false
+);
+do $$
+begin
+  if exists (select 1 from public.organization_instructor_connections
+             where instructor_id = '00000000-0000-0000-0000-000000000004') then
+    raise exception 'FAIL: verwijderen uit poule is niet idempotent';
+  end if;
+end $$;
+
+select public.set_instructor_connection(
+  '10000000-0000-0000-0000-000000000001',
+  '00000000-0000-0000-0000-000000000004', true
+);
+select public.set_instructor_connection(
+  '10000000-0000-0000-0000-000000000001',
+  '00000000-0000-0000-0000-000000000005', true
+);
+select public.set_instructor_connection(
+  '10000000-0000-0000-0000-000000000001',
+  '00000000-0000-0000-0000-000000000006', true
+);
+do $$
+begin
+  begin
+    perform public.set_instructor_connection(
+      '10000000-0000-0000-0000-000000000001',
+      '00000000-0000-0000-0000-000000000007', true
+    );
+    raise exception 'FAIL: niet-instructeur kon aan poule worden toegevoegd';
+  exception when others then
+    if sqlerrm like 'FAIL:%' then raise; end if;
+  end;
+end $$;
+
+-- Een andere sportschool mag de rijen niet lezen of verwijderen.
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000007', false);
+select set_config('request.jwt.claim.email', 'andere-school@test.nl', false);
+do $$
+declare v_deleted integer;
+begin
+  if exists (select 1 from public.organization_instructor_connections) then
+    raise exception 'FAIL: andere organisatie ziet private poule';
+  end if;
+  delete from public.organization_instructor_connections
+  where organization_id = '10000000-0000-0000-0000-000000000001';
+  get diagnostics v_deleted = row_count;
+  if v_deleted <> 0 then
+    raise exception 'FAIL: andere organisatie kan poule verwijderen';
+  end if;
+  begin
+    insert into public.organization_instructor_connections
+      (organization_id, instructor_id, created_by)
+    values ('10000000-0000-0000-0000-000000000001',
+            '00000000-0000-0000-0000-000000000004', auth.uid());
+    raise exception 'FAIL: andere organisatie kon direct aan poule toevoegen';
+  exception when others then
+    if sqlerrm like 'FAIL:%' then raise; end if;
+  end;
+  begin
+    perform public.set_instructor_connection(
+      '10000000-0000-0000-0000-000000000001',
+      '00000000-0000-0000-0000-000000000004', false
+    );
+    raise exception 'FAIL: vreemde organisatie kon poule muteren';
+  exception when others then
+    if sqlerrm like 'FAIL:%' then raise; end if;
+  end;
+end $$;
+
+-- Ook de opgeslagen instructeur zelf ziet niets en kan de tabel niet muteren.
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000004', false);
+select set_config('request.jwt.claim.email', 'poule-geldig@test.nl', false);
+do $$
+declare v_deleted integer;
+begin
+  if exists (select 1 from public.organization_instructor_connections) then
+    raise exception 'FAIL: instructeur ziet eigen connectie';
+  end if;
+  delete from public.organization_instructor_connections
+  where instructor_id = auth.uid();
+  get diagnostics v_deleted = row_count;
+  if v_deleted <> 0 then
+    raise exception 'FAIL: instructeur kon connectie verwijderen';
+  end if;
+  begin
+    insert into public.organization_instructor_connections
+      (organization_id, instructor_id, created_by)
+    values ('10000000-0000-0000-0000-000000000001', auth.uid(), auth.uid());
+    raise exception 'FAIL: instructeur kon connectie toevoegen';
+  exception when others then
+    if sqlerrm like 'FAIL:%' then raise; end if;
+  end;
+  begin
+    perform public.set_instructor_connection(
+      '10000000-0000-0000-0000-000000000001', auth.uid(), false
+    );
+    raise exception 'FAIL: instructeur kon connectie-RPC gebruiken';
+  exception when others then
+    if sqlerrm like 'FAIL:%' then raise; end if;
+  end;
+end $$;
+
+-- De individuele RPC blijft werken; de bulk-RPC slaat die uitnodiging over.
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000002', false);
+select set_config('request.jwt.claim.email', 'sportschool@test.nl', false);
+select public.invite_instructor(
+  '30000000-0000-0000-0000-000000000007',
+  '00000000-0000-0000-0000-000000000005', ''
+);
+do $$
+declare v_result record;
+begin
+  select * into v_result from public.invite_connected_instructors(
+    '30000000-0000-0000-0000-000000000007'
+  );
+  if v_result.invited_count <> 1 or v_result.skipped_count <> 2 then
+    raise exception 'FAIL: bulk uitnodiging telde succes/skips verkeerd: %, %',
+      v_result.invited_count, v_result.skipped_count;
+  end if;
+  if (select count(*) from public.job_invitations
+      where job_id = '30000000-0000-0000-0000-000000000007') <> 2 then
+    raise exception 'FAIL: bulk nodigde dubbel of te weinig uit';
+  end if;
+  if not exists (
+    select 1 from public.job_invitations
+    where job_id = '30000000-0000-0000-0000-000000000007'
+      and instructor_id = '00000000-0000-0000-0000-000000000004'
+  ) or exists (
+    select 1 from public.job_invitations
+    where job_id = '30000000-0000-0000-0000-000000000007'
+      and instructor_id = '00000000-0000-0000-0000-000000000006'
+  ) then
+    raise exception 'FAIL: VOG-gate of uitnodiging is onjuist';
+  end if;
+  if not exists (
+      select 1 from public.chats
+      where job_id = '30000000-0000-0000-0000-000000000007'
+        and instructor_id = '00000000-0000-0000-0000-000000000004'
+    )
+    or not exists (
+      select 1 from public.chat_messages m
+      join public.chats c on c.id = m.chat_id
+      where c.job_id = '30000000-0000-0000-0000-000000000007'
+        and c.instructor_id = '00000000-0000-0000-0000-000000000004'
+        and m.system_event = 'invitation_sent'
+    ) then
+    raise exception 'FAIL: bestaande notificatie/chat/system-message-flow ontbreekt';
+  end if;
+
+  select * into v_result from public.invite_connected_instructors(
+    '30000000-0000-0000-0000-000000000007'
+  );
+  if v_result.invited_count <> 0 or v_result.skipped_count <> 3 then
+    raise exception 'FAIL: herhaalde bulk-uitnodiging gaf dubbele uitnodiging';
+  end if;
+
+  begin
+    perform public.invite_connected_instructors(
+      '30000000-0000-0000-0000-000000000008'
+    );
+    raise exception 'FAIL: vreemde opdracht kon poule uitnodigen';
+  exception when others then
+    if sqlerrm like 'FAIL:%' then raise; end if;
+  end;
+  begin
+    perform public.invite_connected_instructors(
+      '30000000-0000-0000-0000-000000000001'
+    );
+    raise exception 'FAIL: niet-open opdracht kon poule uitnodigen';
+  exception when others then
+    if sqlerrm like 'FAIL:%' then raise; end if;
+  end;
+end $$;
+
+-- Een organisatiebrede blokkade moet als fout terugkomen en mag niet als
+-- "overgeslagen" worden verstopt.
+reset role;
+update public.subscriptions
+set status = 'cancelled',
+    trial_ends_at = now() - interval '1 day',
+    current_period_end = now() - interval '1 day',
+    grace_until = null
+where location_id = '20000000-0000-0000-0000-000000000001';
+
+set role authenticated;
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000002', false);
+select set_config('request.jwt.claim.email', 'sportschool@test.nl', false);
+do $bulk$
+begin
+  begin
+    perform public.invite_connected_instructors(
+      '30000000-0000-0000-0000-000000000007'
+    );
+    raise exception 'FAIL: inactief vestigingsabonnement werd door bulkuitnodiging genegeerd';
+  exception when others then
+    if sqlerrm like 'FAIL:%' then raise; end if;
+    if sqlerrm <> 'Het abonnement voor deze vestiging is niet actief.' then
+      raise exception 'FAIL: verkeerde bulkfout bij inactief abonnement: %', sqlerrm;
+    end if;
+  end;
+end $bulk$;
+
+reset role;
+update public.subscriptions
+set status = 'trial',
+    trial_ends_at = now() + interval '30 days',
+    current_period_end = null,
+    grace_until = null
+where location_id = '20000000-0000-0000-0000-000000000001';
+
+-- De instructeur ziet alleen de normale uitnodiging, precies één keer.
+set role authenticated;
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000004', false);
+select set_config('request.jwt.claim.email', 'poule-geldig@test.nl', false);
+do $$
+begin
+  if (select count(*) from public.notifications
+      where user_id = auth.uid()
+        and notification_type = 'invitation_received') <> 1 then
+    raise exception 'FAIL: bulk gaf geen of dubbele uitnodigingsmelding';
+  end if;
+end $$;
+
+-- Elke demo heeft eigen organisatie en eigen instructeur. Verwijderen van die
+-- organisatie ruimt de connecties via de bestaande cascade op.
+reset role;
+insert into public.demo_sessions (id) values
+  ('d0000000-0000-0000-0000-000000000001'),
+  ('d0000000-0000-0000-0000-000000000002');
+insert into auth.users (id, email, raw_user_meta_data) values
+  ('00000000-0000-0000-0000-000000000008', 'demo-a-org@test.nl',
+   '{"role":"organization","full_name":"Demo A School"}'),
+  ('00000000-0000-0000-0000-00000000000a', 'demo-a-instructeur@test.nl',
+   '{"role":"instructor","full_name":"Demo A Instructeur"}'),
+  ('00000000-0000-0000-0000-00000000000b', 'demo-b-org@test.nl',
+   '{"role":"organization","full_name":"Demo B School"}'),
+  ('00000000-0000-0000-0000-00000000000c', 'demo-b-instructeur@test.nl',
+   '{"role":"instructor","full_name":"Demo B Instructeur"}');
+update public.profiles set demo_session_id = 'd0000000-0000-0000-0000-000000000001'
+where id in ('00000000-0000-0000-0000-000000000008',
+             '00000000-0000-0000-0000-00000000000a');
+update public.profiles set demo_session_id = 'd0000000-0000-0000-0000-000000000002'
+where id in ('00000000-0000-0000-0000-00000000000b',
+             '00000000-0000-0000-0000-00000000000c');
+insert into public.instructor_profiles (user_id) values
+  ('00000000-0000-0000-0000-00000000000a'),
+  ('00000000-0000-0000-0000-00000000000c');
+insert into public.organizations
+  (id, name, org_type, created_by, contact_name, contact_email, contact_phone,
+   demo_session_id)
+values
+  ('10000000-0000-0000-0000-00000000000a', 'Demo A', 'gym',
+   '00000000-0000-0000-0000-000000000008',
+   'Demo A', 'demo-a@test.nl', '0301234567',
+   'd0000000-0000-0000-0000-000000000001'),
+  ('10000000-0000-0000-0000-00000000000b', 'Demo B', 'gym',
+   '00000000-0000-0000-0000-00000000000b',
+   'Demo B', 'demo-b@test.nl', '0301234568',
+   'd0000000-0000-0000-0000-000000000002');
+insert into public.organization_members (organization_id, user_id, member_role)
+values
+  ('10000000-0000-0000-0000-00000000000a',
+   '00000000-0000-0000-0000-000000000008', 'owner'),
+  ('10000000-0000-0000-0000-00000000000b',
+   '00000000-0000-0000-0000-00000000000b', 'owner');
+
+set role authenticated;
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000008', false);
+select set_config('request.jwt.claim.email', 'demo-a-org@test.nl', false);
+select public.set_instructor_connection(
+  '10000000-0000-0000-0000-00000000000a',
+  '00000000-0000-0000-0000-00000000000a', true
+);
+do $$
+begin
+  if (select count(*) from public.organization_instructor_connections
+      where organization_id = '10000000-0000-0000-0000-00000000000a') <> 1 then
+    raise exception 'FAIL: demo A kon eigen poule niet vullen';
+  end if;
+  begin
+    perform public.set_instructor_connection(
+      '10000000-0000-0000-0000-00000000000a',
+      '00000000-0000-0000-0000-00000000000c', true
+    );
+    raise exception 'FAIL: demo A kon instructeur uit demo B opslaan';
+  exception when others then
+    if sqlerrm like 'FAIL:%' then raise; end if;
+  end;
+end $$;
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-00000000000b', false);
+select set_config('request.jwt.claim.email', 'demo-b-org@test.nl', false);
+do $$
+begin
+  if exists (select 1 from public.organization_instructor_connections) then
+    raise exception 'FAIL: demo B ziet de poule van demo A';
+  end if;
+end $$;
+reset role;
+delete from public.organizations
+where id = '10000000-0000-0000-0000-00000000000a';
+do $$
+begin
+  if exists (select 1 from public.organization_instructor_connections
+             where organization_id = '10000000-0000-0000-0000-00000000000a') then
+    raise exception 'FAIL: demo cleanup liet connecties achter';
+  end if;
+end $$;
+
 -- Interne SECURITY DEFINER-helpers en muterende RPC's zijn niet voor anon.
 reset role;
 do $$
@@ -674,6 +1075,14 @@ begin
   end if;
   if not has_function_privilege('authenticated', 'public.apply_to_job(uuid,text,text,uuid[])', 'EXECUTE') then
     raise exception 'FAIL: authenticated mist execute op apply_to_job';
+  end if;
+  if has_function_privilege('anon', 'public.set_instructor_connection(uuid,uuid,boolean)', 'EXECUTE')
+    or has_function_privilege('anon', 'public.invite_connected_instructors(uuid,text)', 'EXECUTE') then
+    raise exception 'FAIL: anon kan private poule-RPC uitvoeren';
+  end if;
+  if not has_function_privilege('authenticated', 'public.set_instructor_connection(uuid,uuid,boolean)', 'EXECUTE')
+    or not has_function_privilege('authenticated', 'public.invite_connected_instructors(uuid,text)', 'EXECUTE') then
+    raise exception 'FAIL: authenticated mist private poule-RPC';
   end if;
 end $$;
 
