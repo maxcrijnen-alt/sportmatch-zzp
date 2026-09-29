@@ -198,7 +198,7 @@ test("opdracht ondersteunt eigen lesvorm, herhaling, blok en sjabloon", async ({
 
   await page.getByRole("button", { name: "Opdracht plaatsen" }).click();
   await page.waitForURL("**/organisatie/opdrachten/**", { timeout: 30_000 });
-  await expect(page.getByText("Terugkerend lessenblok")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Terugkerend lessenblok", exact: true })).toBeVisible();
   await expect(page.getByText("Mobiliteit en herstel")).toBeVisible();
   await expect(page.getByRole("button", { name: "Opslaan als sjabloon" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Opdracht dupliceren" })).toBeVisible();
