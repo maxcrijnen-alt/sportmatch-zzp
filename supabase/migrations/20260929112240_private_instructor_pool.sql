@@ -84,7 +84,7 @@ begin
       select 1 from public.profiles p
       where p.id = auth.uid() and p.role = 'organization'
     )
-    or not public.is_org_member(p_organization)
+    or not private.is_org_member(p_organization)
     or not private.organization_in_demo_scope(p_organization)
   then
     raise exception 'Geen toegang tot deze organisatie.';
@@ -144,7 +144,7 @@ begin
 
   select * into v_job from public.jobs where id = p_job;
   if v_job.id is null
-    or not public.is_org_member(v_job.organization_id)
+    or not private.is_org_member(v_job.organization_id)
     or not private.organization_in_demo_scope(v_job.organization_id)
     or not public.demo_scope_matches(v_job.demo_session_id)
   then
