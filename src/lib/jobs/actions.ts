@@ -588,6 +588,50 @@ export async function inviteInstructorAction(
   return { error: null, success: "Uitnodiging verstuurd." };
 }
 
+export async function inviteConnectedInstructorsAction(
+  _previous: JobActionState,
+  formData: FormData,
+): Promise<JobActionState> {
+  const jobId = z.string().uuid().safeParse(formData.get("jobId"));
+  if (!jobId.success) {
+    return initialError("Deze opdracht is niet gevonden.");
+  }
+
+  const profile = await getSessionProfile();
+  const orgContext = await getOrgContext();
+  const supabase = await createClient();
+  if (profile?.role !== "organization" || !orgContext || !supabase) {
+    return initialError("Geen toegang tot deze opdracht.");
+  }
+
+  const { data, error } = await supabase.rpc("invite_connected_instructors", {
+    p_job: jobId.data,
+    p_message: "",
+  });
+  if (error) {
+    return initialError("Uitnodigen is niet gelukt. Probeer het opnieuw.");
+  }
+
+  const result = (
+    (data as { invited_count: number; skipped_count: number }[] | null) ?? []
+  )[0];
+  if (!result) {
+    return initialError("Uitnodigen is niet gelukt. Probeer het opnieuw.");
+  }
+
+  revalidatePath(`/organisatie/opdrachten/${jobId.data}`);
+  if (result.invited_count === 0) {
+    return {
+      error: null,
+      success: `Niemand uit je poule kon worden uitgenodigd. ${result.skipped_count} overgeslagen.`,
+    };
+  }
+  return {
+    error: null,
+    success: `${result.invited_count} instructeurs uit je poule uitgenodigd. ${result.skipped_count} overgeslagen.`,
+  };
+}
+
 export async function respondInvitationAction(
   invitationId: string,
   accept: boolean,

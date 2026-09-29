@@ -154,6 +154,14 @@ export interface OrganizationMember {
   state: MemberState;
 }
 
+export interface OrganizationInstructorConnection {
+  id: string;
+  organization_id: string;
+  instructor_id: string;
+  created_by: string;
+  created_at: string;
+}
+
 export interface Job {
   id: string;
   organization_id: string;

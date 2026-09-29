@@ -109,6 +109,25 @@ test("sportschooldemo bevat kandidaten, agenda en alle berichtfilters", async ({
   await closeDemo(page);
 });
 
+test("sportschool kan een instructeur in de private poule bewaren en verwijderen", async ({
+  page,
+}) => {
+  await startDemo(page, "sportschool");
+  await page.goto("/organisatie/kandidaten");
+
+  await page.getByRole("button", { name: "Toevoegen aan poule" }).first().click();
+  const pool = page.locator("section").filter({
+    has: page.getByRole("heading", { name: "Mijn poule" }),
+  });
+  await expect(
+    pool.getByRole("button", { name: "Verwijderen uit poule" }),
+  ).toBeVisible();
+
+  await pool.getByRole("button", { name: "Verwijderen uit poule" }).click();
+  await expect(pool.getByText("Nog geen instructeurs opgeslagen.")).toBeVisible();
+  await closeDemo(page);
+});
+
 test("opdracht ondersteunt eigen lesvorm, herhaling, blok en sjabloon", async ({
   page,
 }) => {

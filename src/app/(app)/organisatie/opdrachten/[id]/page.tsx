@@ -13,6 +13,7 @@ import {
 import { CancelForm } from "@/components/jobs/cancel-form";
 import { CounterofferForm } from "@/components/jobs/counteroffer-form";
 import { InviteForm } from "@/components/jobs/invite-form";
+import { PoolInviteForm } from "@/components/jobs/pool-invite-form";
 import { NoShowForm } from "@/components/jobs/no-show-form";
 import { ProblemReportForm } from "@/components/jobs/problem-report-form";
 import { ReviewForm } from "@/components/jobs/review-form";
@@ -115,6 +116,7 @@ export default async function OrganisatieOpdrachtDetailPage({
     applicationSegmentsResult,
     cancellationResult,
     segmentConfirmationsResult,
+    connectionsResult,
   ] = await Promise.all([
     supabase
       .from("job_applications")
@@ -157,8 +159,15 @@ export default async function OrganisatieOpdrachtDetailPage({
       .from("job_segment_confirmations")
       .select("id, segment_id, application_id, instructor_id, confirmed_at, cancelled_at")
       .eq("job_id", job.id),
+    job.status === "open"
+      ? supabase
+          .from("organization_instructor_connections")
+          .select("id", { count: "exact", head: true })
+          .eq("organization_id", orgContext.organization.id)
+      : Promise.resolve({ data: [], count: 0 }),
   ]);
 
+  const poolCount = connectionsResult.count ?? 0;
   const rawApplications =
     (applicationsResult.data as JobApplication[] | null) ?? [];
   const cancellations =
@@ -815,11 +824,16 @@ export default async function OrganisatieOpdrachtDetailPage({
       {job.status === "open" ? (
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">Instructeurs uitnodigen</CardTitle>
-            <CardDescription>
-              Instructeurs met {job.sport?.name ?? "deze sport"} als
-              specialisatie.
-            </CardDescription>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <CardTitle className="text-base">Instructeurs uitnodigen</CardTitle>
+                <CardDescription>
+                  Instructeurs met {job.sport?.name ?? "deze sport"} als
+                  specialisatie.
+                </CardDescription>
+              </div>
+              {poolCount > 0 ? <PoolInviteForm count={poolCount} jobId={job.id} /> : null}
+            </div>
           </CardHeader>
           <CardContent className="pt-0">
             {suggestions.length === 0 ? (

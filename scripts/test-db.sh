@@ -21,6 +21,7 @@ for f in \
   supabase/migrations/0004_realtime.sql \
   supabase/migrations/20260919171944_harden_function_and_contact_access.sql \
   supabase/migrations/20260919172021_product_workflows.sql \
+  supabase/migrations/20260929112240_private_instructor_pool.sql \
   supabase/seed.sql
 do
   echo "== $f"

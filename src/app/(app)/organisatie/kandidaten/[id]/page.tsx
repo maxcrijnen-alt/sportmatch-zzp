@@ -8,6 +8,7 @@ import {
   ShieldCheck,
   Star,
 } from "lucide-react";
+import { ConnectionButton } from "@/components/org/connection-button";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { ReviewFilters } from "@/components/reviews/review-filters";
@@ -129,6 +130,17 @@ export default async function CandidateProfilePage({
     notFound();
   }
 
+  const connectionResult =
+    orgContext && sessionProfile.role === "organization"
+      ? await supabase
+          .from("organization_instructor_connections")
+          .select("instructor_id")
+          .eq("organization_id", orgContext.organization.id)
+          .eq("instructor_id", instructorId)
+          .maybeSingle()
+      : null;
+  const isConnected = Boolean(connectionResult?.data);
+
   const sportIds = (sportsResult.data ?? []).map((item) => item.sport_id as string);
   const lessonTypeIds = (lessonTypesResult.data ?? []).map(
     (item) => item.lesson_type_id as string,
@@ -230,10 +242,20 @@ export default async function CandidateProfilePage({
                     </span>
                   </div>
                 </div>
-                <Badge variant={hasValidVog ? "success" : "warning"}>
-                  <ShieldCheck className="mr-1 h-3.5 w-3.5" />
-                  {hasValidVog ? "VOG goedgekeurd" : "VOG niet goedgekeurd"}
-                </Badge>
+                <div className="flex flex-wrap items-center gap-2">
+                  {!isOwnPreview && orgContext && sessionProfile.role === "organization" ? (
+                    <ConnectionButton
+                      expanded
+                      initialConnected={isConnected}
+                      instructorId={instructorId}
+                      key={`${instructorId}-${isConnected}`}
+                    />
+                  ) : null}
+                  <Badge variant={hasValidVog ? "success" : "warning"}>
+                    <ShieldCheck className="mr-1 h-3.5 w-3.5" />
+                    {hasValidVog ? "VOG goedgekeurd" : "VOG niet goedgekeurd"}
+                  </Badge>
+                </div>
               </div>
 
               <div className="mt-4 grid gap-2 sm:grid-cols-3">
