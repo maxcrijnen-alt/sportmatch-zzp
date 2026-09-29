@@ -128,6 +128,41 @@ test("sportschool kan een instructeur in de private poule bewaren en verwijderen
   await closeDemo(page);
 });
 
+test("sportschool bevestigt voordat de private poule bulk wordt uitgenodigd", async ({
+  page,
+}) => {
+  await startDemo(page, "sportschool");
+  await page.goto("/organisatie/kandidaten");
+
+  await page.getByRole("button", { name: "Toevoegen aan poule" }).first().click();
+  const pool = page.locator("section").filter({
+    has: page.getByRole("heading", { name: "Mijn poule" }),
+  });
+  await expect(
+    pool.getByRole("button", { name: "Verwijderen uit poule" }),
+  ).toBeVisible();
+
+  const title = `Poule uitnodiging ${Date.now()}`;
+  await createSimpleJob(page, title);
+
+  await page.getByRole("button", { name: "Mijn poule uitnodigen" }).click();
+  await expect(
+    page.getByRole("note").getByText(/op het punt 1 instructeur uit te nodigen/i),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Annuleren" }).click();
+  await expect(
+    page.getByRole("button", { name: "Mijn poule uitnodigen" }),
+  ).toBeVisible();
+
+  await page.getByRole("button", { name: "Mijn poule uitnodigen" }).click();
+  await page.getByRole("button", { name: "Ja, uitnodigen" }).click();
+  await expect(page.getByRole("status")).toContainText(
+    "1 instructeur uit je poule uitgenodigd.",
+  );
+
+  await closeDemo(page);
+});
+
 test("opdracht ondersteunt eigen lesvorm, herhaling, blok en sjabloon", async ({
   page,
 }) => {
