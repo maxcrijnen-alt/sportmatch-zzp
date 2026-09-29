@@ -609,7 +609,7 @@ export async function inviteConnectedInstructorsAction(
     p_message: "",
   });
   if (error) {
-    return initialError("Uitnodigen is niet gelukt. Probeer het opnieuw.");
+    return initialError(rpcErrorMessage(error));
   }
 
   const result = (
@@ -619,16 +619,25 @@ export async function inviteConnectedInstructorsAction(
     return initialError("Uitnodigen is niet gelukt. Probeer het opnieuw.");
   }
 
+  const invitedLabel =
+    result.invited_count === 1
+      ? "1 instructeur"
+      : `${result.invited_count} instructeurs`;
+  const skippedLabel =
+    result.skipped_count === 1
+      ? "1 instructeur"
+      : `${result.skipped_count} instructeurs`;
+
   revalidatePath(`/organisatie/opdrachten/${jobId.data}`);
   if (result.invited_count === 0) {
     return {
       error: null,
-      success: `Niemand uit je poule kon worden uitgenodigd. ${result.skipped_count} overgeslagen.`,
+      success: `Niemand uit je poule kon worden uitgenodigd. ${skippedLabel} overgeslagen.`,
     };
   }
   return {
     error: null,
-    success: `${result.invited_count} instructeurs uit je poule uitgenodigd. ${result.skipped_count} overgeslagen.`,
+    success: `${invitedLabel} uit je poule uitgenodigd. ${skippedLabel} overgeslagen.`,
   };
 }
 
