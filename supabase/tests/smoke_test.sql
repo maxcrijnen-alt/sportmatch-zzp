@@ -929,7 +929,44 @@ begin
   end;
 end $$;
 
+-- Een organisatiebrede blokkade moet als fout terugkomen en mag niet als
+-- "overgeslagen" worden verstopt.
+reset role;
+update public.subscriptions
+set status = 'cancelled',
+    trial_ends_at = now() - interval '1 day',
+    current_period_end = now() - interval '1 day',
+    grace_until = null
+where location_id = '20000000-0000-0000-0000-000000000001';
+
+set role authenticated;
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000002', false);
+select set_config('request.jwt.claim.email', 'sportschool@test.nl', false);
+do $
+begin
+  begin
+    perform public.invite_connected_instructors(
+      '30000000-0000-0000-0000-000000000007'
+    );
+    raise exception 'FAIL: inactief vestigingsabonnement werd door bulkuitnodiging genegeerd';
+  exception when others then
+    if sqlerrm like 'FAIL:%' then raise; end if;
+    if sqlerrm <> 'Het abonnement voor deze vestiging is niet actief.' then
+      raise exception 'FAIL: verkeerde bulkfout bij inactief abonnement: %', sqlerrm;
+    end if;
+  end;
+end $;
+
+reset role;
+update public.subscriptions
+set status = 'trial',
+    trial_ends_at = now() + interval '30 days',
+    current_period_end = null,
+    grace_until = null
+where location_id = '20000000-0000-0000-0000-000000000001';
+
 -- De instructeur ziet alleen de normale uitnodiging, precies één keer.
+set role authenticated;
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000004', false);
 select set_config('request.jwt.claim.email', 'poule-geldig@test.nl', false);
 do $$
