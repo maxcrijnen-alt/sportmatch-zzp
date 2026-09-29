@@ -1084,6 +1084,17 @@ begin
     or not has_function_privilege('authenticated', 'public.invite_connected_instructors(uuid,text)', 'EXECUTE') then
     raise exception 'FAIL: authenticated mist private poule-RPC';
   end if;
+  if has_table_privilege('anon', 'public.organization_instructor_connections', 'SELECT')
+    or has_table_privilege('anon', 'public.organization_instructor_connections', 'INSERT')
+    or has_table_privilege('anon', 'public.organization_instructor_connections', 'DELETE') then
+    raise exception 'FAIL: anon heeft toegang tot private poule';
+  end if;
+  if (select prosecdef from pg_proc
+      where oid = 'public.set_instructor_connection(uuid,uuid,boolean)'::regprocedure)
+    or (select prosecdef from pg_proc
+      where oid = 'public.invite_connected_instructors(uuid,text)'::regprocedure) then
+    raise exception 'FAIL: private poule-RPC is geen SECURITY INVOKER';
+  end if;
 end $$;
 
 reset role;
