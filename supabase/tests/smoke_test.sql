@@ -942,7 +942,7 @@ where location_id = '20000000-0000-0000-0000-000000000001';
 set role authenticated;
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000002', false);
 select set_config('request.jwt.claim.email', 'sportschool@test.nl', false);
-do $
+do $bulk$
 begin
   begin
     perform public.invite_connected_instructors(
@@ -955,7 +955,7 @@ begin
       raise exception 'FAIL: verkeerde bulkfout bij inactief abonnement: %', sqlerrm;
     end if;
   end;
-end $;
+end $bulk$;
 
 reset role;
 update public.subscriptions
