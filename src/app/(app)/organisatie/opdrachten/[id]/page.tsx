@@ -352,6 +352,34 @@ export default async function OrganisatieOpdrachtDetailPage({
         </div>
       </div>
 
+      {job.segments.length > 0 ? (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Lessenblok</CardTitle>
+            <CardDescription>
+              {job.segments.length} aaneengesloten lessen binnen deze opdracht.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2 pt-0">
+            {job.segments.map((segment) => (
+              <div
+                className="flex flex-wrap items-center justify-between gap-2 border-t border-border py-2.5 first:border-t-0 first:pt-0"
+                key={segment.id}
+              >
+                <span className="font-medium">
+                  {segment.custom_lesson_type ||
+                    segment.lesson_type?.name ||
+                    "Lesvorm niet opgegeven"}
+                </span>
+                <span className="text-sm text-muted-foreground">
+                  {formatTime(segment.start_time)}–{formatTime(segment.end_time)}
+                </span>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      ) : null}
+
       {/* Statusacties */}
       {job.status === "open" ? (
         <div className="flex flex-wrap gap-2">
