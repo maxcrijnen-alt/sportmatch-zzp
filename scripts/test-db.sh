@@ -22,7 +22,7 @@ for f in \
   supabase/migrations/20260919171944_harden_function_and_contact_access.sql \
   supabase/migrations/20260919172021_product_workflows.sql \
   supabase/migrations/20260929135835_private_instructor_pool.sql \
-  supabase/migrations/20260929141903_optimize_private_pool_rls.sql \
+  supabase/migrations/20260929144824_optimize_private_pool_rls.sql \
   supabase/seed.sql
 do
   echo "== $f"
