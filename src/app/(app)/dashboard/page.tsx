@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { connection } from "next/server";
 import {
   AlertTriangle,
   ArrowRight,
@@ -21,6 +22,28 @@ import type { Subscription } from "@/types/database";
 export const metadata: Metadata = {
   title: "Dashboard",
 };
+
+async function getUrgencyDateRange() {
+  await connection();
+  const now = Date.now();
+  const amsterdamDate = (offsetDays: number) => {
+    const date = new Date(now + offsetDays * 24 * 60 * 60 * 1000);
+    const parts = new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Europe/Amsterdam",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).formatToParts(date);
+    const values = Object.fromEntries(
+      parts
+        .filter((part) => part.type !== "literal")
+        .map((part) => [part.type, part.value]),
+    );
+    return `${values.year}-${values.month}-${values.day}`;
+  };
+
+  return { urgencyStart: amsterdamDate(0), urgencyEnd: amsterdamDate(7) };
+}
 
 export default async function DashboardPage({
   searchParams,
@@ -139,23 +162,7 @@ export default async function DashboardPage({
         !pendingConfirmationJobIds.has(jobId),
     ).length;
 
-    const amsterdamDate = (offsetDays: number) => {
-      const date = new Date(Date.now() + offsetDays * 24 * 60 * 60 * 1000);
-      const parts = new Intl.DateTimeFormat("en-GB", {
-        timeZone: "Europe/Amsterdam",
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-      }).formatToParts(date);
-      const values = Object.fromEntries(
-        parts
-          .filter((part) => part.type !== "literal")
-          .map((part) => [part.type, part.value]),
-      );
-      return `${values.year}-${values.month}-${values.day}`;
-    };
-    const urgencyStart = amsterdamDate(0);
-    const urgencyEnd = amsterdamDate(7);
+    const { urgencyStart, urgencyEnd } = await getUrgencyDateRange();
 
     type OrganizationDashboardJob = {
       id: string;

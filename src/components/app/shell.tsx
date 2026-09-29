@@ -46,7 +46,21 @@ export function AppShell({
       ? initialLocationId
       : "",
   );
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileMenu, setMobileMenu] = useState({ pathname, open: false });
+  // Reset the menu before the next route renders.
+  if (mobileMenu.pathname !== pathname) {
+    setMobileMenu({ pathname, open: false });
+  }
+  const mobileMenuOpen = mobileMenu.pathname === pathname && mobileMenu.open;
+  const setMobileMenuOpen = (nextOpen: React.SetStateAction<boolean>) => {
+    setMobileMenu((current) => ({
+      pathname,
+      open:
+        typeof nextOpen === "function"
+          ? nextOpen(current.pathname === pathname && current.open)
+          : nextOpen,
+    }));
+  };
 
   useEffect(() => {
     if (role !== "organization" || locations.length === 0) {
@@ -116,10 +130,6 @@ export function AppShell({
     secondaryLinks.some((link) => isActive(link.href));
 
   useEffect(() => {
-    setMobileMenuOpen(false);
-  }, [pathname]);
-
-  useEffect(() => {
     if (!mobileMenuOpen) {
       return;
     }
@@ -129,7 +139,7 @@ export function AppShell({
 
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        setMobileMenuOpen(false);
+        setMobileMenu((current) => ({ ...current, open: false }));
       }
     };
 
