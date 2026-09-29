@@ -157,6 +157,16 @@ begin
   invited_count := 0;
   skipped_count := 0;
 
+  -- Organisatiebrede blokkades horen als echte fout terug te komen. Als deze
+  -- checks alleen binnen invite_instructor zouden falen, zou de bulkloop ze
+  -- ten onrechte als een overgeslagen instructeur kunnen tellen.
+  if public.has_pending_review(auth.uid()) then
+    raise exception 'Je hebt nog een beoordeling openstaan. Rond die eerst af.';
+  end if;
+  if not public.location_has_access(v_job.location_id) then
+    raise exception 'Het abonnement voor deze vestiging is niet actief.';
+  end if;
+
   for v_instructor in
     select c.instructor_id
     from public.organization_instructor_connections c
@@ -180,12 +190,17 @@ begin
       continue;
     end if;
 
+    if not public.has_valid_vog(v_instructor) then
+      skipped_count := skipped_count + 1;
+      continue;
+    end if;
+
     begin
       perform public.invite_instructor(p_job, v_instructor, coalesce(p_message, ''));
       invited_count := invited_count + 1;
     exception
-      when unique_violation or raise_exception then
-        -- Existing invitation/business gate failed for this instructor only.
+      when unique_violation then
+        -- Een gelijktijdig aangemaakte uitnodiging telt als veilig overgeslagen.
         skipped_count := skipped_count + 1;
     end;
   end loop;
