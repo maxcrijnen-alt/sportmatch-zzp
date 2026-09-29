@@ -24,7 +24,7 @@ async function startDemo(
 async function createSimpleJob(page: Page, title: string) {
   await page.goto("/organisatie/opdrachten/nieuw");
   await page.getByLabel("Soort plaatsing").selectOption("one_time");
-  await page.getByLabel("Vestiging").selectOption({ index: 1 });
+  await page.getByLabel("Vestiging", { exact: true }).selectOption({ index: 1 });
   await page.getByLabel("Sport").selectOption({ index: 1 });
   await page.getByLabel("Soort les").selectOption({ index: 1 });
   await page.getByLabel("Titel").fill(title);
@@ -170,7 +170,7 @@ test("opdracht ondersteunt eigen lesvorm, herhaling, blok en sjabloon", async ({
   await page.goto("/organisatie/opdrachten/nieuw");
 
   await page.getByLabel("Soort plaatsing").selectOption("recurring");
-  await page.getByLabel("Vestiging").selectOption({ index: 1 });
+  await page.getByLabel("Vestiging", { exact: true }).selectOption({ index: 1 });
   await page.getByLabel("Sport").selectOption({ index: 1 });
   await page.getByLabel("Soort les").selectOption("custom");
   await page.getByLabel("Eigen lesvorm").fill("Mobiliteitstraining");
@@ -215,6 +215,6 @@ test("instructeursdemo toont verticale opdrachten, reviews en geldige VOG", asyn
 
   await page.goto("/reviews");
   await expect(page.getByText("Ontvangen beoordelingen")).toBeVisible();
-  await expect(page.getByText("Betrouwbaarheid")).toBeVisible();
+  await expect(page.getByText("Betrouwbaarheid", { exact: true })).toBeVisible();
   await closeDemo(page);
 });
