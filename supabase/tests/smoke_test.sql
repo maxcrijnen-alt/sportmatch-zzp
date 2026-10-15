@@ -1239,6 +1239,10 @@ do $$ begin
 end $$;
 -- Authorization must reject before unrelated job status/document gates. Capture
 -- real fixture IDs as postgres so an RLS-hidden NULL cannot make this test pass.
+insert into public.document_uploads
+  (user_id,doc_type,storage_path,original_filename,status,expires_at)
+values ('00000000-0000-0000-0000-00000000000c','vog',
+        'tests/demo-b-vog.pdf','demo-b-vog.pdf','approved',current_date+365);
 create temp table rpc_targets as
 select (select id from public.job_applications
         where job_id='30000000-0000-0000-0000-000000000006' limit 1) as application,
@@ -1264,6 +1268,12 @@ $$;
 grant execute on function pg_temp.expect_rpc_denied(text,text) to authenticated;
 set role authenticated;
 select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000007',false);
+do $$ begin
+  if public.demo_scope_matches(null) is distinct from true
+    or public.demo_scope_matches('d0000000-0000-0000-0000-000000000002') is distinct from false then
+    raise exception 'FAIL: production scope comparison is not strict boolean';
+  end if;
+end $$;
 select pg_temp.expect_rpc_denied(
   $$select public.invite_instructor('30000000-0000-0000-0000-000000000007','00000000-0000-0000-0000-000000000004')$$,
   'Opdracht niet gevonden of geen toegang.');
@@ -1282,6 +1292,13 @@ select pg_temp.expect_rpc_denied(
   $$select public.propose_replacement('30000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-000000000003')$$,
   'Alleen de bevestigde instructeur kan een vervanger voorstellen.');
 select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-00000000000c',false);
+do $$ begin
+  if public.demo_scope_matches(null) is distinct from false
+    or public.demo_scope_matches('d0000000-0000-0000-0000-000000000001') is distinct from false
+    or public.demo_scope_matches('d0000000-0000-0000-0000-000000000002') is distinct from true then
+    raise exception 'FAIL: demo scope comparison is not strict boolean';
+  end if;
+end $$;
 select pg_temp.expect_rpc_denied(
   $$select public.apply_to_job('30000000-0000-0000-0000-000000000007')$$,
   'Deze opdracht staat niet (meer) open voor reacties.');
