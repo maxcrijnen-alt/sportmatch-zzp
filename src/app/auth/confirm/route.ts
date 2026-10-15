@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import type { EmailOtpType } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
-import { safeNextPath } from "@/lib/auth/safe-next-path";
+import { safeAuthRedirect } from "@/lib/auth/safe-next-path";
 
 /**
  * Landingsroute voor Supabase e-maillinks (wachtwoordherstel, bevestiging).
@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const tokenHash = searchParams.get("token_hash");
   const type = searchParams.get("type") as EmailOtpType | null;
-  const next = safeNextPath(searchParams.get("next"), request.url);
+  const next = safeAuthRedirect(searchParams.get("next"), request.url);
 
   if (tokenHash && type) {
     const supabase = await createClient();
@@ -24,7 +24,9 @@ export async function GET(request: NextRequest) {
       });
 
       if (!error) {
-        return NextResponse.redirect(new URL(next, request.url));
+        // Use the validated URL itself: reparsing a normalized //path could
+        // turn an internal destination into an external redirect.
+        return NextResponse.redirect(next);
       }
     }
   }
