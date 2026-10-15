@@ -381,14 +381,25 @@ begin
   end;
 end $$;
 
--- Mockbetaling activeert weer
+-- Een regulier account kan geen betaalbewijs simuleren. Herstel uitsluitend
+-- deze geïsoleerde fixture via de bestaande gecontroleerde adminroute.
 do $$
 declare
   v_sub uuid;
 begin
   select id into v_sub from public.subscriptions where instructor_id = auth.uid();
-  perform public.mock_activate_subscription(v_sub);
+  begin
+    perform public.mock_activate_subscription(v_sub);
+    raise exception 'FAIL: een regulier account kon een mockbetaling uitvoeren';
+  exception when insufficient_privilege then null;
+  end;
 end $$;
+
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000009', false);
+select public.admin_set_subscription_status(
+  (select id from public.subscriptions where instructor_id = '00000000-0000-0000-0000-000000000001'), 'active'
+);
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000001', false);
 
 select public.apply_to_job('30000000-0000-0000-0000-000000000002', 'Ik wil wel!');
 

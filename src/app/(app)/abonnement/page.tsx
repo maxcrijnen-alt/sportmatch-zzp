@@ -32,10 +32,12 @@ function SubscriptionCard({
   subscription,
   title,
   canManage,
+  isDemo,
 }: {
   subscription: Subscription;
   title: string;
   canManage: boolean;
+  isDemo: boolean;
 }) {
   const hasAccess = subscriptionGrantsAccess(subscription);
 
@@ -58,7 +60,7 @@ function SubscriptionCard({
         </p>
         {canManage ? (
           <div className="flex flex-wrap gap-2">
-            {!hasAccess || subscription.status === "trial" ? (
+            {isDemo && (!hasAccess || subscription.status === "trial") ? (
               <form
                 action={mockActivateSubscriptionAction.bind(null, subscription.id)}
               >
@@ -81,12 +83,18 @@ function SubscriptionCard({
             Alleen de eigenaar van de organisatie kan abonnementen beheren.
           </p>
         )}
+        {!isDemo && canManage && (!hasAccess || subscription.status === "trial") ? (
+          <p className="text-xs text-muted-foreground">Betaalactivatie is nog niet beschikbaar.</p>
+        ) : null}
       </CardContent>
     </Card>
   );
 }
 
-export default async function AbonnementPage() {
+export default async function AbonnementPage({ searchParams }: {
+  searchParams: Promise<{ fout?: string }>;
+}) {
+  const { fout } = await searchParams;
   const profile = await getSessionProfile();
   const supabase = await createClient();
 
@@ -119,6 +127,7 @@ export default async function AbonnementPage() {
       return subscription ? (
         <SubscriptionCard
           canManage={canManage}
+          isDemo={Boolean(profile.demo_session_id)}
           key={location.id}
           subscription={subscription}
           title={location.name}
@@ -137,6 +146,7 @@ export default async function AbonnementPage() {
     cards = subscription ? (
       <SubscriptionCard
         canManage
+        isDemo={Boolean(profile.demo_session_id)}
         subscription={subscription}
         title="Jouw abonnement"
       />
@@ -160,6 +170,15 @@ export default async function AbonnementPage() {
         </p>
       </div>
 
+      {fout === "activatie" || fout === "opzeggen" ? (
+        <Alert variant="destructive">
+          <AlertDescription>
+            {fout === "activatie"
+              ? "Dit abonnement kan niet op deze manier worden geactiveerd."
+              : "Opzeggen is niet gelukt. Controleer je toegang en probeer het opnieuw."}
+          </AlertDescription>
+        </Alert>
+      ) : null}
       <Alert className="py-3">
         <AlertTitle className="text-sm">Toegang en looptijd</AlertTitle>
         <AlertDescription className="text-xs leading-5">

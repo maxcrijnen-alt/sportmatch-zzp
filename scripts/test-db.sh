@@ -40,7 +40,11 @@ for file in supabase/tests/local_stub.sql supabase/migrations/*.sql supabase/see
 done
 
 mkdir -p test-results
-docker exec -i "$test_container" psql -X -q -v ON_ERROR_STOP=1 \
-  --username postgres --dbname sportmatch_test < supabase/tests/smoke_test.sql \
-  | tee test-results/db-smoke.log
+: > test-results/db-smoke.log
+for file in supabase/tests/*_test.sql; do
+  echo "== $file" | tee -a test-results/db-smoke.log
+  docker exec -i "$test_container" psql -X -q -v ON_ERROR_STOP=1 \
+    --username postgres --dbname sportmatch_test < "$file" \
+    | tee -a test-results/db-smoke.log
+done
 grep -q 'ALLE SMOKETESTS GESLAAGD' test-results/db-smoke.log
