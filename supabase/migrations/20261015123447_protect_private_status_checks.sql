@@ -1,3 +1,15 @@
+-- A demo comparing its session to a production NULL must receive false, never
+-- NULL: SECURITY DEFINER workflows use IF NOT demo_scope_matches(...).
+create or replace function public.demo_scope_matches(target_session uuid)
+returns boolean language sql stable security definer set search_path = ''
+as $$
+  select case
+    when public.is_admin() then true
+    when public.current_demo_session_id() is null then target_session is null
+    else coalesce(target_session = public.current_demo_session_id(), false)
+  end;
+$$;
+
 -- Preserve the existing central business checks verbatim in the non-exposed
 -- schema. Public callers get an authorization boundary, internal workflows keep
 -- their existing rules (including instructor-proposed replacements).
