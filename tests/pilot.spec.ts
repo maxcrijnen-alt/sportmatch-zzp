@@ -90,7 +90,8 @@ test("nieuwe sportschool en zzp-instructeur doorlopen de volledige samenwerking"
     await expect(instructor.getByRole("heading", { name: title, exact: true })).toBeVisible();
     await instructor.getByLabel("Kort bericht (optioneel)").fill("Ik verzorg deze training graag.");
     await instructor.getByRole("button", { name: "Ik ben beschikbaar", exact: true }).click();
-    await expect(instructor.getByText("Je reactie is verstuurd!", { exact: true })).toBeVisible();
+    // Revalidation replaces the apply form with the persisted application.
+    await expect(instructor.getByRole("heading", { name: "Jouw reactie", exact: true })).toBeVisible();
 
     await school.reload();
     await school.getByRole("button", { name: "Deze kandidaat kiezen", exact: true }).click();
@@ -98,7 +99,7 @@ test("nieuwe sportschool en zzp-instructeur doorlopen de volledige samenwerking"
     await expect(school.getByText("Kandidaat gekozen. De opdracht is definitief zodra de instructeur bevestigt.", { exact: true })).toBeVisible();
     await instructor.reload();
     await instructor.getByRole("button", { name: "Ik ga akkoord — opdracht bevestigen", exact: true }).click();
-    await expect(instructor.getByText("Opdracht bevestigd! Contactgegevens zijn nu zichtbaar.", { exact: true })).toBeVisible();
+    await expect(instructor.getByRole("heading", { name: "Opdracht bevestigd", exact: true })).toBeVisible();
     const confirmation = await admin.from("job_confirmations").select("organization_agreed_at,instructor_agreed_at,confirmed_at")
       .eq("job_id", jobId).single();
     expect(confirmation.error).toBeNull();
@@ -131,14 +132,14 @@ test("nieuwe sportschool en zzp-instructeur doorlopen de volledige samenwerking"
     await expect(school.getByText("Beoordeel de instructeur", { exact: true })).toBeVisible();
     await school.getByRole("button", { name: "5 sterren", exact: true }).click();
     await school.getByRole("button", { name: "Beoordeling versturen", exact: true }).click();
-    await expect(school.getByText("Bedankt voor je beoordeling!", { exact: true })).toBeVisible();
+    await expect(school.getByRole("button", { name: "Beoordeling versturen", exact: true })).toHaveCount(0);
     const firstReview = await admin.from("reviews").select("released_at").eq("job_id", jobId).single();
     expect(firstReview.error).toBeNull();
     expect(firstReview.data!.released_at).toBeNull();
     await instructor.goto(`/opdrachten/${jobId}`);
     await instructor.getByRole("button", { name: "5 sterren", exact: true }).click();
     await instructor.getByRole("button", { name: "Beoordeling versturen", exact: true }).click();
-    await expect(instructor.getByText("Bedankt voor je beoordeling!", { exact: true })).toBeVisible();
+    await expect(instructor.getByRole("button", { name: "Beoordeling versturen", exact: true })).toHaveCount(0);
     const reviews = await admin.from("reviews").select("side,released_at").eq("job_id", jobId);
     expect(reviews.error).toBeNull();
     expect(reviews.data).toHaveLength(2);
