@@ -4,7 +4,6 @@ import { Trash2 } from "lucide-react";
 import {
   AddExceptionForm,
   AddRuleForm,
-  WEEKDAYS,
 } from "@/components/availability/availability-forms";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,6 +14,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { getSessionProfile } from "@/lib/auth/session";
+import { WEEKDAYS } from "@/lib/availability/constants";
 import {
   deleteAvailabilityExceptionAction,
   deleteAvailabilityRuleAction,
