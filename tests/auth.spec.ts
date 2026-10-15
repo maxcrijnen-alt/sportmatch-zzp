@@ -4,6 +4,27 @@ import { expect, test } from "@playwright/test";
 
 test.skip(process.env.RUN_DEMO_E2E !== "true", "Local Supabase E2E is not enabled");
 
+test("Auth weigert een te kort wachtwoord ook buiten het formulier", async () => {
+  const client = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } });
+  const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } });
+  const email = `weak-${randomUUID()}@example.test`;
+  try {
+    const signup = await client.auth.signUp({ email, password: "aA1!xyz" });
+    expect(signup.error?.code).toBe("weak_password");
+    expect(signup.data.user).toBeNull();
+    const profiles = await admin.from("profiles").select("id").eq("email", email);
+    expect(profiles.error).toBeNull();
+    expect(profiles.data).toHaveLength(0);
+  } finally {
+    const profiles = await admin.from("profiles").select("id").eq("email", email);
+    for (const profile of profiles.data ?? []) {
+      expect((await admin.auth.admin.deleteUser(profile.id)).error).toBeNull();
+    }
+  }
+});
+
 test("inloggen controleert wachtwoord en uitloggen beschermt de sessie", async ({ page }) => {
   // playwright.config.ts rejects remote Supabase URLs before this code runs.
   const admin = createClient(

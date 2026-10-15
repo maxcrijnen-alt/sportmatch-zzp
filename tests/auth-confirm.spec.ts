@@ -168,3 +168,42 @@ test("herstel zonder sessie blijft beschermd en onbekende e-mail krijgt hetzelfd
   await page.getByRole("button", { name: "Stuur herstellink" }).click();
   await expect(page.getByText("Als dit e-mailadres bekend is,", { exact: false })).toBeVisible();
 });
+
+test("herstellink uit de echte lokale SMTP-mail herstelt het wachtwoord", async ({ page, request, baseURL, localUser }) => {
+  const mailpit = new URL(process.env.LOCAL_MAILPIT_URL!);
+  if (mailpit.protocol !== "http:" || !["localhost", "127.0.0.1", "[::1]"].includes(mailpit.hostname)) {
+    throw new Error("Only the isolated local Mailpit is allowed.");
+  }
+  await page.goto("/wachtwoord-vergeten");
+  await page.getByLabel("E-mailadres").fill(localUser.email);
+  await page.getByRole("button", { name: "Stuur herstellink", exact: true }).click();
+  await expect(page.getByText("Als dit e-mailadres bekend is,", { exact: false })).toBeVisible();
+  let messageId = "";
+  await expect.poll(async () => {
+    const response = await request.get(new URL(`/api/v1/search?query=${encodeURIComponent(`to:${localUser.email}`)}`, mailpit).href);
+    expect(response.ok()).toBe(true);
+    const result = await response.json() as { messages: { ID: string }[] };
+    messageId = result.messages[0]?.ID ?? "";
+    return Boolean(messageId);
+  }, { timeout: 15_000, intervals: [250, 500, 1000] }).toBe(true);
+  const response = await request.get(new URL(`/api/v1/message/${messageId}`, mailpit).href);
+  expect(response.ok()).toBe(true);
+  const mail = await response.json() as { HTML: string };
+  const href = mail.HTML.match(/href="([^"]+)"/)?.[1].replace(/&amp;/g, "&");
+  expect(href).toBeTruthy();
+  const link = new URL(href!);
+  expect(link.origin).toBe(new URL(baseURL!).origin);
+  expect(link.pathname).toBe("/auth/confirm");
+  expect(link.searchParams.get("type")).toBe("recovery");
+  await page.goto(link.href);
+  await expect(page).toHaveURL(/\/wachtwoord-herstellen$/);
+  const password = `Mail-Recovered-${randomUUID()}-aA1!`;
+  await page.getByLabel("Nieuw wachtwoord", { exact: true }).fill(password);
+  await page.getByLabel("Herhaal nieuw wachtwoord", { exact: true }).fill(password);
+  await page.getByRole("button", { name: "Wachtwoord wijzigen", exact: true }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+  await page.getByRole("button", { name: /uitloggen/i }).click();
+  await page.waitForURL(/\/$/);
+  await login(page, localUser.email, password);
+  await expect(page).toHaveURL(/\/dashboard$/);
+});
