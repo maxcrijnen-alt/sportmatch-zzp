@@ -28,6 +28,7 @@ fi
 mkdir -p "$test_workdir/supabase"
 cp supabase/config.toml supabase/seed.sql "$test_workdir/supabase/"
 cp -R supabase/migrations "$test_workdir/supabase/"
+cp -R supabase/templates "$test_workdir/supabase/"
 sed -i "s/^project_id = .*/project_id = \"sportmatch-ci-$$-$RANDOM\"/" "$test_workdir/supabase/config.toml"
 
 # Never link a remote project or load the application's .env files here.

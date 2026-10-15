@@ -24,6 +24,7 @@ const env = {
   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: status.ANON_KEY,
   NEXT_PUBLIC_SUPABASE_ANON_KEY: status.ANON_KEY,
   SUPABASE_SERVICE_ROLE_KEY: status.SERVICE_ROLE_KEY,
+  LOCAL_MAILPIT_URL: requireLoopback(status.MAILPIT_URL ?? status.INBUCKET_URL, "http:"),
   NEXT_PUBLIC_APP_URL: "http://localhost:3000",
   PLAYWRIGHT_BASE_URL: "http://localhost:3000",
   BILLING_PROVIDER: "mock",

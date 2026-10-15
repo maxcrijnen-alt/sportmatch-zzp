@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { devices, expect, test, type Page } from "@playwright/test";
 
 test.skip(process.env.RUN_DEMO_E2E !== "true", "Isolated local Supabase is required");
+test.use({ actionTimeout: 15_000, navigationTimeout: 30_000 });
 
 test("nieuwe sportschool en zzp-instructeur doorlopen de volledige samenwerking", async ({ page: school, browser }, testInfo) => {
   test.setTimeout(180_000);
@@ -48,9 +49,11 @@ test("nieuwe sportschool en zzp-instructeur doorlopen de volledige samenwerking"
     await instructor.getByLabel("Woonplaats", { exact: true }).selectOption({ label: "Utrecht" });
     await instructor.getByLabel("Uurtarief (€, excl. btw)").fill("45");
     await instructor.getByLabel("Jaren ervaring").fill("5");
-    await instructor.getByLabel("Zzp'er", { exact: true }).check();
+    await instructor.getByText("Zzp'er", { exact: true }).click();
+    await expect(instructor.getByLabel("Zzp'er", { exact: true })).toBeChecked();
     await instructor.getByLabel("KvK-nummer", { exact: true }).fill("12345678");
-    await instructor.getByLabel("Fitness", { exact: true }).check();
+    await instructor.getByText("Fitness", { exact: true }).click();
+    await expect(instructor.getByLabel("Fitness", { exact: true })).toBeChecked();
     await instructor.getByLabel("Werkervaring", { exact: true }).fill("Vijf jaar groepslessen. Geïsoleerde pilotfixture.");
     await instructor.getByRole("button", { name: "Profiel opslaan en starten" }).click();
     await instructor.waitForURL("**/dashboard");
@@ -145,7 +148,9 @@ test("nieuwe sportschool en zzp-instructeur doorlopen de volledige samenwerking"
     await expect(school.getByText("Beoordelingen", { exact: true })).toBeVisible();
     await school.screenshot({ path: testInfo.outputPath("pilot-school-completed.png"), fullPage: true });
   } finally {
-    await instructorContext.close();
+    // Playwright may already close this context after a test timeout. Still run
+    // account cleanup and preserve the original failing action in the report.
+    await instructorContext.close().catch(() => undefined);
     const users = await admin.from("profiles").select("id").in("email", [schoolEmail, instructorEmail]);
     expect(users.error).toBeNull();
     for (const user of users.data ?? []) {
