@@ -1237,4 +1237,59 @@ do $$ begin
     raise exception 'FAIL: internal status check callable directly';
   end if;
 end $$;
+-- Authorization must reject before unrelated job status/document gates. Capture
+-- real fixture IDs as postgres so an RLS-hidden NULL cannot make this test pass.
+create temp table rpc_targets as
+select (select id from public.job_applications
+        where job_id='30000000-0000-0000-0000-000000000006' limit 1) as application,
+       (select id from public.chats
+        where job_id='30000000-0000-0000-0000-000000000006' limit 1) as chat;
+grant select on rpc_targets to authenticated;
+do $$ begin
+  if exists (select 1 from rpc_targets where application is null or chat is null) then
+    raise exception 'FAIL: missing workflow authorization fixtures';
+  end if;
+end $$;
+create function pg_temp.expect_rpc_denied(statement text, expected_message text)
+returns void language plpgsql security invoker set search_path='' as $$
+begin
+  execute statement;
+  raise exception 'FAIL: unauthorized workflow mutation succeeded';
+exception when others then
+  if sqlerrm <> expected_message then
+    raise exception 'FAIL: expected authorization refusal %, got %',expected_message,sqlerrm;
+  end if;
+end;
+$$;
+grant execute on function pg_temp.expect_rpc_denied(text,text) to authenticated;
+set role authenticated;
+select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000007',false);
+select pg_temp.expect_rpc_denied(
+  $$select public.invite_instructor('30000000-0000-0000-0000-000000000007','00000000-0000-0000-0000-000000000004')$$,
+  'Opdracht niet gevonden of geen toegang.');
+select pg_temp.expect_rpc_denied(
+  $$select public.complete_job('30000000-0000-0000-0000-000000000006')$$,
+  'Geen toegang tot deze opdracht.');
+select pg_temp.expect_rpc_denied(format('select public.select_candidate(%L::uuid)',application),
+  'Geen toegang tot deze opdracht.') from rpc_targets;
+select pg_temp.expect_rpc_denied(format('select public.send_chat_message(%L::uuid,%L)',chat,'Unauthorized'),
+  'Je bent geen deelnemer van deze chat.') from rpc_targets;
+select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000004',false);
+select pg_temp.expect_rpc_denied(
+  $$select public.confirm_job('30000000-0000-0000-0000-000000000001')$$,
+  'Er staat geen bevestiging voor jou klaar bij deze opdracht.');
+select pg_temp.expect_rpc_denied(
+  $$select public.propose_replacement('30000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-000000000003')$$,
+  'Alleen de bevestigde instructeur kan een vervanger voorstellen.');
+select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-00000000000c',false);
+select pg_temp.expect_rpc_denied(
+  $$select public.apply_to_job('30000000-0000-0000-0000-000000000007')$$,
+  'Deze opdracht staat niet (meer) open voor reacties.');
+select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-00000000000b',false);
+select pg_temp.expect_rpc_denied(
+  $$select public.invite_instructor('30000000-0000-0000-0000-000000000007','00000000-0000-0000-0000-00000000000c')$$,
+  'Opdracht niet gevonden of geen toegang.');
+select pg_temp.expect_rpc_denied(format('select public.send_chat_message(%L::uuid,%L)',chat,'Cross-demo'),
+  'Je bent geen deelnemer van deze chat.') from rpc_targets;
+reset role;
 select 'ALLE SMOKETESTS GESLAAGD' as resultaat;
