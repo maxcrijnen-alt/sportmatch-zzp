@@ -65,7 +65,10 @@ select set_config('request.jwt.claim.sub','b1000000-0000-0000-0000-000000000001'
 select pg_temp.expect_billing_denied('mock_activate_subscription',id) from billing_targets;
 select pg_temp.expect_billing_denied('cancel_subscription',id) from billing_targets where label<>'real-instructor';
 do $$ begin
-  if not public.instructor_has_access(auth.uid()) then raise exception 'FAIL: valid trial lost'; end if;
+  if not exists (select 1 from public.subscriptions
+                 where instructor_id=auth.uid() and status='trial' and trial_ends_at>now()) then
+    raise exception 'FAIL: valid trial lost';
+  end if;
   begin
     update public.profiles set demo_session_id='bd000000-0000-0000-0000-000000000001' where id=auth.uid();
     raise exception 'FAIL: real user could self-assign demo scope';
