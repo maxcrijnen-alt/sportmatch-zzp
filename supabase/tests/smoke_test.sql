@@ -1131,6 +1131,21 @@ begin
   if exists (select 1 from public.admin_list_profiles()) then
     raise exception 'FAIL: niet-admin ziet profielen via admin-RPC';
   end if;
+  -- Profile updates mogen geen self-promotion naar de adminrol toelaten.
+  begin
+    update public.profiles
+    set role = 'admin'
+    where id = '00000000-0000-0000-0000-00000000000a';
+  exception when insufficient_privilege then
+    null; -- RLS hoort de verboden UPDATE te weigeren.
+  end;
+  if exists (
+    select 1 from public.profiles
+    where id = '00000000-0000-0000-0000-00000000000a'
+      and role = 'admin'
+  ) then
+    raise exception 'FAIL: instructeur kan zichzelf tot admin promoveren';
+  end if;
   begin
     perform public.admin_set_subscription_status(
       '00000000-0000-0000-0000-000000000001', 'active', null
