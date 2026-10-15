@@ -1097,5 +1097,67 @@ begin
   end if;
 end $$;
 
+-- Regressie: publieke SECURITY DEFINER-functies mogen niet rechtstreeks door
+-- anon worden uitgevoerd en moeten een vastgezette, lege search_path hebben.
+reset role;
+do $rpc_audit$
+begin
+  if exists (
+    select 1 from pg_proc p
+    join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'public'
+      and p.prosecdef
+      and has_function_privilege('anon', p.oid, 'EXECUTE')
+  ) then
+    raise exception 'FAIL: publieke SECURITY DEFINER-RPC toegankelijk voor anon';
+  end if;
+  if exists (
+    select 1 from pg_proc p
+    join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'public'
+      and p.prosecdef
+      and not (coalesce(p.proconfig, ARRAY[]::text[]) @> ARRAY['search_path=""'])
+  ) then
+    raise exception 'FAIL: SECURITY DEFINER zonder vastgezette lege search_path';
+  end if;
+end $rpc_audit$;
+
+-- Een gewone instructeur mag niet via de rechtstreeks uitvoerbare admin-RPC's
+-- gegevens zien of betalingsstatussen aanpassen.
+set role authenticated;
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-00000000000a', false);
+do $rpc_audit$
+begin
+  if exists (select 1 from public.admin_list_profiles()) then
+    raise exception 'FAIL: niet-admin ziet profielen via admin-RPC';
+  end if;
+  -- Profile updates mogen geen self-promotion naar de adminrol toelaten.
+  begin
+    update public.profiles
+    set role = 'admin'
+    where id = '00000000-0000-0000-0000-00000000000a';
+  exception when insufficient_privilege then
+    null; -- RLS hoort de verboden UPDATE te weigeren.
+  end;
+  if exists (
+    select 1 from public.profiles
+    where id = '00000000-0000-0000-0000-00000000000a'
+      and role = 'admin'
+  ) then
+    raise exception 'FAIL: instructeur kan zichzelf tot admin promoveren';
+  end if;
+  begin
+    perform public.admin_set_subscription_status(
+      '00000000-0000-0000-0000-000000000001', 'active', null
+    );
+    raise exception 'FAIL: niet-admin mag abonnementsstatus aanpassen';
+  exception when others then
+    if sqlerrm like 'FAIL:%' then raise; end if;
+    if sqlerrm not like '%Alleen admins%' then
+      raise exception 'FAIL: admin-RPC weigerde om onverwachte reden: %', sqlerrm;
+    end if;
+  end;
+end $rpc_audit$;
+
 reset role;
 select 'ALLE SMOKETESTS GESLAAGD' as resultaat;
