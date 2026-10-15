@@ -134,14 +134,17 @@ test("nieuwe sportschool en zzp-instructeur doorlopen de volledige samenwerking"
     await expect(school.getByText("Beoordeel de instructeur", { exact: true })).toBeVisible();
     await school.getByRole("button", { name: "5 sterren", exact: true }).click();
     await school.getByRole("button", { name: "Beoordeling versturen", exact: true }).click();
-    await expect(school.getByRole("button", { name: "Beoordeling versturen", exact: true })).toHaveCount(0);
+    // The submit button changes its name while pending. Wait for the saved
+    // review to remove the card, rather than mistaking that name change for success.
+    await expect(school.getByRole("heading", { name: "Beoordeel de instructeur", exact: true })).toHaveCount(0);
     const firstReview = await admin.from("reviews").select("released_at").eq("job_id", jobId).single();
     expect(firstReview.error).toBeNull();
     expect(firstReview.data!.released_at).toBeNull();
     await instructor.goto(`/opdrachten/${jobId}`);
+    await expect(instructor.getByRole("heading", { name: "Beoordeel de organisatie", exact: true })).toBeVisible();
     await instructor.getByRole("button", { name: "5 sterren", exact: true }).click();
     await instructor.getByRole("button", { name: "Beoordeling versturen", exact: true }).click();
-    await expect(instructor.getByRole("button", { name: "Beoordeling versturen", exact: true })).toHaveCount(0);
+    await expect(instructor.getByRole("heading", { name: "Beoordelingen", exact: true })).toBeVisible();
     const reviews = await admin.from("reviews").select("side,released_at").eq("job_id", jobId);
     expect(reviews.error).toBeNull();
     expect(reviews.data).toHaveLength(2);
