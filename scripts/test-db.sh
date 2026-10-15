@@ -5,6 +5,8 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 docker info >/dev/null
+docker_endpoint="${DOCKER_HOST:-$(docker context inspect --format '{{ .Endpoints.docker.Host }}')}"
+case "$docker_endpoint" in unix://*|npipe://*) ;; *) echo "A local Docker engine is required." >&2; exit 1 ;; esac
 test_container="sportmatch-db-test-$$-$RANDOM"
 cleanup() {
   result=$?
@@ -22,7 +24,7 @@ docker run --detach --name "$test_container" --network none \
 
 ready=false
 for ((attempt=0; attempt<60; attempt++)); do
-  if docker exec "$test_container" pg_isready --username postgres >/dev/null 2>&1; then
+  if docker exec "$test_container" pg_isready --host 127.0.0.1 --username postgres >/dev/null 2>&1; then
     ready=true
     break
   fi

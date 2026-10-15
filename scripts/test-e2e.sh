@@ -3,6 +3,8 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 docker info >/dev/null
+docker_endpoint="${DOCKER_HOST:-$(docker context inspect --format '{{ .Endpoints.docker.Host }}')}"
+case "$docker_endpoint" in unix://*|npipe://*) ;; *) echo "A local Docker engine is required." >&2; exit 1 ;; esac
 supabase --version
 test_workdir="$(mktemp -d "${TMPDIR:-/tmp}/sportmatch-e2e.XXXXXXXX")"
 cleanup() {
