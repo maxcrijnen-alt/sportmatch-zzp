@@ -10,7 +10,9 @@ const launchOptions = existsSync(preinstalledChromium)
 
 const isCI = process.env.CI === "true";
 const demoReady = process.env.RUN_DEMO_E2E === "true";
-const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:3000";
+// NextURL canonicalizes loopback IPs to localhost. Use that same host for the
+// browser so auth-confirm redirects retain their host-scoped session cookies.
+const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000";
 const supabaseURL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 for (const value of [baseURL, supabaseURL].filter(Boolean)) {
   const url = new URL(value);
@@ -53,7 +55,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "node node_modules/next/dist/bin/next start",
+    command: `node node_modules/next/dist/bin/next start --hostname ${new URL(baseURL).hostname}`,
     url: baseURL,
     reuseExistingServer: !isCI,
     timeout: 60_000,

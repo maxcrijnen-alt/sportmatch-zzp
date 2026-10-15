@@ -42,6 +42,10 @@ wordt niet gereset. Er wordt geen remote project gekoppeld en `.env.example`
 of productieconfiguratie wordt niet naar de teststack gekopieerd. De app krijgt
 de lokale testvariabelen rechtstreeks vanuit `supabase status`.
 
+De app en browser gebruiken `http://localhost:3000`: Next canonicaliseert
+loopback-IP's naar `localhost` in auth-redirects. Zo blijven sessiecookies bij
+tokenuitwisseling op dezelfde host. Supabase zelf blijft uitsluitend lokaal.
+
 De scripts verwijderen hun containers en volumes bij succes en fouten via
 een exit-trap. GitHub heeft daarnaast een `always()`-cleanupstap en gooit na de
 job de volledige runner weg. De losse SQL-run raakt geen bestaande lokale
@@ -59,6 +63,8 @@ zonder ingeschakelde demo-E2E.
 | Controle | Suite |
 | --- | --- |
 | Wachtwoordcontrole, inloggen, uitloggen, afgeschermde route | `auth.spec.ts` |
+| Veilige auth-redirects, URL-normalisatie en geneste encoding; interne query/fragment behouden | `auth-redirect.spec.ts` |
+| Echte OTP-uitwisseling, e-mailbevestiging, tokenhergebruik, wachtwoordherstel en sessiebehoud | `auth-confirm.spec.ts` |
 | Twee gelijktijdige demo's, opnieuw starten zonder datalek of verlies in andere sessie | `flows.spec.ts` |
 | Sportschool/instructeur, kandidaten, agenda, vestigingsfilter, beschikbaarheid | `flows.spec.ts` |
 | Lessenblokken, herhaling, sjablonen, poule opslaan/verwijderen, bulkbevestiging, mobiele navigatie | `flows.spec.ts` |
