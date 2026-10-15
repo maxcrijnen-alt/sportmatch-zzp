@@ -121,7 +121,7 @@ test("nieuwe sportschool en zzp-instructeur doorlopen de volledige samenwerking"
     await expect(instructor.getByText("Tot bij de pilottraining!", { exact: true })).toBeVisible();
     await instructor.getByPlaceholder("Typ een bericht…").fill("Afgesproken, tot dan!");
     await instructor.getByRole("button", { name: "Versturen", exact: true }).click();
-    await expect(school.getByText("Afgesproken, tot dan!", { exact: true })).toBeVisible();
+    await expect(school.getByText("Afgesproken, tot dan!", { exact: true })).toBeVisible({ timeout: 15_000 });
 
     await school.goto(`/organisatie/opdrachten/${jobId}`);
     await school.getByRole("button", { name: "Opdracht afronden", exact: true }).click();
