@@ -1171,4 +1171,142 @@ begin
 end $rpc_audit$;
 
 reset role;
+-- Direct status RPCs disclose only the caller's review status and the intended
+-- organization candidate eligibility. Workflow tests above still exercise VOG,
+-- mandatory reviews, invitations, confirmations and instructor replacements.
+create function pg_temp.expect_status_denied(rpc text, target uuid)
+returns void language plpgsql security invoker set search_path='' as $$
+begin
+  execute format('select public.%I($1)',rpc) using target;
+  raise exception 'FAIL: % disclosed unauthorized status',rpc;
+exception when insufficient_privilege then null;
+end;
+$$;
+grant execute on function pg_temp.expect_status_denied(text,uuid) to authenticated;
+set role authenticated;
+select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000001',false);
+do $$ begin
+  if not public.has_valid_vog(auth.uid()) then raise exception 'FAIL: own VOG check changed'; end if;
+  perform public.has_pending_review(auth.uid());
+end $$;
+select pg_temp.expect_status_denied('has_valid_vog','00000000-0000-0000-0000-000000000003');
+select pg_temp.expect_status_denied('has_pending_review','00000000-0000-0000-0000-000000000003');
+select pg_temp.expect_status_denied('has_valid_vog','00000000-0000-0000-0000-00000000000c');
+
+select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000002',false);
+do $$ begin
+  if not public.has_valid_vog('00000000-0000-0000-0000-000000000003') then
+    raise exception 'FAIL: organization lost candidate VOG eligibility';
+  end if;
+  perform public.has_pending_review(auth.uid());
+end $$;
+select pg_temp.expect_status_denied('has_pending_review','00000000-0000-0000-0000-000000000003');
+select pg_temp.expect_status_denied('has_valid_vog','00000000-0000-0000-0000-00000000000c');
+select pg_temp.expect_status_denied('has_valid_vog',null);
+
+select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-00000000000b',false);
+do $$ begin
+  if public.has_valid_vog('00000000-0000-0000-0000-00000000000c') then
+    raise exception 'FAIL: missing demo VOG became valid';
+  end if;
+end $$;
+select pg_temp.expect_status_denied('has_valid_vog','00000000-0000-0000-0000-00000000000a');
+select pg_temp.expect_status_denied('has_valid_vog','00000000-0000-0000-0000-000000000001');
+select pg_temp.expect_status_denied('has_pending_review','00000000-0000-0000-0000-00000000000c');
+reset role;
+update public.organization_members set state='removed'
+where user_id='00000000-0000-0000-0000-00000000000b';
+set role authenticated;
+select pg_temp.expect_status_denied('has_valid_vog','00000000-0000-0000-0000-00000000000c');
+select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000009',false);
+do $$ begin
+  if not public.has_valid_vog('00000000-0000-0000-0000-000000000003') then
+    raise exception 'FAIL: admin lost document eligibility check';
+  end if;
+  perform public.has_pending_review('00000000-0000-0000-0000-000000000003');
+end $$;
+select set_config('request.jwt.claim.sub','',false);
+select pg_temp.expect_status_denied('has_valid_vog','00000000-0000-0000-0000-000000000003');
+select pg_temp.expect_status_denied('has_pending_review','00000000-0000-0000-0000-000000000003');
+reset role;
+do $$ begin
+  if has_function_privilege('authenticated','private.has_valid_vog(uuid)','execute')
+    or has_function_privilege('authenticated','private.has_pending_review(uuid)','execute')
+    or has_function_privilege('anon','private.has_valid_vog(uuid)','execute')
+    or has_function_privilege('anon','private.has_pending_review(uuid)','execute') then
+    raise exception 'FAIL: internal status check callable directly';
+  end if;
+end $$;
+-- Authorization must reject before unrelated job status/document gates. Capture
+-- real fixture IDs as postgres so an RLS-hidden NULL cannot make this test pass.
+insert into public.document_uploads
+  (user_id,doc_type,storage_path,original_filename,status,expires_at)
+values ('00000000-0000-0000-0000-00000000000c','vog',
+        'tests/demo-b-vog.pdf','demo-b-vog.pdf','approved',current_date+365);
+create temp table rpc_targets as
+select (select id from public.job_applications
+        where job_id='30000000-0000-0000-0000-000000000006' limit 1) as application,
+       (select id from public.chats
+        where job_id='30000000-0000-0000-0000-000000000006' limit 1) as chat;
+grant select on rpc_targets to authenticated;
+do $$ begin
+  if exists (select 1 from rpc_targets where application is null or chat is null) then
+    raise exception 'FAIL: missing workflow authorization fixtures';
+  end if;
+end $$;
+create function pg_temp.expect_rpc_denied(statement text, expected_message text)
+returns void language plpgsql security invoker set search_path='' as $$
+begin
+  execute statement;
+  raise exception 'FAIL: unauthorized workflow mutation succeeded';
+exception when others then
+  if sqlerrm <> expected_message then
+    raise exception 'FAIL: expected authorization refusal %, got %',expected_message,sqlerrm;
+  end if;
+end;
+$$;
+grant execute on function pg_temp.expect_rpc_denied(text,text) to authenticated;
+set role authenticated;
+select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000007',false);
+do $$ begin
+  if public.demo_scope_matches(null) is distinct from true
+    or public.demo_scope_matches('d0000000-0000-0000-0000-000000000002') is distinct from false then
+    raise exception 'FAIL: production scope comparison is not strict boolean';
+  end if;
+end $$;
+select pg_temp.expect_rpc_denied(
+  $$select public.invite_instructor('30000000-0000-0000-0000-000000000007','00000000-0000-0000-0000-000000000004')$$,
+  'Opdracht niet gevonden of geen toegang.');
+select pg_temp.expect_rpc_denied(
+  $$select public.complete_job('30000000-0000-0000-0000-000000000006')$$,
+  'Geen toegang tot deze opdracht.');
+select pg_temp.expect_rpc_denied(format('select public.select_candidate(%L::uuid)',application),
+  'Geen toegang tot deze opdracht.') from rpc_targets;
+select pg_temp.expect_rpc_denied(format('select public.send_chat_message(%L::uuid,%L)',chat,'Unauthorized'),
+  'Je bent geen deelnemer van deze chat.') from rpc_targets;
+select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000004',false);
+select pg_temp.expect_rpc_denied(
+  $$select public.confirm_job('30000000-0000-0000-0000-000000000001')$$,
+  'Er staat geen bevestiging voor jou klaar bij deze opdracht.');
+select pg_temp.expect_rpc_denied(
+  $$select public.propose_replacement('30000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-000000000003')$$,
+  'Alleen de bevestigde instructeur kan een vervanger voorstellen.');
+select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-00000000000c',false);
+do $$ begin
+  if public.demo_scope_matches(null) is distinct from false
+    or public.demo_scope_matches('d0000000-0000-0000-0000-000000000001') is distinct from false
+    or public.demo_scope_matches('d0000000-0000-0000-0000-000000000002') is distinct from true then
+    raise exception 'FAIL: demo scope comparison is not strict boolean';
+  end if;
+end $$;
+select pg_temp.expect_rpc_denied(
+  $$select public.apply_to_job('30000000-0000-0000-0000-000000000007')$$,
+  'Deze opdracht staat niet (meer) open voor reacties.');
+select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-00000000000b',false);
+select pg_temp.expect_rpc_denied(
+  $$select public.invite_instructor('30000000-0000-0000-0000-000000000007','00000000-0000-0000-0000-00000000000c')$$,
+  'Opdracht niet gevonden of geen toegang.');
+select pg_temp.expect_rpc_denied(format('select public.send_chat_message(%L::uuid,%L)',chat,'Cross-demo'),
+  'Je bent geen deelnemer van deze chat.') from rpc_targets;
+reset role;
 select 'ALLE SMOKETESTS GESLAAGD' as resultaat;
