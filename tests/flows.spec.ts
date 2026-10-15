@@ -44,6 +44,9 @@ async function createSimpleJob(page: Page, title: string) {
 }
 
 async function closeDemo(page: Page) {
+  if (!(await page.getByRole("button", { name: /uitloggen/i }).isVisible())) {
+    await page.getByRole("button", { name: "Meer navigatie" }).click();
+  }
   await page.getByRole("button", { name: /uitloggen/i }).click();
   await page.waitForURL(/\/$/, { timeout: 30_000 });
 }

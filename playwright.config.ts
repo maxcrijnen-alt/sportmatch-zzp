@@ -25,6 +25,7 @@ if (demoReady && (!supabaseURL || !process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_
 
 export default defineConfig({
   testDir: "./tests",
+  outputDir: "test-results/playwright",
   fullyParallel: false,
   retries: 0,
   workers: 1,

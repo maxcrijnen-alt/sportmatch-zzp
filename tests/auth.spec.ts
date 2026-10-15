@@ -29,6 +29,7 @@ test("inloggen controleert wachtwoord en uitloggen beschermt de sessie", async (
     await page.getByLabel("Wachtwoord", { exact: true }).fill("incorrect-password");
     await page.getByRole("main").getByRole("button", { name: "Inloggen", exact: true }).click();
     await expect(page.getByText("Inloggen mislukt.", { exact: false })).toBeVisible();
+    await page.getByLabel("E-mailadres").fill(email);
     await page.getByLabel("Wachtwoord", { exact: true }).fill(password);
     await page.getByRole("main").getByRole("button", { name: "Inloggen", exact: true }).click();
     await page.waitForURL("**/dashboard");

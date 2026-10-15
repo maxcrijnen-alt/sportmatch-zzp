@@ -32,7 +32,8 @@ sed -i "s/^project_id = .*/project_id = \"sportmatch-ci-$$-$RANDOM\"/" "$test_wo
 
 # Never link a remote project or load the application's .env files here.
 # CLI startup output contains local keys, so keep it out of logs/artifacts.
-if ! supabase start --workdir "$test_workdir" \
+echo "Starting isolated local Supabase (migrations and seed)..."
+if ! timeout 10m supabase start --workdir "$test_workdir" \
   --exclude studio,imgproxy,edge-runtime,logflare,vector,supavisor \
   > "$test_workdir/start.log" 2>&1; then
   sed -E 's/eyJ[A-Za-z0-9_.-]+/[REDACTED JWT]/g; s/sb_(secret|publishable)_[A-Za-z0-9_-]+/[REDACTED KEY]/g' \
