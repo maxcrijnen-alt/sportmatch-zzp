@@ -108,9 +108,11 @@ test("nieuwe sportschool en zzp-instructeur doorlopen de volledige samenwerking"
     expect(confirmation.data!.confirmed_at).toBeTruthy();
 
     for (const participant of [school, instructor]) {
-      await participant.goto("/agenda");
+      // The existing deep link also selects the right month at month boundaries.
+      await participant.goto(`/agenda?job=${jobId}`);
       await participant.getByRole("button", { name: "Lijst", exact: true }).click();
-      await expect(participant.getByText(title, { exact: true })).toBeVisible();
+      // Calendar titles include the lesson type before the job title.
+      await expect(participant.getByRole("link").filter({ hasText: title })).toBeVisible();
       await participant.goto("/meldingen");
       await expect(participant.getByRole("heading", { name: "Meldingen", exact: true })).toBeVisible();
       await expect(participant.getByText(title, { exact: false }).first()).toBeVisible();
