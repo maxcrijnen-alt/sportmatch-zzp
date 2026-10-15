@@ -24,7 +24,7 @@ async function startDemo(
 async function createSimpleJob(page: Page, title: string) {
   await page.goto("/organisatie/opdrachten/nieuw");
   await page.getByLabel("Soort plaatsing").selectOption("one_time");
-  await page.getByLabel("Vestiging").selectOption({ index: 1 });
+  await page.getByLabel("Vestiging", { exact: true }).selectOption({ index: 1 });
   await page.getByLabel("Sport").selectOption({ index: 1 });
   await page.getByLabel("Soort les").selectOption({ index: 1 });
   await page.getByLabel("Titel").fill(title);
@@ -44,6 +44,9 @@ async function createSimpleJob(page: Page, title: string) {
 }
 
 async function closeDemo(page: Page) {
+  if (!(await page.getByRole("button", { name: /uitloggen/i }).isVisible())) {
+    await page.getByRole("button", { name: "Meer navigatie" }).click();
+  }
   await page.getByRole("button", { name: /uitloggen/i }).click();
   await page.waitForURL(/\/$/, { timeout: 30_000 });
 }
@@ -58,6 +61,7 @@ test("twee gelijktijdige demosessies zien elkaars wijzigingen niet", async ({
   const pageA = await contextA.newPage();
   const pageB = await contextB.newPage();
   const uniqueTitle = `Alleen sessie A ${Date.now()}`;
+  const otherTitle = `Alleen sessie B ${Date.now()}`;
 
   try {
     await Promise.all([
@@ -71,6 +75,17 @@ test("twee gelijktijdige demosessies zien elkaars wijzigingen niet", async ({
 
     await pageA.goto("/organisatie/opdrachten");
     await expect(pageA.getByText(uniqueTitle, { exact: true })).toBeVisible();
+
+    await createSimpleJob(pageB, otherTitle);
+    // Starting a new demo while B stays logged in must neither expose nor
+    // delete B's data, and A's previous session must be gone.
+    await startDemo(pageA, "sportschool");
+    await pageA.goto("/organisatie/opdrachten");
+    await expect(pageA.getByText(uniqueTitle, { exact: true })).toHaveCount(0);
+    await expect(pageA.getByText(otherTitle, { exact: true })).toHaveCount(0);
+    await pageB.goto("/organisatie/opdrachten");
+    await expect(pageB.getByText(otherTitle, { exact: true })).toBeVisible();
+    await expect(pageB.getByText(uniqueTitle, { exact: true })).toHaveCount(0);
   } finally {
     await Promise.allSettled([closeDemo(pageA), closeDemo(pageB)]);
     await Promise.all([contextA.close(), contextB.close()]);
@@ -109,6 +124,80 @@ test("sportschooldemo bevat kandidaten, agenda en alle berichtfilters", async ({
   await closeDemo(page);
 });
 
+test("mobiel meer-menu sluit na navigatie", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await startDemo(page, "sportschool");
+
+  const moreButton = page.getByRole("button", { name: "Meer navigatie" });
+  await expect(moreButton).toBeVisible();
+  await moreButton.click();
+
+  const moreMenu = page.locator('section[aria-label="Meer navigatie"]');
+  await expect(moreMenu).toBeVisible();
+  await expect(moreButton).toHaveAttribute("aria-expanded", "true");
+
+  await moreMenu.getByRole("link", { name: "Berichten" }).click();
+  await page.waitForURL("**/berichten**");
+
+  await expect(moreMenu).toHaveCount(0);
+  await expect(moreButton).toHaveAttribute("aria-expanded", "false");
+  await closeDemo(page);
+});
+
+test("sportschool kan een instructeur in de private poule bewaren en verwijderen", async ({
+  page,
+}) => {
+  await startDemo(page, "sportschool");
+  await page.goto("/organisatie/kandidaten");
+
+  await page.getByRole("button", { name: "Toevoegen aan poule" }).first().click();
+  const pool = page.locator("section").filter({
+    has: page.getByRole("heading", { name: "Mijn poule" }),
+  });
+  await expect(
+    pool.getByRole("button", { name: "Verwijderen uit poule" }),
+  ).toBeVisible();
+
+  await pool.getByRole("button", { name: "Verwijderen uit poule" }).click();
+  await expect(pool.getByText("Nog geen instructeurs opgeslagen.")).toBeVisible();
+  await closeDemo(page);
+});
+
+test("sportschool bevestigt voordat de private poule bulk wordt uitgenodigd", async ({
+  page,
+}) => {
+  await startDemo(page, "sportschool");
+  await page.goto("/organisatie/kandidaten");
+
+  await page.getByRole("button", { name: "Toevoegen aan poule" }).first().click();
+  const pool = page.locator("section").filter({
+    has: page.getByRole("heading", { name: "Mijn poule" }),
+  });
+  await expect(
+    pool.getByRole("button", { name: "Verwijderen uit poule" }),
+  ).toBeVisible();
+
+  const title = `Poule uitnodiging ${Date.now()}`;
+  await createSimpleJob(page, title);
+
+  await page.getByRole("button", { name: "Mijn poule uitnodigen" }).click();
+  await expect(
+    page.getByRole("note").getByText(/op het punt 1 instructeur uit te nodigen/i),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Annuleren" }).click();
+  await expect(
+    page.getByRole("button", { name: "Mijn poule uitnodigen" }),
+  ).toBeVisible();
+
+  await page.getByRole("button", { name: "Mijn poule uitnodigen" }).click();
+  await page.getByRole("button", { name: "Ja, uitnodigen" }).click();
+  await expect(page.getByRole("status")).toContainText(
+    "1 instructeur uit je poule uitgenodigd.",
+  );
+
+  await closeDemo(page);
+});
+
 test("opdracht ondersteunt eigen lesvorm, herhaling, blok en sjabloon", async ({
   page,
 }) => {
@@ -116,7 +205,7 @@ test("opdracht ondersteunt eigen lesvorm, herhaling, blok en sjabloon", async ({
   await page.goto("/organisatie/opdrachten/nieuw");
 
   await page.getByLabel("Soort plaatsing").selectOption("recurring");
-  await page.getByLabel("Vestiging").selectOption({ index: 1 });
+  await page.getByLabel("Vestiging", { exact: true }).selectOption({ index: 1 });
   await page.getByLabel("Sport").selectOption({ index: 1 });
   await page.getByLabel("Soort les").selectOption("custom");
   await page.getByLabel("Eigen lesvorm").fill("Mobiliteitstraining");
@@ -144,7 +233,7 @@ test("opdracht ondersteunt eigen lesvorm, herhaling, blok en sjabloon", async ({
 
   await page.getByRole("button", { name: "Opdracht plaatsen" }).click();
   await page.waitForURL("**/organisatie/opdrachten/**", { timeout: 30_000 });
-  await expect(page.getByText("Terugkerend lessenblok")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Terugkerend lessenblok", exact: true })).toBeVisible();
   await expect(page.getByText("Mobiliteit en herstel")).toBeVisible();
   await expect(page.getByRole("button", { name: "Opslaan als sjabloon" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Opdracht dupliceren" })).toBeVisible();
@@ -161,6 +250,56 @@ test("instructeursdemo toont verticale opdrachten, reviews en geldige VOG", asyn
 
   await page.goto("/reviews");
   await expect(page.getByText("Ontvangen beoordelingen")).toBeVisible();
-  await expect(page.getByText("Betrouwbaarheid")).toBeVisible();
+  await expect(page.getByText("Betrouwbaarheid", { exact: true })).toBeVisible();
+  await closeDemo(page);
+});
+
+test("vestigingsfilter toont alleen opdrachten van de gekozen vestiging", async ({ page }) => {
+  await startDemo(page, "sportschool");
+  const title = `Vestiging opdracht ${Date.now()}`;
+  await createSimpleJob(page, title);
+  const filter = page.getByRole("combobox", { name: "Vestiging filteren" });
+  const locations = await filter.locator("option").evaluateAll((options) =>
+    options.map((option) => (option as HTMLOptionElement).value).filter(Boolean),
+  );
+  expect(locations).toHaveLength(2);
+  await page.goto(`/organisatie/opdrachten?location=${locations[1]}`);
+  await expect(page.getByText(title, { exact: true })).toHaveCount(0);
+  await filter.selectOption(locations[0]);
+  await expect(page.getByText(title, { exact: true })).toBeVisible();
+  await page.reload();
+  await expect(filter).toHaveValue(locations[0]);
+  await closeDemo(page);
+});
+
+test("instructeur kan beschikbaarheid en een uitzondering bewaren en verwijderen", async ({ page }) => {
+  await startDemo(page, "instructeur");
+  await page.goto("/beschikbaarheid");
+  await page.getByLabel("Dag", { exact: true }).selectOption("0");
+  await page.getByLabel("Van", { exact: true }).fill("04:00");
+  await page.getByLabel("Tot", { exact: true }).fill("05:00");
+  await page.getByRole("button", { name: "Toevoegen", exact: true }).click();
+  const rule = page.locator("div").filter({
+    has: page.getByRole("button", { name: "Verwijderen", exact: true }),
+    hasText: "Zondag 04:00–05:00",
+  }).last();
+  await expect(rule).toBeVisible();
+  const note = `CI beschikbaarheid ${Date.now()}`;
+  await page.getByLabel("Datum niet beschikbaar").fill(
+    new Date(Date.now() + 14 * 86_400_000).toISOString().slice(0, 10),
+  );
+  await page.getByLabel("Notitie (optioneel)").fill(note);
+  await page.getByRole("button", { name: "Blokkeren", exact: true }).click();
+  await expect(page.getByText(note, { exact: false })).toBeVisible();
+  await page.reload();
+  await expect(rule).toBeVisible();
+  await rule.getByRole("button", { name: "Verwijderen", exact: true }).click();
+  await expect(rule).toHaveCount(0);
+  const exception = page.locator("div").filter({
+    has: page.getByRole("button", { name: "Verwijderen", exact: true }),
+    hasText: note,
+  }).last();
+  await exception.getByRole("button", { name: "Verwijderen", exact: true }).click();
+  await expect(page.getByText(note, { exact: false })).toHaveCount(0);
   await closeDemo(page);
 });

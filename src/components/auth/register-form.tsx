@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { Building2, Dumbbell } from "lucide-react";
+import { RoleIcon } from "@/components/brand/role-icon";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,7 +43,7 @@ export function RegisterForm({
           onClick={() => setRole("instructor")}
           type="button"
         >
-          <Dumbbell className="h-6 w-6" />
+          <RoleIcon className="h-9 w-9" iconClassName="h-5 w-5" role="instructor" />
           Ik ben instructeur
         </button>
         <button
@@ -56,7 +56,7 @@ export function RegisterForm({
           onClick={() => setRole("organization")}
           type="button"
         >
-          <Building2 className="h-6 w-6" />
+          <RoleIcon className="h-9 w-9" iconClassName="h-5 w-5" role="organization" />
           Ik zoek instructeurs
         </button>
       </div>

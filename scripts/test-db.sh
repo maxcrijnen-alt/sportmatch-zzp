@@ -1,32 +1,46 @@
 #!/usr/bin/env bash
-# Valideert de migrations en kernflows tegen een lokale Postgres (zonder Supabase).
-# Vereist: lokale PostgreSQL en sudo-toegang tot de postgres-gebruiker.
+# Only talks to a fresh container, with no network or published ports.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-sudo -u postgres psql -q <<'EOF'
-drop database if exists sportmatch_test;
-drop role if exists anon;
-drop role if exists authenticated;
-drop role if exists service_role;
-create database sportmatch_test;
-EOF
+docker info >/dev/null
+docker_endpoint="${DOCKER_HOST:-$(docker context inspect --format '{{ .Endpoints.docker.Host }}')}"
+case "$docker_endpoint" in unix://*|npipe://*) ;; *) echo "A local Docker engine is required." >&2; exit 1 ;; esac
+test_container="sportmatch-db-test-$$-$RANDOM"
+cleanup() {
+  result=$?
+  trap - EXIT
+  if [[ $result -ne 0 ]]; then docker logs --tail 50 "$test_container" 2>/dev/null || true; fi
+  docker rm --force --volumes "$test_container" >/dev/null 2>&1 || result=1
+  exit "$result"
+}
+trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
-for f in \
-  supabase/tests/local_stub.sql \
-  supabase/migrations/0001_schema.sql \
-  supabase/migrations/0002_rls.sql \
-  supabase/migrations/0003_functions.sql \
-  supabase/migrations/0004_realtime.sql \
-  supabase/migrations/20260919171944_harden_function_and_contact_access.sql \
-  supabase/migrations/20260919172021_product_workflows.sql \
-  supabase/seed.sql
-do
-  echo "== $f"
-  cat "$f" | sudo -u postgres psql -v ON_ERROR_STOP=1 -q -d sportmatch_test
+docker run --detach --name "$test_container" --network none \
+  --env POSTGRES_HOST_AUTH_METHOD=trust postgres:17.6 >/dev/null
+
+ready=false
+for ((attempt=0; attempt<60; attempt++)); do
+  if docker exec "$test_container" pg_isready --host 127.0.0.1 --username postgres >/dev/null 2>&1; then
+    ready=true
+    break
+  fi
+  sleep 1
+done
+if [[ "$ready" != true ]]; then echo "Test PostgreSQL did not become ready." >&2; exit 1; fi
+docker exec "$test_container" createdb --username postgres sportmatch_test
+
+for file in supabase/tests/local_stub.sql supabase/migrations/*.sql supabase/seed.sql; do
+  echo "== $file"
+  docker exec -i "$test_container" psql -X -q -v ON_ERROR_STOP=1 \
+    --username postgres --dbname sportmatch_test < "$file"
 done
 
-echo "== smoke test"
-cat supabase/tests/smoke_test.sql | sudo -u postgres psql -v ON_ERROR_STOP=1 -q -d sportmatch_test \
-  | grep -E "GESLAAGD" && echo "OK"
+mkdir -p test-results
+docker exec -i "$test_container" psql -X -q -v ON_ERROR_STOP=1 \
+  --username postgres --dbname sportmatch_test < supabase/tests/smoke_test.sql \
+  | tee test-results/db-smoke.log
+grep -q 'ALLE SMOKETESTS GESLAAGD' test-results/db-smoke.log

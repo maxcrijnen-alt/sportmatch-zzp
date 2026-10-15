@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
+import { WEEKDAYS } from "@/lib/availability/constants";
 import {
   addAvailabilityExceptionAction,
   addAvailabilityRuleAction,
@@ -13,16 +14,6 @@ import {
 } from "@/lib/availability/actions";
 
 const initialState: AvailabilityActionState = { error: null };
-
-export const WEEKDAYS = [
-  "Zondag",
-  "Maandag",
-  "Dinsdag",
-  "Woensdag",
-  "Donderdag",
-  "Vrijdag",
-  "Zaterdag",
-];
 
 export function AddRuleForm() {
   const [state, formAction, isPending] = useActionState(

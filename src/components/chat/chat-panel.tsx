@@ -85,7 +85,7 @@ export function ChatPanel({
 
   return (
     <div className="flex h-[calc(100vh-16rem)] flex-col rounded-lg border border-border bg-card lg:h-[calc(100vh-14rem)]">
-      <div className="flex-1 space-y-3 overflow-y-auto p-4">
+      <div className="flex-1 space-y-2.5 overflow-y-auto p-3">
         {messages.length === 0 ? (
           <p className="py-8 text-center text-sm text-muted-foreground">
             Nog geen berichten.
@@ -94,7 +94,7 @@ export function ChatPanel({
         {messages.map((message) =>
           message.system_event ? (
             <div className="flex justify-center" key={message.id}>
-              <p className="max-w-[85%] rounded-full bg-muted px-4 py-1.5 text-center text-xs text-muted-foreground">
+              <p className="max-w-[85%] rounded-full bg-muted px-3 py-1 text-center text-xs text-muted-foreground">
                 {message.body}
               </p>
             </div>
@@ -110,7 +110,7 @@ export function ChatPanel({
             >
               <div
                 className={cn(
-                  "max-w-[75%] rounded-2xl px-4 py-2 text-sm",
+                  "max-w-[78%] rounded-2xl px-3 py-2 text-sm",
                   message.sender_id === currentUserId
                     ? "rounded-br-sm bg-primary text-primary-foreground"
                     : "rounded-bl-sm bg-muted",
@@ -137,7 +137,7 @@ export function ChatPanel({
         <div ref={bottomRef} />
       </div>
 
-      <div className="border-t border-border p-3">
+      <div className="border-t border-border p-2.5">
         {error ? (
           <Alert className="mb-2" variant="destructive">
             <AlertDescription>{error}</AlertDescription>
@@ -150,7 +150,7 @@ export function ChatPanel({
         ) : (
           <div className="flex items-end gap-2">
             <textarea
-              className="max-h-32 min-h-[2.5rem] flex-1 resize-none rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="max-h-32 min-h-[2.25rem] flex-1 resize-none rounded-md border border-input bg-background px-3 py-1.5 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               onChange={(event) => setBody(event.target.value)}
               onKeyDown={(event) => {
                 if (event.key === "Enter" && !event.shiftKey) {
@@ -166,6 +166,7 @@ export function ChatPanel({
               aria-label="Versturen"
               disabled={isPending || body.trim().length === 0}
               onClick={send}
+              className="h-9 w-9"
               size="icon"
               type="button"
             >

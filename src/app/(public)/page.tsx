@@ -3,11 +3,9 @@ import Link from "next/link";
 import {
   ArrowRight,
   BadgeCheck,
-  Building2,
   CalendarClock,
   CheckCircle2,
   Clock3,
-  Dumbbell,
   MapPin,
   MessageSquare,
   Search,
@@ -18,6 +16,7 @@ import {
 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { RoleIcon } from "@/components/brand/role-icon";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BRAND } from "@/lib/branding";
@@ -269,7 +268,7 @@ export default function HomePage() {
           </div>
           <Card className="h-full">
             <CardHeader>
-              <Building2 className="h-8 w-8 text-primary" />
+              <RoleIcon className="h-11 w-11" iconClassName="h-6 w-6" role="organization" />
               <CardTitle className="text-xl">Voor sportscholen</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm text-muted-foreground">
@@ -286,7 +285,7 @@ export default function HomePage() {
           </Card>
           <Card className="h-full">
             <CardHeader>
-              <Dumbbell className="h-8 w-8 text-primary" />
+              <RoleIcon className="h-11 w-11" iconClassName="h-6 w-6" role="instructor" />
               <CardTitle className="text-xl">Voor instructeurs</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm text-muted-foreground">

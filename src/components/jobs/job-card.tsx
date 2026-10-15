@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AlertTriangle, CalendarDays, Clock, MapPin, Zap } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { formatDate, formatTime, jobTypeLabels } from "@/lib/labels";
 import { describePay, type JobWithRelations } from "@/lib/jobs/queries";
@@ -23,10 +24,14 @@ export function JobCard({
   job,
   match,
   href,
+  actionHref,
+  actionLabel,
 }: {
   job: JobWithRelations;
   match?: OpenJobMatch;
   href: string;
+  actionHref?: string;
+  actionLabel?: string;
 }) {
   const isUrgent = job.job_type === "urgent_substitute";
   const hasWarnings =
@@ -44,8 +49,8 @@ export function JobCard({
     job.custom_lesson_type || job.lesson_type?.name || "Lesvorm niet opgegeven";
 
   return (
-    <Link className="block" href={href}>
-      <Card className="transition-shadow hover:shadow-md">
+    <Card className="overflow-hidden transition-shadow hover:shadow-md">
+      <Link className="block" href={href}>
         <CardHeader className="pb-3">
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant={isUrgent ? "destructive" : "secondary"}>
@@ -104,7 +109,14 @@ export function JobCard({
             </p>
           ) : null}
         </CardContent>
-      </Card>
-    </Link>
+      </Link>
+      {actionHref && actionLabel ? (
+        <div className="flex justify-end border-t border-border bg-muted/20 px-4 py-3">
+          <Link href={actionHref}>
+            <Button size="sm">{actionLabel}</Button>
+          </Link>
+        </div>
+      ) : null}
+    </Card>
   );
 }

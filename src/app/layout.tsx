@@ -19,6 +19,10 @@ export const metadata: Metadata = {
     template: `%s | ${BRAND.name}`,
   },
   description: BRAND.description,
+  icons: {
+    icon: "/sportmatch-mark.svg",
+    shortcut: "/sportmatch-mark.svg",
+  },
 };
 
 export const viewport: Viewport = {

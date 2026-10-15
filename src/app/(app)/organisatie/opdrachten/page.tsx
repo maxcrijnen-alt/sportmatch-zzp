@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { CheckCircle2, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
+import { AgendaView } from "@/components/agenda/agenda-view";
+import { JobStatusIndicator } from "@/components/jobs/job-status-indicator";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -13,12 +15,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { sportMatchAgendaProvider } from "@/lib/agenda/sportmatch-provider";
 import { getSessionProfile } from "@/lib/auth/session";
-import { formatDate, formatTime, jobStatusLabels, jobTypeLabels } from "@/lib/labels";
+import { formatDate, formatTime, jobTypeLabels } from "@/lib/labels";
 import { getOrgContext } from "@/lib/org/context";
 import { resolveLocationFilter } from "@/lib/org/location-filter";
 import { createClient } from "@/lib/supabase/server";
-import type { Job, JobStatus } from "@/types/database";
+import type { Job } from "@/types/database";
 
 export const metadata: Metadata = {
   title: "Opdrachten beheren",
@@ -29,23 +32,6 @@ interface JobRow extends Job {
   location: { name: string } | null;
   applications: { count: number }[];
 }
-
-const statusVariant: Record<
-  JobStatus,
-  "secondary" | "success" | "muted" | "destructive" | "outline"
-> = {
-  open: "secondary",
-  confirmed: "success",
-  completed: "muted",
-  cancelled: "destructive",
-  closed: "outline",
-};
-
-const organizationJobFlow = [
-  "Plaats eerst één concrete opdracht met duidelijke vergoeding en tijden.",
-  "Bekijk reacties per opdracht en vergelijk kandidaten op beschikbaarheid en vertrouwen.",
-  "Sluit de opdracht zodra iemand bevestigd is, zodat het overzicht actueel blijft.",
-];
 
 export default async function OrganisatieOpdrachtenPage({
   searchParams,
@@ -83,13 +69,98 @@ export default async function OrganisatieOpdrachtenPage({
     .eq("organization_id", orgContext.organization.id)
     .order("created_at", { ascending: false });
 
+  query = query.eq("applications.status", "pending");
+
   if (selectedLocationId) {
     query = query.eq("location_id", selectedLocationId);
   }
 
-  const { data } = await query;
+  const [{ data, error }, agendaEvents] = await Promise.all([
+    query,
+    sportMatchAgendaProvider.listEvents({
+      role: "organization",
+      userId: profile.id,
+      organizationId: orgContext.organization.id,
+      locationId: selectedLocationId,
+      includeOpenPlanning: true,
+    }),
+  ]);
+  const agendaExportHref = selectedLocationId
+    ? `/agenda/export?location=${encodeURIComponent(selectedLocationId)}`
+    : "/agenda/export";
 
-  const jobs = (data as unknown as JobRow[] | null) ?? [];
+  if (error) {
+    console.error("Opdrachtenoverzicht kon niet worden geladen", error.message);
+  }
+
+  const baseJobs = (data as unknown as JobRow[] | null) ?? [];
+  const jobIds = baseJobs.map((job) => job.id);
+  const pendingConfirmationJobIds = new Set<string>();
+
+  if (jobIds.length > 0) {
+    const { data: confirmationData, error: confirmationError } = await supabase
+      .from("job_confirmations")
+      .select("job_id, confirmed_at")
+      .in("job_id", jobIds);
+
+    if (confirmationError) {
+      console.error(
+        "Bevestigingsstatussen konden niet worden geladen",
+        confirmationError.message,
+      );
+    } else {
+      for (const confirmation of confirmationData ?? []) {
+        if (!confirmation.confirmed_at) {
+          pendingConfirmationJobIds.add(confirmation.job_id as string);
+        }
+      }
+    }
+  }
+
+  const priority = (job: JobRow) => {
+    const applicationCount = job.applications?.[0]?.count ?? 0;
+
+    if (job.status === "open" && pendingConfirmationJobIds.has(job.id)) return 0;
+    if (job.status === "open" && applicationCount > 0) return 1;
+    if (job.status === "open") return 2;
+    if (job.status === "confirmed") return 3;
+    if (job.status === "completed") return 4;
+    if (job.status === "closed") return 5;
+    return 6;
+  };
+
+  const jobs = [...baseJobs].sort((left, right) => {
+    const priorityDifference = priority(left) - priority(right);
+    if (priorityDifference !== 0) return priorityDifference;
+
+    const dateDifference = left.starts_on.localeCompare(right.starts_on);
+    return priority(left) >= 4 ? -dateDifference : dateDifference;
+  });
+
+  const workflowState = (job: JobRow) => {
+    const applicationCount = job.applications?.[0]?.count ?? 0;
+
+    if (job.status === "open" && pendingConfirmationJobIds.has(job.id)) {
+      return "planned" as const;
+    }
+    if (job.status === "open" && applicationCount > 0) {
+      return "action_required" as const;
+    }
+    if (job.status === "open") {
+      return "searching" as const;
+    }
+    if (job.status === "confirmed") {
+      return "confirmed" as const;
+    }
+    if (job.status === "completed") {
+      return "completed" as const;
+    }
+    if (job.status === "cancelled") {
+      return "cancelled" as const;
+    }
+
+    return null;
+  };
 
   return (
     <div className="mx-auto w-full max-w-5xl space-y-6 px-4 py-8">
@@ -109,28 +180,32 @@ export default async function OrganisatieOpdrachtenPage({
         </Link>
       </div>
 
-      <Card className="border-primary/30 bg-primary/5">
-        <CardContent className="pt-5">
-          <p className="text-sm font-medium text-primary">
-            Startflow voor sportscholen
+      <section className="space-y-3">
+        <div>
+          <h2 className="text-lg font-semibold tracking-tight">Weekoverzicht</h2>
+          <p className="text-sm text-muted-foreground">
+            {selectedLocation
+              ? `Planning en openstaande opdrachten van ${selectedLocation.name}.`
+              : "Planning en openstaande opdrachten van alle vestigingen."}
           </p>
-          <p className="mt-1 text-sm leading-6 text-muted-foreground">
-            Dit overzicht laat zien wat openstaat, hoeveel reacties er zijn en
-            welke opdracht opvolging nodig heeft.
-          </p>
-          <div className="mt-4 grid gap-2 md:grid-cols-3">
-            {organizationJobFlow.map((item) => (
-              <p
-                className="flex gap-2 rounded-md border border-border bg-background p-3 text-sm leading-6"
-                key={item}
-              >
-                <CheckCircle2 className="mt-1 h-4 w-4 shrink-0 text-primary" />
-                <span>{item}</span>
-              </p>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+        </div>
+        <AgendaView
+          defaultView="week"
+          events={agendaEvents}
+          exportHref={agendaExportHref}
+          role="organization"
+        />
+      </section>
+
+      <section className="space-y-3">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-lg font-semibold tracking-tight">
+            Opdrachtenlijst
+          </h2>
+          <span className="rounded-full border border-border px-2.5 py-1 text-xs font-semibold text-muted-foreground">
+            {jobs.length}
+          </span>
+        </div>
 
       {jobs.length === 0 ? (
         <Card>
@@ -148,7 +223,7 @@ export default async function OrganisatieOpdrachtenPage({
           </CardContent>
         </Card>
       ) : (
-        <Card>
+        <Card className="overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
@@ -161,7 +236,10 @@ export default async function OrganisatieOpdrachtenPage({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {jobs.map((job) => (
+              {jobs.map((job) => {
+                const state = workflowState(job);
+
+                return (
                 <TableRow key={job.id}>
                   <TableCell>
                     <Link
@@ -185,19 +263,32 @@ export default async function OrganisatieOpdrachtenPage({
                   </TableCell>
                   <TableCell className="text-sm">{job.location?.name}</TableCell>
                   <TableCell className="text-sm">
-                    {job.applications?.[0]?.count ?? 0}
+                    {(job.applications?.[0]?.count ?? 0) > 0 && job.status === "open" ? (
+                      <Link
+                        className="font-medium text-primary hover:underline"
+                        href={`/organisatie/kandidaten?job=${job.id}${selectedLocationId ? `&location=${selectedLocationId}` : ""}`}
+                      >
+                        {job.applications?.[0]?.count ?? 0} bekijken
+                      </Link>
+                    ) : (
+                      job.applications?.[0]?.count ?? 0
+                    )}
                   </TableCell>
                   <TableCell>
-                    <Badge variant={statusVariant[job.status]}>
-                      {jobStatusLabels[job.status]}
-                    </Badge>
+                    {state ? (
+                      <JobStatusIndicator state={state} />
+                    ) : (
+                      <Badge variant="outline">Gesloten</Badge>
+                    )}
                   </TableCell>
                 </TableRow>
-              ))}
+                );
+              })}
             </TableBody>
           </Table>
         </Card>
       )}
+      </section>
     </div>
   );
 }

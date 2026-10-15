@@ -145,12 +145,12 @@ export default async function ChatDetailPage({
     "Lesvorm niet opgegeven";
 
   return (
-    <div className="mx-auto flex w-full max-w-4xl flex-col gap-4 px-4 py-6">
+    <div className="mx-auto flex w-full max-w-4xl flex-col gap-3 px-4 py-6">
       <div className="flex items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
           <Link
             aria-label="Terug naar berichten"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md hover:bg-muted"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md hover:bg-muted"
             href="/berichten"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -168,15 +168,15 @@ export default async function ChatDetailPage({
       {chat.job ? (
         <section
           aria-label="Opdrachtdetails bij dit gesprek"
-          className="rounded-lg border border-border bg-card p-4"
+          className="rounded-lg border border-border bg-card p-3"
         >
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0">
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Concrete opdracht
               </p>
-              <h1 className="mt-1 text-lg font-semibold">{chat.job.title}</h1>
-              <p className="mt-1 text-sm text-muted-foreground">
+              <h1 className="mt-0.5 text-base font-semibold">{chat.job.title}</h1>
+              <p className="mt-0.5 text-sm text-muted-foreground">
                 {chat.job.sport?.name ?? "Sport"} · {lessonName}
               </p>
             </div>
@@ -196,17 +196,17 @@ export default async function ChatDetailPage({
             </div>
           </div>
 
-          <div className="mt-4 grid gap-2 border-t border-border pt-4 text-sm sm:grid-cols-3">
+          <div className="mt-3 grid gap-2 border-t border-border pt-3 text-xs sm:grid-cols-3">
             <span className="inline-flex items-center gap-2 text-muted-foreground">
-              <CalendarDays className="h-4 w-4" />
+              <CalendarDays className="h-3.5 w-3.5" />
               {formatDate(chat.job.starts_on)}
             </span>
             <span className="inline-flex items-center gap-2 text-muted-foreground">
-              <Clock3 className="h-4 w-4" />
+              <Clock3 className="h-3.5 w-3.5" />
               {formatTime(chat.job.start_time)}–{formatTime(chat.job.end_time)}
             </span>
             <span className="inline-flex items-center gap-2 text-muted-foreground">
-              <MapPin className="h-4 w-4" />
+              <MapPin className="h-3.5 w-3.5" />
               {chat.job.location?.name ?? "Vestiging onbekend"}
             </span>
           </div>
@@ -221,9 +221,7 @@ export default async function ChatDetailPage({
       />
 
       <p className="text-center text-xs text-muted-foreground">
-        Deel geen telefoonnummers of e-mailadressen vóór bevestiging.
-        Contactgegevens worden automatisch gedeeld zodra de opdracht definitief
-        is.
+        Contactgegevens worden automatisch gedeeld zodra de opdracht definitief is.
       </p>
     </div>
   );

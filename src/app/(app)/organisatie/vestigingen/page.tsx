@@ -51,7 +51,7 @@ export default async function VestigingenPage() {
   const cityNameById = new Map(cities.map((city) => [city.id, city.name]));
 
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-6 px-4 py-8">
+    <div className="mx-auto w-full max-w-3xl space-y-4 px-4 py-8">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Vestigingen</h1>
         <p className="text-sm text-muted-foreground">
@@ -61,10 +61,13 @@ export default async function VestigingenPage() {
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Huidige vestigingen</CardTitle>
+        <CardHeader className="flex-row items-center justify-between space-y-0 pb-3">
+          <CardTitle className="text-base">Huidige vestigingen</CardTitle>
+          <span className="rounded-full border border-border px-2.5 py-1 text-xs font-semibold text-muted-foreground">
+            {orgContext.locations.length}
+          </span>
         </CardHeader>
-        <CardContent className="space-y-2">
+        <CardContent className="space-y-0 pt-0">
           {orgContext.locations.map((location) => {
             const subscription = subscriptions.find(
               (item) => item.location_id === location.id,
@@ -73,12 +76,12 @@ export default async function VestigingenPage() {
 
             return (
               <div
-                className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border p-3"
+                className="flex flex-wrap items-center justify-between gap-3 border-t border-border py-3 first:border-t-0 first:pt-0"
                 key={location.id}
               >
-                <div className="flex items-center gap-3">
-                  <MapPin className="h-5 w-5 text-muted-foreground" />
-                  <div>
+                <div className="flex min-w-0 items-center gap-3">
+                  <MapPin className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  <div className="min-w-0">
                     <p className="text-sm font-medium">{location.name}</p>
                     <p className="text-xs text-muted-foreground">
                       {location.street} {location.house_number},{" "}
@@ -100,13 +103,13 @@ export default async function VestigingenPage() {
 
       {orgContext.memberRole === "owner" ? (
         <Card>
-          <CardHeader>
-            <CardTitle>Vestiging toevoegen</CardTitle>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Vestiging toevoegen</CardTitle>
             <CardDescription>
               Nieuwe vestigingen krijgen automatisch een gratis proefperiode.
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-0">
             <AddLocationForm cities={cities} />
           </CardContent>
         </Card>

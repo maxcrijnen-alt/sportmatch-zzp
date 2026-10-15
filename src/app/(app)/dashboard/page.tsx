@@ -1,28 +1,21 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { connection } from "next/server";
 import {
+  AlertTriangle,
   ArrowRight,
-  Briefcase,
   CalendarCheck,
-  CheckCircle2,
-  Inbox,
-  MessageSquare,
-  Search,
+  ShieldCheck,
 } from "lucide-react";
+import { DashboardTodoList } from "@/components/dashboard/dashboard-todo-list";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { getSessionProfile } from "@/lib/auth/session";
 import { subscriptionGrantsAccess } from "@/lib/billing/access";
 import { getOrgContext } from "@/lib/org/context";
 import { resolveLocationFilter } from "@/lib/org/location-filter";
+import { formatDate, formatTime } from "@/lib/labels";
 import { createClient } from "@/lib/supabase/server";
 import type { Subscription } from "@/types/database";
 
@@ -30,47 +23,27 @@ export const metadata: Metadata = {
   title: "Dashboard",
 };
 
-const organizationNextActions = [
-  {
-    title: "Plaats of bekijk je eerste opdracht",
-    text: "Maak sport, datum, tijd, vergoeding, locatie en vereiste kwalificaties concreet. In de demo zie je hoe dat eruitziet.",
-    href: "/organisatie/opdrachten/nieuw",
-    cta: "Eerste opdracht",
-  },
-  {
-    title: "Vergelijk kandidaten zonder zoeken",
-    text: "Open reacties en vergelijk beschikbaarheid, tarief, afstand, documenten en bericht op dezelfde plek.",
-    href: "/organisatie/kandidaten",
-    cta: "Kandidaten bekijken",
-  },
-  {
-    title: "Houd je planning actueel",
-    text: "Bekijk voorlopige en bevestigde lessen per vestiging in je centrale agenda.",
-    href: "/agenda",
-    cta: "Agenda bekijken",
-  },
-];
+async function getUrgencyDateRange() {
+  await connection();
+  const now = Date.now();
+  const amsterdamDate = (offsetDays: number) => {
+    const date = new Date(now + offsetDays * 24 * 60 * 60 * 1000);
+    const parts = new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Europe/Amsterdam",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).formatToParts(date);
+    const values = Object.fromEntries(
+      parts
+        .filter((part) => part.type !== "literal")
+        .map((part) => [part.type, part.value]),
+    );
+    return `${values.year}-${values.month}-${values.day}`;
+  };
 
-const instructorNextActions = [
-  {
-    title: "Check profiel, reisafstand en tarief",
-    text: "Je profiel bepaalt welke opdrachten logisch bovenaan staan en hoe sportscholen jou beoordelen.",
-    href: "/profiel",
-    cta: "Profiel openen",
-  },
-  {
-    title: "Bekijk passende opdrachten",
-    text: "Start met opdrachten binnen je reisafstand en filter daarna op sport, datum of vergoeding.",
-    href: "/opdrachten",
-    cta: "Opdrachten bekijken",
-  },
-  {
-    title: "Volg reacties en uitnodigingen",
-    text: "Bekijk open reacties, bevestigingen en gesprekken zodat geen opvolging blijft hangen.",
-    href: "/mijn-reacties",
-    cta: "Mijn reacties",
-  },
-];
+  return { urgencyStart: amsterdamDate(0), urgencyEnd: amsterdamDate(7) };
+}
 
 export default async function DashboardPage({
   searchParams,
@@ -113,15 +86,12 @@ export default async function DashboardPage({
 
     let jobsQuery = supabase
       .from("jobs")
-      .select("id, status", { count: "exact" })
+      .select("id, status, title, starts_on, start_time")
       .eq("organization_id", orgContext.organization.id)
       .eq("status", "open");
     let applicationsQuery = supabase
       .from("job_applications")
-      .select("id, job:jobs!inner(organization_id, location_id)", {
-        count: "exact",
-        head: true,
-      })
+      .select("id, job_id, job:jobs!inner(organization_id, location_id)")
       .eq("job.organization_id", orgContext.organization.id)
       .eq("status", "pending");
 
@@ -133,20 +103,163 @@ export default async function DashboardPage({
       );
     }
 
-    const [jobsResult, subsResult, applicationsResult] = await Promise.all([
-      jobsQuery,
-      locationIds.length > 0
-        ? supabase.from("subscriptions").select("*").in("location_id", locationIds)
-        : Promise.resolve({ data: [] as Subscription[] }),
-      applicationsQuery,
-    ]);
+    const [jobsResult, subsResult, applicationsResult, pendingReviewResult] =
+      await Promise.all([
+        jobsQuery,
+        locationIds.length > 0
+          ? supabase.from("subscriptions").select("*").in("location_id", locationIds)
+          : Promise.resolve({ data: [] as Subscription[] }),
+        applicationsQuery,
+        supabase.rpc("has_pending_review", { target_user: profile.id }),
+      ]);
 
     const subscriptions = (subsResult.data as Subscription[] | null) ?? [];
     const hasInactiveLocation = subscriptions.some(
       (subscription) => !subscriptionGrantsAccess(subscription),
     );
-    const openJobCount = jobsResult.count ?? 0;
-    const pendingApplicationCount = applicationsResult.count ?? 0;
+    const openJobs =
+      (jobsResult.data as { id: string; status: string }[] | null) ?? [];
+    const openJobIds = openJobs.map((job) => job.id);
+    const pendingApplications =
+      (applicationsResult.data as { id: string; job_id: string }[] | null) ?? [];
+    const pendingApplicationJobIds = new Set(
+      pendingApplications.map((application) => application.job_id),
+    );
+
+    const pendingConfirmationJobIds = new Set<string>();
+
+    if (openJobIds.length > 0) {
+      const [wholeConfirmationsResult, segmentConfirmationsResult] =
+        await Promise.all([
+          supabase
+            .from("job_confirmations")
+            .select("job_id")
+            .in("job_id", openJobIds)
+            .is("confirmed_at", null),
+          supabase
+            .from("job_segment_confirmations")
+            .select("job_id")
+            .in("job_id", openJobIds)
+            .is("confirmed_at", null)
+            .is("cancelled_at", null),
+        ]);
+
+      for (const confirmation of wholeConfirmationsResult.data ?? []) {
+        pendingConfirmationJobIds.add(confirmation.job_id as string);
+      }
+      for (const confirmation of segmentConfirmationsResult.data ?? []) {
+        pendingConfirmationJobIds.add(confirmation.job_id as string);
+      }
+    }
+
+    const openJobCount = openJobs.length;
+    const pendingApplicationCount = pendingApplications.length;
+    const pendingConfirmationCount = pendingConfirmationJobIds.size;
+    const hasPendingReview = pendingReviewResult.data === true;
+    const searchingJobCount = openJobIds.filter(
+      (jobId) =>
+        !pendingApplicationJobIds.has(jobId) &&
+        !pendingConfirmationJobIds.has(jobId),
+    ).length;
+
+    const { urgencyStart, urgencyEnd } = await getUrgencyDateRange();
+
+    type OrganizationDashboardJob = {
+      id: string;
+      status: string;
+      title: string;
+      starts_on: string;
+      start_time: string;
+    };
+
+    const urgentJobs = (openJobs as OrganizationDashboardJob[])
+      .filter(
+        (job) =>
+          job.starts_on >= urgencyStart &&
+          job.starts_on <= urgencyEnd,
+      )
+      .sort((left, right) =>
+        `${left.starts_on}T${left.start_time}`.localeCompare(
+          `${right.starts_on}T${right.start_time}`,
+        ),
+      );
+
+    const todoItems = [
+      ...(hasPendingReview
+        ? [
+            {
+              title: "Beoordeling afronden",
+              description: "Er staat nog een verplichte review open.",
+              href: "/organisatie/reviews?view=given",
+            },
+          ]
+        : []),
+      ...(pendingApplicationCount > 0
+        ? [
+            {
+              title: "Reacties beoordelen",
+              description: `${pendingApplicationCount} ${pendingApplicationCount === 1 ? "reactie wacht" : "reacties wachten"} op beoordeling.`,
+              href: "/organisatie/kandidaten",
+            },
+          ]
+        : []),
+      ...(searchingJobCount > 0
+        ? [
+            {
+              title: "Open opdrachten opvolgen",
+              description: `${searchingJobCount} ${searchingJobCount === 1 ? "opdracht heeft" : "opdrachten hebben"} nog geen reactie of gekozen instructeur.`,
+              href: "/organisatie/opdrachten",
+            },
+          ]
+        : []),
+      ...(hasInactiveLocation
+        ? [
+            {
+              title: "Abonnement vestiging controleren",
+              description: "Minimaal één vestiging heeft geen actieve toegang.",
+              href: "/abonnement",
+            },
+          ]
+        : []),
+    ];
+
+    const primaryAction =
+      pendingConfirmationCount > 0
+        ? {
+            title: "Bevestigingen opvolgen",
+            text: `${pendingConfirmationCount} ${
+              pendingConfirmationCount === 1 ? "opdracht wacht" : "opdrachten wachten"
+            } nog op definitieve bevestiging van de instructeur.`,
+            href: "/organisatie/opdrachten",
+            cta: "Bekijk bevestigingen",
+          }
+        : pendingApplicationCount > 0
+          ? {
+              title: "Nieuwe reacties beoordelen",
+              text: `${pendingApplicationCount} ${
+                pendingApplicationCount === 1 ? "reactie staat" : "reacties staan"
+              } klaar om te vergelijken en op te volgen.`,
+              href: "/organisatie/kandidaten",
+              cta: "Bekijk kandidaten",
+            }
+          : searchingJobCount > 0
+            ? {
+                title: "Nog iemand vinden",
+                text: `${searchingJobCount} ${
+                  searchingJobCount === 1 ? "open opdracht heeft" : "open opdrachten hebben"
+                } nog geen reactie of gekozen instructeur.`,
+                href: "/organisatie/opdrachten",
+                cta: "Bekijk open opdrachten",
+              }
+            : {
+                title: openJobCount > 0 ? "Alles is opgevolgd" : "Klaar voor een nieuwe opdracht",
+                text:
+                  openJobCount > 0
+                    ? "Je open opdrachten hebben allemaal opvolging. Houd de agenda in de gaten voor de volgende stap."
+                    : "Er staat nu niets open. Plaats een nieuwe opdracht zodra je weer iemand nodig hebt.",
+                href: openJobCount > 0 ? "/agenda" : "/organisatie/opdrachten/nieuw",
+                cta: openJobCount > 0 ? "Bekijk agenda" : "Nieuwe opdracht",
+              };
 
     return (
       <div className="mx-auto w-full max-w-5xl space-y-6 px-4 py-8">
@@ -175,178 +288,380 @@ export default async function DashboardPage({
           </Alert>
         ) : null}
 
-        <section className="rounded-lg border border-primary/30 bg-primary/5 p-5">
+        <section className="rounded-lg border border-primary/30 bg-primary/5 p-4">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <p className="text-sm font-medium text-primary">
-                Start hier als sportschool
-              </p>
-              <h2 className="mt-1 text-xl font-semibold tracking-tight">
-                {openJobCount > 0
-                  ? pendingApplicationCount > 0
-                    ? "Vergelijk nieuwe reacties en kies wie je wilt spreken."
-                    : "Houd je open opdrachten scherp en deel ze met passende instructeurs."
-                  : "Plaats je eerste opdracht in een paar minuten."}
+            <div className="max-w-2xl">
+              <p className="text-sm font-medium text-primary">Wat vraagt aandacht?</p>
+              <h2 className="mt-1 text-lg font-semibold tracking-tight">
+                {primaryAction.title}
               </h2>
-              <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                De snelste route naar waarde: leg een concrete opdracht vast,
-                vergelijk reacties op beschikbaarheid en tarief, en rond de
-                afspraak af via berichten en bevestiging.
+              <p className="mt-1.5 text-sm leading-5 text-muted-foreground">
+                {primaryAction.text}
               </p>
             </div>
-            <Link
-              href={
-                pendingApplicationCount > 0
-                  ? "/organisatie/kandidaten"
-                  : openJobCount > 0
-                    ? "/organisatie/opdrachten"
-                    : "/organisatie/opdrachten/nieuw"
-              }
-            >
-              <Button className="w-full sm:w-auto">
-                {pendingApplicationCount > 0
-                  ? "Kandidaten bekijken"
-                  : openJobCount > 0
-                    ? "Opdrachten bekijken"
-                    : "Nieuwe opdracht"}
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
-          </div>
-          <div className="mt-5 grid gap-3 md:grid-cols-3">
-            {organizationNextActions.map((action) => (
-              <div
-                className="rounded-lg border border-border bg-background p-4"
-                key={action.title}
-              >
-                <CheckCircle2 className="mb-3 h-5 w-5 text-primary" />
-                <h3 className="font-semibold">{action.title}</h3>
-                <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                  {action.text}
-                </p>
-                <Link
-                  className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
-                  href={action.href}
-                >
-                  {action.cta}
-                  <ArrowRight className="h-3.5 w-3.5" />
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+              <Link href={primaryAction.href}>
+                <Button className="w-full sm:w-auto">
+                  {primaryAction.cta}
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </Link>
+              {primaryAction.href !== "/organisatie/opdrachten/nieuw" ? (
+                <Link href="/organisatie/opdrachten/nieuw">
+                  <Button className="w-full sm:w-auto" variant="outline">
+                    Nieuwe opdracht
+                  </Button>
                 </Link>
-              </div>
-            ))}
+              ) : null}
+            </div>
+          </div>
+
+          <div className="mt-4 grid gap-2 md:grid-cols-3">
+            <Link
+              className="rounded-lg border border-border bg-background p-3 transition-colors hover:border-primary/40 hover:bg-primary/5"
+              href="/organisatie/opdrachten"
+            >
+              <p className="text-sm font-medium text-muted-foreground">
+                Nog iemand zoeken
+              </p>
+              <p className="mt-0.5 text-2xl font-bold tracking-tight">
+                {searchingJobCount}
+              </p>
+            </Link>
+
+            <Link
+              className="rounded-lg border border-border bg-background p-3 transition-colors hover:border-primary/40 hover:bg-primary/5"
+              href="/organisatie/kandidaten"
+            >
+              <p className="text-sm font-medium text-muted-foreground">
+                Reacties te beoordelen
+              </p>
+              <p className="mt-0.5 text-2xl font-bold tracking-tight">
+                {pendingApplicationCount}
+              </p>
+            </Link>
+
+            <Link
+              className="rounded-lg border border-border bg-background p-3 transition-colors hover:border-primary/40 hover:bg-primary/5"
+              href="/organisatie/opdrachten"
+            >
+              <p className="text-sm font-medium text-muted-foreground">
+                Wacht op bevestiging
+              </p>
+              <p className="mt-0.5 text-2xl font-bold tracking-tight">
+                {pendingConfirmationCount}
+              </p>
+            </Link>
           </div>
         </section>
 
-        <div className="grid gap-4 sm:grid-cols-3">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>Open opdrachten</CardDescription>
-              <CardTitle className="text-3xl">{openJobCount}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Link
-                className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
-                href="/organisatie/opdrachten"
-              >
-                Bekijken <ArrowRight className="h-3.5 w-3.5" />
-              </Link>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>Nieuwe reacties</CardDescription>
-              <CardTitle className="text-3xl">
-                {pendingApplicationCount}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Link
-                className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
-                href="/organisatie/kandidaten"
-              >
-                Kandidaten bekijken <ArrowRight className="h-3.5 w-3.5" />
-              </Link>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>Vestigingen</CardDescription>
-              <CardTitle className="text-3xl">
-                {orgContext.locations.length}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Link
-                className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
-                href="/organisatie/vestigingen"
-              >
-                Beheren <ArrowRight className="h-3.5 w-3.5" />
-              </Link>
-            </CardContent>
-          </Card>
-        </div>
+        <DashboardTodoList items={todoItems} />
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <Briefcase className="mb-1 h-6 w-6 text-primary" />
-              <CardTitle>Plaats een opdracht</CardTitle>
-              <CardDescription>
-                Van spoed-inval tot vaste vacature: bereik direct passende
-                instructeurs.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Link href="/organisatie/opdrachten/nieuw">
-                <Button>Nieuwe opdracht</Button>
-              </Link>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CalendarCheck className="mb-1 h-6 w-6 text-primary" />
-              <CardTitle>Bekijk je agenda</CardTitle>
-              <CardDescription>
-                Houd voorlopige en definitief bevestigde lessen bij elkaar.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Link href="/agenda">
-                <Button variant="outline">Agenda openen</Button>
-              </Link>
-            </CardContent>
-          </Card>
-        </div>
+        <section className="rounded-lg border border-destructive/25 bg-card">
+          <div className="flex items-center justify-between border-b border-border px-4 py-3">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              <h2 className="font-semibold">Urgentie</h2>
+            </div>
+            <span className="rounded-full border border-border px-2.5 py-1 text-xs font-semibold text-muted-foreground">
+              {urgentJobs.length}
+            </span>
+          </div>
+
+          {urgentJobs.length > 0 ? (
+            <div className="divide-y divide-border">
+              {urgentJobs.slice(0, 5).map((job) => {
+                const workflowLabel = pendingConfirmationJobIds.has(job.id)
+                  ? "Wacht op bevestiging"
+                  : pendingApplicationJobIds.has(job.id)
+                    ? "Reacties binnen"
+                    : "Nog zoeken";
+
+                return (
+                  <Link
+                    className="flex flex-col gap-2 px-4 py-3 transition-colors hover:bg-muted/50 sm:flex-row sm:items-center sm:justify-between"
+                    href={`/organisatie/opdrachten/${job.id}`}
+                    key={job.id}
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate font-medium">{job.title}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {formatDate(job.starts_on)} · {formatTime(job.start_time)}
+                      </p>
+                    </div>
+                    <span className="shrink-0 rounded-md border border-destructive/25 bg-destructive/5 px-2.5 py-1 text-xs font-medium text-destructive">
+                      {workflowLabel}
+                    </span>
+                  </Link>
+                );
+              })}
+              {urgentJobs.length > 5 ? (
+                <Link
+                  className="block px-4 py-3 text-sm font-medium text-primary hover:underline"
+                  href="/organisatie/opdrachten"
+                >
+                  Bekijk alle urgente opdrachten
+                </Link>
+              ) : null}
+            </div>
+          ) : (
+            <p className="px-4 py-3 text-sm text-muted-foreground">
+              Geen open opdrachten binnen 7 dagen.
+            </p>
+          )}
+        </section>
       </div>
     );
   }
 
   // Instructeur
-  const [subscriptionResult, applicationsResult, confirmationsResult, chatsResult] =
-    await Promise.all([
-      supabase
-        .from("subscriptions")
-        .select("*")
-        .eq("instructor_id", profile.id)
-        .maybeSingle(),
-      supabase
-        .from("job_applications")
-        .select("id", { count: "exact", head: true })
-        .eq("instructor_id", profile.id)
-        .eq("status", "pending"),
-      supabase
-        .from("job_confirmations")
-        .select("id", { count: "exact", head: true })
-        .eq("instructor_id", profile.id)
-        .not("confirmed_at", "is", null),
-      supabase
-        .from("chats")
-        .select("id", { count: "exact", head: true })
-        .eq("instructor_id", profile.id),
-    ]);
+  const today = new Date().toISOString().slice(0, 10);
+  const [
+    subscriptionResult,
+    applicationsResult,
+    invitationsResult,
+    pendingConfirmationsResult,
+    pendingSegmentConfirmationsResult,
+    confirmedJobsResult,
+    vogResult,
+    instructorProfileResult,
+    pendingReviewResult,
+  ] = await Promise.all([
+    supabase
+      .from("subscriptions")
+      .select("*")
+      .eq("instructor_id", profile.id)
+      .maybeSingle(),
+    supabase
+      .from("job_applications")
+      .select("id", { count: "exact", head: true })
+      .eq("instructor_id", profile.id)
+      .eq("status", "pending"),
+    supabase
+      .from("job_invitations")
+      .select("id", { count: "exact", head: true })
+      .eq("instructor_id", profile.id)
+      .eq("status", "pending"),
+    supabase
+      .from("job_confirmations")
+      .select("job_id")
+      .eq("instructor_id", profile.id)
+      .not("organization_agreed_at", "is", null)
+      .is("instructor_agreed_at", null)
+      .is("confirmed_at", null),
+    supabase
+      .from("job_segment_confirmations")
+      .select("job_id")
+      .eq("instructor_id", profile.id)
+      .not("organization_agreed_at", "is", null)
+      .is("instructor_agreed_at", null)
+      .is("confirmed_at", null)
+      .is("cancelled_at", null),
+    supabase
+      .from("job_confirmations")
+      .select(
+        "job_id, job:jobs!inner(id, title, starts_on, start_time, status)",
+      )
+      .eq("instructor_id", profile.id)
+      .not("confirmed_at", "is", null)
+      .eq("job.status", "confirmed")
+      .gte("job.starts_on", today),
+    supabase
+      .from("document_uploads")
+      .select("status, expires_at, created_at")
+      .eq("user_id", profile.id)
+      .eq("doc_type", "vog")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from("instructor_profiles")
+      .select(
+        "hourly_rate_cents, travel_distance_km, work_experience, years_experience",
+      )
+      .eq("user_id", profile.id)
+      .maybeSingle(),
+    supabase.rpc("has_pending_review", { target_user: profile.id }),
+  ]);
 
   const subscription = subscriptionResult.data as Subscription | null;
   const hasAccess = subscriptionGrantsAccess(subscription);
   const pendingApplicationCount = applicationsResult.count ?? 0;
+  const pendingInvitationCount = invitationsResult.count ?? 0;
+
+  const pendingConfirmationJobIds = new Set<string>();
+  for (const row of pendingConfirmationsResult.data ?? []) {
+    pendingConfirmationJobIds.add(row.job_id as string);
+  }
+  for (const row of pendingSegmentConfirmationsResult.data ?? []) {
+    pendingConfirmationJobIds.add(row.job_id as string);
+  }
+  const pendingConfirmationCount = pendingConfirmationJobIds.size;
+  const firstPendingConfirmationJobId =
+    Array.from(pendingConfirmationJobIds)[0] ?? null;
+
+  type ConfirmedDashboardJob = {
+    job_id: string;
+    job: {
+      id: string;
+      title: string;
+      starts_on: string;
+      start_time: string;
+      status: string;
+    } | null;
+  };
+
+  const upcomingConfirmedJobs =
+    (confirmedJobsResult.data as unknown as ConfirmedDashboardJob[] | null) ?? [];
+  const nextConfirmedJob = upcomingConfirmedJobs
+    .filter((row) => row.job)
+    .sort((left, right) =>
+      `${left.job!.starts_on}T${left.job!.start_time}`.localeCompare(
+        `${right.job!.starts_on}T${right.job!.start_time}`,
+      ),
+    )[0]?.job ?? null;
+
+  const latestVog = vogResult.data as
+    | { status: string; expires_at: string | null; created_at: string }
+    | null;
+  const vogValid =
+    latestVog?.status === "approved" &&
+    (!latestVog.expires_at || latestVog.expires_at >= today);
+
+  const instructorDetails = instructorProfileResult.data as
+    | {
+        hourly_rate_cents: number | null;
+        travel_distance_km: number | null;
+        work_experience: string | null;
+        years_experience: number | null;
+      }
+    | null;
+
+  const profileNeedsAttention =
+    !profile.phone ||
+    (!profile.city_id && !profile.custom_city) ||
+    !instructorDetails?.hourly_rate_cents ||
+    !instructorDetails?.travel_distance_km ||
+    !instructorDetails?.work_experience;
+  const hasPendingReview = pendingReviewResult.data === true;
+
+  const todoItems = [
+    ...(hasPendingReview
+      ? [
+          {
+            title: "Beoordeling afronden",
+            description: "Er staat nog een verplichte review open.",
+            href: "/reviews?view=given",
+          },
+        ]
+      : []),
+    ...(pendingInvitationCount > 0
+      ? [
+          {
+            title: "Uitnodiging beantwoorden",
+            description: `${pendingInvitationCount} ${pendingInvitationCount === 1 ? "uitnodiging wacht" : "uitnodigingen wachten"} op jouw reactie.`,
+            href: "/mijn-reacties",
+          },
+        ]
+      : []),
+    ...(pendingConfirmationCount > 0
+      ? [
+          {
+            title: "Opdracht bevestigen",
+            description: `${pendingConfirmationCount} ${pendingConfirmationCount === 1 ? "opdracht wacht" : "opdrachten wachten"} op jouw definitieve bevestiging.`,
+            href: firstPendingConfirmationJobId
+              ? `/opdrachten/${firstPendingConfirmationJobId}`
+              : "/mijn-reacties",
+          },
+        ]
+      : []),
+    ...(!vogValid
+      ? [
+          {
+            title: "VOG regelen",
+            description:
+              latestVog?.status === "pending"
+                ? "Je VOG wacht nog op controle."
+                : "Er is nog geen geldige, goedgekeurde VOG.",
+            href: "/documenten",
+          },
+        ]
+      : []),
+    ...(profileNeedsAttention
+      ? [
+          {
+            title: "Profiel aanvullen",
+            description: "Je basisprofiel mist nog informatie voor betere matching.",
+            href: "/profiel",
+          },
+        ]
+      : []),
+  ];
+
+  const primaryAction =
+    pendingInvitationCount > 0
+      ? {
+          title: "Je hebt een nieuwe uitnodiging",
+          text: `${pendingInvitationCount} ${
+            pendingInvitationCount === 1 ? "sportschool wil" : "sportscholen willen"
+          } je rechtstreeks boeken. Bekijk datum, locatie en vergoeding en reageer.`,
+          href: "/mijn-reacties",
+          cta: "Bekijk uitnodigingen",
+        }
+      : pendingConfirmationCount > 0
+        ? {
+            title: "Een sportschool heeft jou gekozen",
+            text: `${pendingConfirmationCount} ${
+              pendingConfirmationCount === 1 ? "opdracht wacht" : "opdrachten wachten"
+            } nog op jouw definitieve bevestiging.`,
+            href: firstPendingConfirmationJobId
+              ? `/opdrachten/${firstPendingConfirmationJobId}`
+              : "/mijn-reacties",
+            cta: "Bevestiging bekijken",
+          }
+        : !vogValid
+          ? {
+              title: "Je VOG vraagt aandacht",
+              text:
+                latestVog?.status === "pending"
+                  ? "Je VOG wacht nog op controle. Je kunt opdrachten bekijken, maar commerciële acties blijven beperkt totdat deze is goedgekeurd."
+                  : "Zorg voor een geldige, goedgekeurde VOG zodat je kunt reageren, uitnodigingen accepteren en bevestigd kunt worden.",
+              href: "/documenten",
+              cta: "Bekijk documenten",
+            }
+          : profileNeedsAttention
+            ? {
+                title: "Maak je profiel completer",
+                text:
+                  "Vul je woonplaats, reisafstand, tarief en werkervaring zo volledig mogelijk in. Dat verbetert je matching en geeft sportscholen meer context.",
+                href: "/profiel",
+                cta: "Profiel aanvullen",
+              }
+            : pendingApplicationCount > 0
+              ? {
+                  title: "Je reacties lopen",
+                  text: `${pendingApplicationCount} ${
+                    pendingApplicationCount === 1 ? "reactie staat" : "reacties staan"
+                  } nog open. Je hoeft niets opnieuw te versturen; houd opvolging en berichten in de gaten.`,
+                  href: "/mijn-reacties",
+                  cta: "Mijn reacties",
+                }
+              : nextConfirmedJob
+                ? {
+                    title: "Je volgende klus staat gepland",
+                    text: `${nextConfirmedJob.title} · ${formatDate(
+                      nextConfirmedJob.starts_on,
+                    )} om ${formatTime(nextConfirmedJob.start_time)}.`,
+                    href: `/opdrachten/${nextConfirmedJob.id}`,
+                    cta: "Bekijk opdracht",
+                  }
+                : {
+                    title: "Bekijk passende opdrachten",
+                    text:
+                      "Er staat nu geen actie voor je open. Bekijk opdrachten die passen bij je sport, reisafstand en voorkeuren.",
+                    href: "/opdrachten",
+                    cta: "Opdrachten bekijken",
+                  };
 
   return (
     <div className="mx-auto w-full max-w-5xl space-y-6 px-4 py-8">
@@ -355,8 +670,8 @@ export default async function DashboardPage({
           Hoi {profile.full_name.split(" ")[0]}!
         </h1>
         <p className="text-sm text-muted-foreground">
-          Je startpunt voor profiel, passende opdrachten, reacties en gesprekken.
-          Begin met je profiel en open daarna opdrachten die echt passen.
+          Je overzicht voor uitnodigingen, reacties, bevestigingen en aankomende
+          opdrachten.
         </p>
       </div>
 
@@ -373,118 +688,147 @@ export default async function DashboardPage({
         </Alert>
       ) : null}
 
-      <section className="rounded-lg border border-primary/30 bg-primary/5 p-5">
+      <section className="rounded-lg border border-primary/30 bg-primary/5 p-4">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <p className="text-sm font-medium text-primary">
-              Start hier als instructeur
-            </p>
-            <h2 className="mt-1 text-xl font-semibold tracking-tight">
-              {pendingApplicationCount > 0
-                ? "Volg je open reacties en reageer snel op opvolging."
-                : "Check je profiel en open daarna passende opdrachten."}
+          <div className="max-w-2xl">
+            <p className="text-sm font-medium text-primary">Wat vraagt aandacht?</p>
+            <h2 className="mt-1 text-lg font-semibold tracking-tight">
+              {primaryAction.title}
             </h2>
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              De snelste route naar waarde: zet reisafstand, tarief en
-              specialisaties goed, bekijk opdrachten binnen je voorkeuren en
-              reageer alleen wanneer tijd, locatie en vergoeding kloppen.
+            <p className="mt-1.5 text-sm leading-5 text-muted-foreground">
+              {primaryAction.text}
             </p>
           </div>
-          <Link href={pendingApplicationCount > 0 ? "/mijn-reacties" : "/opdrachten"}>
+          <Link href={primaryAction.href}>
             <Button className="w-full sm:w-auto">
-              {pendingApplicationCount > 0 ? "Mijn reacties" : "Opdrachten bekijken"}
+              {primaryAction.cta}
               <ArrowRight className="h-4 w-4" />
             </Button>
           </Link>
         </div>
-        <div className="mt-5 grid gap-3 md:grid-cols-3">
-          {instructorNextActions.map((action) => (
-            <div
-              className="rounded-lg border border-border bg-background p-4"
-              key={action.title}
-            >
-              <CheckCircle2 className="mb-3 h-5 w-5 text-primary" />
-              <h3 className="font-semibold">{action.title}</h3>
-              <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                {action.text}
-              </p>
-              <Link
-                className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
-                href={action.href}
-              >
-                {action.cta}
-                <ArrowRight className="h-3.5 w-3.5" />
-              </Link>
-            </div>
-          ))}
+
+        <div className="mt-4 grid gap-2 md:grid-cols-3">
+          <Link
+            className="rounded-lg border border-border bg-background p-3 transition-colors hover:border-primary/40 hover:bg-primary/5"
+            href="/mijn-reacties"
+          >
+            <p className="text-sm font-medium text-muted-foreground">
+              Uitnodigingen
+            </p>
+            <p className="mt-0.5 text-2xl font-bold tracking-tight">
+              {pendingInvitationCount}
+            </p>
+          </Link>
+
+          <Link
+            className="rounded-lg border border-border bg-background p-3 transition-colors hover:border-primary/40 hover:bg-primary/5"
+            href="/mijn-reacties"
+          >
+            <p className="text-sm font-medium text-muted-foreground">
+              Open reacties
+            </p>
+            <p className="mt-0.5 text-2xl font-bold tracking-tight">
+              {pendingApplicationCount}
+            </p>
+          </Link>
+
+          <Link
+            className="rounded-lg border border-border bg-background p-3 transition-colors hover:border-primary/40 hover:bg-primary/5"
+            href={
+              firstPendingConfirmationJobId
+                ? `/opdrachten/${firstPendingConfirmationJobId}`
+                : "/mijn-reacties"
+            }
+          >
+            <p className="text-sm font-medium text-muted-foreground">
+              Wacht op jouw bevestiging
+            </p>
+            <p className="mt-0.5 text-2xl font-bold tracking-tight">
+              {pendingConfirmationCount}
+            </p>
+          </Link>
         </div>
       </section>
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Openstaande reacties</CardDescription>
-            <CardTitle className="text-3xl">
-              {pendingApplicationCount}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Link
-              className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
-              href="/mijn-reacties"
-            >
-              <Inbox className="h-3.5 w-3.5" /> Mijn reacties
-            </Link>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Bevestigde opdrachten</CardDescription>
-            <CardTitle className="text-3xl">
-              {confirmationsResult.count ?? 0}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Link
-              className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
-              href="/mijn-reacties"
-            >
-              <CalendarCheck className="h-3.5 w-3.5" /> Bekijken
-            </Link>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Gesprekken</CardDescription>
-            <CardTitle className="text-3xl">{chatsResult.count ?? 0}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Link
-              className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
-              href="/berichten"
-            >
-              <MessageSquare className="h-3.5 w-3.5" /> Berichten
-            </Link>
-          </CardContent>
-        </Card>
-      </div>
+      <DashboardTodoList items={todoItems} />
 
-      <Card>
-        <CardHeader>
-          <Search className="mb-1 h-6 w-6 text-primary" />
-          <CardTitle>Vind je volgende opdracht</CardTitle>
-          <CardDescription>
-            Opdrachten worden gesorteerd op afstand, specialisatie en match met
-            jouw profiel. Open een kaart om vergoeding, locatie en reactieopties
-            te bekijken.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Link href="/opdrachten">
-            <Button>Opdrachten bekijken</Button>
-          </Link>
-        </CardContent>
-      </Card>
+      <div className="grid gap-4 md:grid-cols-2">
+        <section className="rounded-lg border border-border bg-card p-4">
+          <div className="flex items-start gap-3">
+            <CalendarCheck className="mt-0.5 h-5 w-5 text-primary" />
+            <div className="min-w-0">
+              <p className="font-semibold">Eerstvolgende bevestigde klus</p>
+              {nextConfirmedJob ? (
+                <>
+                  <p className="mt-1 truncate text-sm font-medium">
+                    {nextConfirmedJob.title}
+                  </p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {formatDate(nextConfirmedJob.starts_on)} ·{" "}
+                    {formatTime(nextConfirmedJob.start_time)}
+                  </p>
+                  <Link
+                    className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+                    href={`/opdrachten/${nextConfirmedJob.id}`}
+                  >
+                    Bekijk opdracht
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                    Er staat nu geen bevestigde toekomstige klus in je planning.
+                  </p>
+                  <Link
+                    className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+                    href="/opdrachten"
+                  >
+                    Bekijk opdrachten
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </Link>
+                </>
+              )}
+            </div>
+          </div>
+        </section>
+
+        <section className="rounded-lg border border-border bg-card p-4">
+          <div className="flex items-start gap-3">
+            <ShieldCheck
+              className={`mt-0.5 h-5 w-5 ${
+                vogValid ? "text-primary" : "text-amber-600"
+              }`}
+            />
+            <div>
+              <p className="font-semibold">Profiel & VOG</p>
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                {vogValid
+                  ? profileNeedsAttention
+                    ? "Je VOG is goedgekeurd. Je profiel kan nog completer voor betere matching."
+                    : "Je VOG is goedgekeurd en je basisprofiel is compleet."
+                  : latestVog?.status === "pending"
+                    ? "Je VOG wacht op beoordeling."
+                    : "Je hebt nog geen geldige, goedgekeurde VOG."}
+              </p>
+              <div className="mt-3 flex flex-wrap gap-3 text-sm">
+                <Link
+                  className="font-medium text-primary hover:underline"
+                  href="/documenten"
+                >
+                  Documenten
+                </Link>
+                <Link
+                  className="font-medium text-primary hover:underline"
+                  href="/profiel"
+                >
+                  Profiel
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
     </div>
   );
 }

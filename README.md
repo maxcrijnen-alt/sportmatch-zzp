@@ -53,6 +53,9 @@ hourly cron nodig. Na een planwijziging moeten zowel het schema naar bijvoorbeel
 
 ## Validatie
 
+De permanente GitHub Actions-check en het lokaal uitvoeren van de volledige
+geïsoleerde regressiesuite staan in [docs/TESTING.md](docs/TESTING.md).
+
 ```bash
 pnpm exec tsc --noEmit
 pnpm lint

@@ -24,13 +24,13 @@ export default async function WachtwoordHerstellenPage() {
   return (
     <div className="mx-auto flex w-full max-w-md flex-col px-4 py-8">
       <Card>
-        <CardHeader>
-          <CardTitle className="text-xl">Nieuw wachtwoord instellen</CardTitle>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Nieuw wachtwoord instellen</CardTitle>
           <CardDescription>
             Kies een nieuw wachtwoord voor {profile.email}.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-0">
           <ResetPasswordForm />
         </CardContent>
       </Card>

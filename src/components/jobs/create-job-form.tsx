@@ -199,15 +199,15 @@ export function CreateJobForm({
   };
 
   return (
-    <form action={formAction} className="space-y-6" onSubmit={rememberChoices}>
+    <form action={formAction} className="space-y-4" onSubmit={rememberChoices}>
       {state.error ? (
         <Alert variant="destructive">
           <AlertDescription>{state.error}</AlertDescription>
         </Alert>
       ) : null}
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-2">
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="space-y-1.5">
           <Label htmlFor="jobType">Soort plaatsing</Label>
           <Select
             id="jobType"
@@ -224,7 +224,7 @@ export function CreateJobForm({
             )}
           </Select>
         </div>
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <Label htmlFor="locationId">Vestiging</Label>
           <Select
             id="locationId"
@@ -239,7 +239,7 @@ export function CreateJobForm({
             ))}
           </Select>
         </div>
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <Label htmlFor="sportId">Sport</Label>
           <Select
             id="sportId"
@@ -265,7 +265,7 @@ export function CreateJobForm({
             ))}
           </Select>
         </div>
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <Label htmlFor="lessonTypeId">Soort les</Label>
           <Select
             disabled={!sportId}
@@ -300,54 +300,54 @@ export function CreateJobForm({
         </div>
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-1.5">
         <Label htmlFor="title">Titel</Label>
         <Input defaultValue={defaults.title} id="title" name="title" placeholder="Bijv. Inval spinning dinsdagavond" required />
       </div>
-      <div className="space-y-2">
+      <div className="space-y-1.5">
         <Label htmlFor="description">Beschrijving</Label>
         <Textarea defaultValue={defaults.description} id="description" name="description" required rows={4} />
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        <div className="space-y-2">
+      <div className="grid gap-3 sm:grid-cols-3">
+        <div className="space-y-1.5">
           <Label htmlFor="startsOn">{jobType === "recurring" ? "Eerste datum" : "Datum"}</Label>
           <Input defaultValue={defaults.startsOn} id="startsOn" name="startsOn" required type="date" />
         </div>
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <Label htmlFor="startTime">Begintijd</Label>
           <Input defaultValue={defaults.startTime} id="startTime" name="startTime" required type="time" />
         </div>
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <Label htmlFor="endTime">Eindtijd</Label>
           <Input defaultValue={defaults.endTime} id="endTime" name="endTime" required type="time" />
         </div>
       </div>
 
       {jobType === "recurring" ? (
-        <div className="grid gap-4 rounded-lg border border-border p-4 sm:grid-cols-3">
+        <div className="grid gap-3 rounded-lg border border-border p-3 sm:grid-cols-3">
           <div className="space-y-2 sm:col-span-3">
             <Label htmlFor="recurrenceNote">Omschrijving herhaling</Label>
             <Input defaultValue={defaults.recurrenceNote} id="recurrenceNote" name="recurrenceNote" placeholder="Bijv. iedere dinsdagavond" required />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label htmlFor="intervalWeeks">Iedere … week/weken</Label>
             <Input defaultValue={defaults.intervalWeeks ?? 1} id="intervalWeeks" max={52} min={1} name="intervalWeeks" type="number" />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label htmlFor="occurrenceCount">Aantal lessen</Label>
             <Input defaultValue={defaults.occurrenceCount ?? 8} id="occurrenceCount" max={104} min={2} name="occurrenceCount" type="number" />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label htmlFor="endsOn">Of einddatum</Label>
             <Input defaultValue={defaults.endsOn} id="endsOn" name="endsOn" type="date" />
           </div>
         </div>
       ) : null}
 
-      <div className="space-y-3 rounded-lg border border-border p-4">
-        <div className="grid gap-4 sm:grid-cols-3">
-          <div className="space-y-2">
+      <div className="space-y-3 rounded-lg border border-border p-3">
+        <div className="grid gap-3 sm:grid-cols-3">
+          <div className="space-y-1.5">
             <Label htmlFor="payType">Vergoeding</Label>
             <Select id="payType" name="payType" onChange={(event) => setPayType(event.target.value as "fixed" | "hourly")} value={payType}>
               <option value="hourly">Uurtarief</option>
@@ -355,12 +355,12 @@ export function CreateJobForm({
             </Select>
           </div>
           {payType === "fixed" ? (
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label htmlFor="payAmountEuro">Totaalbedrag (€)</Label>
               <Input id="payAmountEuro" min={1} name="payAmountEuro" onChange={(event) => setPayAmount(event.target.value)} required step="0.50" type="number" value={payAmount} />
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label htmlFor="payHourlyRateEuro">Uurtarief (€)</Label>
               <Input id="payHourlyRateEuro" min={1} name="payHourlyRateEuro" onChange={(event) => setHourlyRate(event.target.value)} required step="0.50" type="number" value={hourlyRate} />
             </div>
@@ -372,12 +372,12 @@ export function CreateJobForm({
         </label>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-2">
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="space-y-1.5">
           <Label htmlFor="requiredLevel">Gevraagd niveau (optioneel)</Label>
           <Input id="requiredLevel" name="requiredLevel" onChange={(event) => setRequiredLevel(event.target.value)} value={requiredLevel} />
         </div>
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <Label htmlFor="expectedParticipants">Verwacht aantal deelnemers</Label>
           <Input defaultValue={defaults.expectedParticipants} id="expectedParticipants" min={0} name="expectedParticipants" type="number" />
         </div>
@@ -401,7 +401,7 @@ export function CreateJobForm({
             ))}
           </div>
         ) : null}
-        <div className="max-h-44 space-y-1 overflow-y-auto rounded-md border border-border p-2">
+        <div className="max-h-40 space-y-0.5 overflow-y-auto rounded-md border border-border p-1.5">
           {filteredQualifications.map((qualification) => (
             <label className="flex cursor-pointer items-center gap-2 rounded p-2 text-sm hover:bg-muted" key={qualification.id}>
               <input
@@ -417,7 +417,7 @@ export function CreateJobForm({
         </div>
       </div>
 
-      <div className="space-y-4 rounded-lg border border-border p-4">
+      <div className="space-y-3 rounded-lg border border-border p-3">
         <label className="flex items-center gap-2 font-medium">
           <input checked={isBlock} onChange={(event) => setIsBlock(event.target.checked)} type="checkbox" />
           Meerdere aansluitende lessen plaatsen
@@ -449,13 +449,13 @@ export function CreateJobForm({
               <input defaultChecked={defaults.partialBlockAllowed} name="partialBlockAllowed" type="checkbox" />
               Gedeeltelijk overnemen toegestaan (alleen aansluitende lessen)
             </label>
-            <div className="space-y-3">
+            <div className="space-y-2">
               {segments.map((segment, index) => (
-                <div className="grid gap-3 rounded-md bg-muted/40 p-3 sm:grid-cols-[auto_1fr_1fr_2fr_auto]" key={segment.key}>
+                <div className="grid gap-2 rounded-md bg-muted/40 p-2.5 sm:grid-cols-[auto_1fr_1fr_2fr_auto]" key={segment.key}>
                   <span className="pt-2 text-sm font-semibold">{index + 1}</span>
                   <Input aria-label={`Begintijd les ${index + 1}`} onChange={(event) => updateSegment(segment.key, { startTime: event.target.value })} required type="time" value={segment.startTime} />
                   <Input aria-label={`Eindtijd les ${index + 1}`} onChange={(event) => updateSegment(segment.key, { endTime: event.target.value })} required type="time" value={segment.endTime} />
-                  <div className="space-y-2">
+                  <div className="space-y-1.5">
                     <Select
                       aria-label={`Lesvorm les ${index + 1}`}
                       onChange={(event) =>
@@ -495,14 +495,14 @@ export function CreateJobForm({
                 </div>
               ))}
             </div>
-            <Button onClick={() => setSegments((current) => [...current, createSegment(current.length)])} type="button" variant="outline">
+            <Button onClick={() => setSegments((current) => [...current, createSegment(current.length)])} size="sm" type="button" variant="outline">
               <Plus className="h-4 w-4" /> Les toevoegen
             </Button>
           </>
         ) : null}
       </div>
 
-      <div className="rounded-lg border border-border p-4">
+      <div className="rounded-lg border border-border p-3">
         <label className="flex items-center gap-2 text-sm font-medium">
           <input name="saveAsTemplate" type="checkbox" />
           Deze keuzes ook als sjabloon opslaan
@@ -519,7 +519,7 @@ export function CreateJobForm({
         </Alert>
       ) : null}
 
-      <Button disabled={isPending} size="lg" type="submit">
+      <Button disabled={isPending} type="submit">
         {isPending ? "Plaatsen…" : "Opdracht plaatsen"}
       </Button>
     </form>

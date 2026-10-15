@@ -1,13 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowRight, CheckCircle2, SearchX } from "lucide-react";
+import { ArrowRight, SearchX } from "lucide-react";
+import { AgendaView } from "@/components/agenda/agenda-view";
 import { JobCard } from "@/components/jobs/job-card";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
+import { sportMatchAgendaProvider } from "@/lib/agenda/sportmatch-provider";
 import { getSessionProfile } from "@/lib/auth/session";
 import { jobTypeLabels } from "@/lib/labels";
 import { fetchOpenJobsWithMatches } from "@/lib/jobs/queries";
@@ -26,12 +28,6 @@ interface Filters {
   minbedrag?: string;
   weergave?: string;
 }
-
-const selectionTips = [
-  "Je profiel, specialisaties, reisafstand en tarief bepalen welke opdrachten bovenaan staan.",
-  "Controleer sport, datum, locatie, vergoeding en vereiste kwalificaties voordat je reageert.",
-  "Open een opdrachtkaart om matchscore, details, contactafspraken en reactieflow te zien.",
-];
 
 export default async function OpdrachtenPage({
   searchParams,
@@ -56,12 +52,26 @@ export default async function OpdrachtenPage({
       showAll,
   );
 
-  const [{ jobs, matches }, sportsResult] = await Promise.all([
-    fetchOpenJobsWithMatches(),
-    supabase.from("sports").select("*").eq("is_active", true).order("name"),
-  ]);
+  const [{ jobs, matches }, sportsResult, applicationsResult, agendaEvents] =
+    await Promise.all([
+      fetchOpenJobsWithMatches(),
+      supabase.from("sports").select("*").eq("is_active", true).order("name"),
+      supabase
+        .from("job_applications")
+        .select("job_id")
+        .eq("instructor_id", profile.id),
+      profile.role === "instructor"
+        ? sportMatchAgendaProvider.listEvents({
+            role: "instructor",
+            userId: profile.id,
+          })
+        : Promise.resolve([]),
+    ]);
 
   const sports = (sportsResult.data as Sport[] | null) ?? [];
+  const appliedJobIds = new Set(
+    (applicationsResult.data ?? []).map((application) => application.job_id as string),
+  );
 
   const filtered = jobs
     .filter((job) => {
@@ -127,13 +137,6 @@ export default async function OpdrachtenPage({
               Profiel en tarief
             </Button>
           </Link>
-          {hasFilters ? (
-            <Link href="/opdrachten">
-              <Button className="w-full sm:w-auto" variant="outline">
-                Filters wissen
-              </Button>
-            </Link>
-          ) : null}
           <Link href="/opdrachten?weergave=alles">
             <Button className="w-full sm:w-auto" variant="outline">
               Alle opdrachten
@@ -142,30 +145,37 @@ export default async function OpdrachtenPage({
         </div>
       </div>
 
-      <div className="rounded-lg border border-primary/30 bg-primary/5 p-4">
-        <p className="text-sm font-medium text-primary">
-          Start hier: van profiel naar passende opdracht
-        </p>
-        <p className="mt-1 text-sm leading-6 text-muted-foreground">
-          Begin met opdrachten die passen bij je profiel. Zie je te weinig of
-          klopt de match niet? Controleer dan je specialisaties, reisafstand en
-          tarief op je profiel en gebruik daarna de filters hieronder.
-        </p>
-        <div className="mt-4 grid gap-2 md:grid-cols-3">
-          {selectionTips.map((tip) => (
-            <p
-              className="flex gap-2 rounded-md border border-border bg-background p-3 text-sm leading-6"
-              key={tip}
-            >
-              <CheckCircle2 className="mt-1 h-4 w-4 shrink-0 text-primary" />
-              <span>{tip}</span>
+      {profile.role === "instructor" ? (
+        <section className="space-y-3">
+          <div>
+            <h2 className="text-lg font-semibold tracking-tight">Mijn week</h2>
+            <p className="text-sm text-muted-foreground">
+              Je geplande, bevestigde en afgeronde opdrachten in weekoverzicht.
             </p>
-          ))}
-        </div>
-      </div>
+          </div>
+          <AgendaView
+            defaultView="week"
+            events={agendaEvents}
+            exportHref="/agenda/export"
+            role="instructor"
+          />
+        </section>
+      ) : null}
 
-      <Card>
-        <CardContent className="pt-5">
+      <section className="space-y-3">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-lg font-semibold tracking-tight">Filters</h2>
+          {hasFilters ? (
+            <Link
+              className="text-sm font-medium text-primary hover:underline"
+              href="/opdrachten"
+            >
+              Wissen
+            </Link>
+          ) : null}
+        </div>
+        <Card>
+          <CardContent className="pt-5">
           <form className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6" method="get">
             <div className="space-y-1.5">
               <Label className="text-xs" htmlFor="sport">
@@ -252,22 +262,21 @@ export default async function OpdrachtenPage({
               <Button className="w-full sm:w-auto" size="sm" type="submit" variant="outline">
                 Filteren
               </Button>
-              {hasFilters ? (
-                <Link href="/opdrachten">
-                  <Button
-                    className="w-full sm:w-auto"
-                    size="sm"
-                    type="button"
-                    variant="outline"
-                  >
-                    Reset
-                  </Button>
-                </Link>
-              ) : null}
             </div>
           </form>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </section>
+
+      <section className="space-y-3">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-lg font-semibold tracking-tight">
+            Beschikbare opdrachten
+          </h2>
+          <span className="rounded-full border border-border px-2.5 py-1 text-xs font-semibold text-muted-foreground">
+            {filtered.length}
+          </span>
+        </div>
 
       {filtered.length === 0 ? (
         <Card>
@@ -304,6 +313,12 @@ export default async function OpdrachtenPage({
         <div className="space-y-4">
           {filtered.map((job) => (
             <JobCard
+              actionHref={
+                appliedJobIds.has(job.id)
+                  ? `/opdrachten/${job.id}`
+                  : `/opdrachten/${job.id}#aanmelden`
+              }
+              actionLabel={appliedJobIds.has(job.id) ? "Reactie bekijken" : "Aanmelden"}
               href={`/opdrachten/${job.id}`}
               job={job}
               key={job.id}
@@ -312,6 +327,7 @@ export default async function OpdrachtenPage({
           ))}
         </div>
       )}
+      </section>
     </div>
   );
 }

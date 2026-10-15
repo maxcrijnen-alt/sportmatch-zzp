@@ -225,7 +225,7 @@ export default async function BerichtenPage({
   const visibleChats = chats.filter((chat) => matchesTab(chat, activeTab));
 
   return (
-    <div className="mx-auto w-full max-w-4xl space-y-6 px-4 py-8">
+    <div className="mx-auto w-full max-w-4xl space-y-4 px-4 py-8">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Berichten</h1>
         <p className="text-sm text-muted-foreground">
@@ -245,7 +245,7 @@ export default async function BerichtenPage({
             <Link
               aria-current={selected ? "page" : undefined}
               className={cn(
-                "flex min-w-max flex-1 items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                "flex min-w-max flex-1 items-center justify-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors",
                 selected
                   ? "bg-primary text-primary-foreground"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground",
@@ -253,7 +253,7 @@ export default async function BerichtenPage({
               href={`/berichten?tab=${tab.id}`}
               key={tab.id}
             >
-              <Icon className="h-4 w-4" />
+              <Icon className="h-3.5 w-3.5" />
               {tab.label}
               <span
                 className={cn(
@@ -270,7 +270,7 @@ export default async function BerichtenPage({
 
       {visibleChats.length === 0 ? (
         <Card>
-          <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
+          <CardContent className="flex flex-col items-center gap-3 py-8 text-center">
             <MessageSquare className="h-8 w-8 text-muted-foreground" />
             <p className="text-sm text-muted-foreground">
               Geen gesprekken in {tabs.find((tab) => tab.id === activeTab)?.label.toLowerCase()}.
@@ -278,7 +278,7 @@ export default async function BerichtenPage({
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-3">
+        <div className="overflow-hidden rounded-lg border border-border bg-card">
           {visibleChats.map((chat) => {
             const counterpartName = orgContext
               ? (instructorNames.get(chat.instructor_id) ?? "Instructeur")
@@ -291,8 +291,12 @@ export default async function BerichtenPage({
             const latestActivity = latestActivityByChat.get(chat.id);
 
             return (
-              <Link className="block" href={`/berichten/${chat.id}`} key={chat.id}>
-                <article className="rounded-lg border border-border bg-card p-4 transition-colors hover:border-primary/40 hover:bg-primary/5">
+              <Link
+                className="block border-t border-border first:border-t-0"
+                href={`/berichten/${chat.id}`}
+                key={chat.id}
+              >
+                <article className="p-3 transition-colors hover:bg-primary/5">
                   <div className="flex items-start gap-3">
                     <Avatar name={counterpartName} />
                     <div className="min-w-0 flex-1">
@@ -308,7 +312,7 @@ export default async function BerichtenPage({
                         ) : null}
                       </div>
 
-                      <div className="mt-3 grid gap-1 text-xs text-muted-foreground sm:grid-cols-2">
+                      <div className="mt-2 grid gap-1 text-xs text-muted-foreground sm:grid-cols-2">
                         {chat.job ? (
                           <span className="inline-flex items-center gap-1.5">
                             <CalendarDays className="h-3.5 w-3.5" />
@@ -322,7 +326,7 @@ export default async function BerichtenPage({
                         </span>
                       </div>
 
-                      <div className="mt-3 flex items-center justify-between gap-3 border-t border-border pt-3">
+                      <div className="mt-2 flex items-center justify-between gap-3 border-t border-border pt-2">
                         <p className="min-w-0 truncate text-sm text-muted-foreground">
                           {latestActivity?.body ?? "Gesprek geopend"}
                         </p>

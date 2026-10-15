@@ -1,26 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import type { EmailOtpType } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
-
-function safeNextPath(value: string | null, requestUrl: string): string {
-  if (
-    !value ||
-    !value.startsWith("/") ||
-    value.startsWith("//") ||
-    value.includes("\\")
-  ) {
-    return "/dashboard";
-  }
-
-  const requestOrigin = new URL(requestUrl).origin;
-  const target = new URL(value, requestOrigin);
-
-  if (target.origin !== requestOrigin) {
-    return "/dashboard";
-  }
-
-  return `${target.pathname}${target.search}${target.hash}`;
-}
+import { safeNextPath } from "@/lib/auth/safe-next-path";
 
 /**
  * Landingsroute voor Supabase e-maillinks (wachtwoordherstel, bevestiging).

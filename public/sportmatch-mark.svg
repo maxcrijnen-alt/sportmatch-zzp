@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="SportMatch">
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M45 108A88 88 0 0 1 116 37" stroke="#0B8F2E" stroke-width="15"/>
+    <path d="M140 37A88 88 0 0 1 211 105" stroke="#F0001A" stroke-width="15"/>
+    <path d="M45 149A88 88 0 0 0 116 220" stroke="#0B8F2E" stroke-width="15"/>
+    <path d="M140 220A88 88 0 0 0 211 151" stroke="#F0001A" stroke-width="15"/>
+  </g>
+
+  <g fill="none" stroke="#0B8F2E" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M84 94V68L128 42L172 68V94" stroke-width="8"/>
+    <path d="M103 80H153" stroke-width="8"/>
+    <path d="M94 68V92M101 64V96M155 64V96M162 68V92" stroke-width="8"/>
+  </g>
+
+  <g>
+    <circle cx="128" cy="157" r="18" fill="#F0001A"/>
+    <path d="M82 211C87 181 105 169 128 169C151 169 169 181 174 211C160 220 145 225 128 225C111 225 96 220 82 211Z" fill="#F0001A"/>
+    <path d="M108 177L128 197L148 177" fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="5"/>
+    <circle cx="128" cy="199" r="5.5" fill="none" stroke="#fff" stroke-width="4"/>
+    <path d="M128 205V214" stroke="#fff" stroke-linecap="round" stroke-width="4"/>
+  </g>
+</svg>

@@ -30,7 +30,7 @@ for (const [path, heading] of [
   ["/hoe-het-werkt", "Hoe het werkt"],
   ["/voor-instructeurs", "Vind opdrachten"],
   ["/voor-sportscholen", "Vul je rooster"],
-  ["/demo", "Bekijk SportMatch"],
+  ["/demo", "Bekijk de demo"],
   ["/tarieven", "Tarieven"],
   ["/faq", "Veelgestelde vragen"],
   ["/privacy", "Privacybeleid"],

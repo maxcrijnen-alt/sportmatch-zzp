@@ -66,15 +66,15 @@ export function InstructorOnboardingForm({
   };
 
   return (
-    <form action={formAction} className="space-y-6">
+    <form action={formAction} className="space-y-3">
       {state.error ? (
         <Alert variant="destructive">
           <AlertDescription>{state.error}</AlertDescription>
         </Alert>
       ) : null}
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-2">
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="space-y-1.5">
           <Label htmlFor="phone">Telefoonnummer</Label>
           <Input
             autoComplete="tel"
@@ -88,11 +88,11 @@ export function InstructorOnboardingForm({
             Alleen zichtbaar voor organisaties na een bevestigde opdracht.
           </p>
         </div>
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <Label htmlFor="birthDate">Geboortedatum</Label>
           <Input id="birthDate" name="birthDate" required type="date" />
         </div>
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <Label htmlFor="cityId">Woonplaats</Label>
           <Select
             id="cityId"
@@ -125,7 +125,7 @@ export function InstructorOnboardingForm({
             Andere gebruikers zien alleen je plaats, nooit je adres.
           </p>
         </div>
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <Label htmlFor="travelDistanceKm">Maximale reisafstand (km)</Label>
           <Input
             defaultValue={25}
@@ -137,7 +137,7 @@ export function InstructorOnboardingForm({
             type="number"
           />
         </div>
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <Label htmlFor="hourlyRateEuro">Uurtarief (€, excl. btw)</Label>
           <Input
             id="hourlyRateEuro"
@@ -149,7 +149,7 @@ export function InstructorOnboardingForm({
             type="number"
           />
         </div>
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <Label htmlFor="yearsExperience">Jaren ervaring</Label>
           <Input
             defaultValue={0}
@@ -163,7 +163,7 @@ export function InstructorOnboardingForm({
         </div>
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-1.5">
         <Label>Jouw situatie (meerdere mogelijk)</Label>
         <div className="flex flex-wrap gap-2">
           {statusOptions.map(([status, label]) => (
@@ -191,8 +191,8 @@ export function InstructorOnboardingForm({
       </div>
 
       {isZzp ? (
-        <div className="grid gap-4 rounded-lg border border-border bg-muted/40 p-4 sm:grid-cols-2">
-          <div className="space-y-2">
+        <div className="grid gap-3 rounded-lg border border-border bg-muted/40 p-3 sm:grid-cols-2">
+          <div className="space-y-1.5">
             <Label htmlFor="kvkNumber">KvK-nummer</Label>
             <Input
               id="kvkNumber"
@@ -201,7 +201,7 @@ export function InstructorOnboardingForm({
               required
             />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label htmlFor="btwNumber">Btw-nummer (optioneel)</Label>
             <Input id="btwNumber" name="btwNumber" placeholder="NL123456789B01" />
           </div>
@@ -212,7 +212,7 @@ export function InstructorOnboardingForm({
         </div>
       ) : null}
 
-      <div className="space-y-2">
+      <div className="space-y-1.5">
         <Label>Specialisaties</Label>
         <div className="flex flex-wrap gap-2">
           {sports.map((sport) => (
@@ -235,7 +235,7 @@ export function InstructorOnboardingForm({
       </div>
 
       {visibleLessonTypes.length > 0 ? (
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <Label>Lesvormen waarin je inzetbaar bent (optioneel)</Label>
           <p className="text-xs text-muted-foreground">
             Dit helpt sportscholen je gerichter uit te nodigen. Zonder keuze
@@ -260,7 +260,7 @@ export function InstructorOnboardingForm({
         </div>
       ) : null}
 
-      <div className="space-y-2">
+      <div className="space-y-1.5">
         <Label htmlFor="workExperience">Werkervaring</Label>
         <Textarea
           id="workExperience"
@@ -270,7 +270,7 @@ export function InstructorOnboardingForm({
         />
       </div>
 
-      <Button className="w-full sm:w-auto" disabled={isPending} size="lg" type="submit">
+      <Button className="w-full sm:w-auto" disabled={isPending} type="submit">
         {isPending ? "Opslaan…" : "Profiel opslaan en starten"}
       </Button>
     </form>

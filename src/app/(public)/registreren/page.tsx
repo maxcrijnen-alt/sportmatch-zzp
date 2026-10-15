@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowRight, Building2, CheckCircle2, Dumbbell, PlayCircle } from "lucide-react";
+import { ArrowRight, CheckCircle2, PlayCircle } from "lucide-react";
 import { RegisterForm } from "@/components/auth/register-form";
+import { RoleIcon } from "@/components/brand/role-icon";
 import {
   Card,
   CardContent,
@@ -21,15 +22,15 @@ const roleCards = [
     title: "Ik ben sportschool",
     text: "Maak een organisatie aan, voeg je eerste vestiging toe en plaats daarna je eerste opdracht.",
     href: "/registreren?rol=organisatie",
-    icon: Building2,
+    role: "organization",
   },
   {
     title: "Ik ben instructeur",
     text: "Vul je specialisaties, beschikbaarheid, reisafstand en documenten in om passende opdrachten te vinden.",
     href: "/registreren?rol=instructeur",
-    icon: Dumbbell,
+    role: "instructor",
   },
-];
+] as const;
 
 const onboardingSteps = [
   "Eerst demo bekijken kan zonder eigen account.",
@@ -88,8 +89,6 @@ export default async function RegistrerenPage({
 
         <div className="grid gap-3">
           {roleCards.map((card) => {
-            const Icon = card.icon;
-
             return (
               <Link
                 className="group rounded-lg border border-border bg-card p-4 transition-colors hover:border-primary hover:bg-primary/5"
@@ -97,9 +96,7 @@ export default async function RegistrerenPage({
                 key={card.title}
               >
                 <div className="flex items-start gap-3">
-                  <div className="rounded-md bg-primary/10 p-2 text-primary">
-                    <Icon className="h-5 w-5" />
-                  </div>
+                  <RoleIcon role={card.role} />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-3">
                       <h2 className="font-semibold">{card.title}</h2>

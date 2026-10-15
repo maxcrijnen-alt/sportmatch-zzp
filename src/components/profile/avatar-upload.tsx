@@ -74,9 +74,9 @@ export function AvatarUpload({
   };
 
   return (
-    <div className="flex items-center gap-4">
+    <div className="flex items-center gap-3">
       <Avatar name={name} size="lg" src={avatarUrl} />
-      <div className="space-y-2">
+      <div className="space-y-1.5">
         <input
           accept="image/png,image/jpeg,image/webp"
           className="hidden"
