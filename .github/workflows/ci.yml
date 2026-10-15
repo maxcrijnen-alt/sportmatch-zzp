@@ -1,0 +1,65 @@
+name: SportMatch CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sportmatch-ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  regression:
+    name: Lint, types, database and full E2E
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      CI: "true"
+      NEXT_TELEMETRY_DISABLED: "1"
+      SPORTMATCH_E2E_STATE_FILE: ${{ runner.temp }}/sportmatch-e2e-workdir
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: ESLint
+        run: npm run lint
+      - name: TypeScript (including generated route types)
+        run: npm run typecheck
+      - name: Migrations and SQL smoke tests (disposable PostgreSQL)
+        run: npm run test:db
+      - uses: supabase/setup-cli@45a513f8c64c0bc8e0e3dfe572b5c95be85f6359 # v3.0.1
+        with:
+          version: 2.121.0
+      - name: Install Chromium and system dependencies
+        run: npx --no-install playwright install --with-deps chromium
+      - name: Production build and complete regression (including demo E2E)
+        run: npm run test:regression
+      - name: Stop remaining test stack
+        if: always()
+        shell: bash
+        run: |
+          if [[ -f "$SPORTMATCH_E2E_STATE_FILE" ]]; then
+            test_workdir="$(cat "$SPORTMATCH_E2E_STATE_FILE")"
+            supabase stop --no-backup --workdir "$test_workdir"
+          fi
+      - name: Preserve reports and failure traces
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: sportmatch-test-results-${{ github.run_attempt }}
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 7
