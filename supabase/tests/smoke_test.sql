@@ -1171,4 +1171,70 @@ begin
 end $rpc_audit$;
 
 reset role;
+-- Direct status RPCs disclose only the caller's review status and the intended
+-- organization candidate eligibility. Workflow tests above still exercise VOG,
+-- mandatory reviews, invitations, confirmations and instructor replacements.
+create function pg_temp.expect_status_denied(rpc text, target uuid)
+returns void language plpgsql security invoker set search_path='' as $$
+begin
+  execute format('select public.%I($1)',rpc) using target;
+  raise exception 'FAIL: % disclosed unauthorized status',rpc;
+exception when insufficient_privilege then null;
+end;
+$$;
+grant execute on function pg_temp.expect_status_denied(text,uuid) to authenticated;
+set role authenticated;
+select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000001',false);
+do $$ begin
+  if not public.has_valid_vog(auth.uid()) then raise exception 'FAIL: own VOG check changed'; end if;
+  perform public.has_pending_review(auth.uid());
+end $$;
+select pg_temp.expect_status_denied('has_valid_vog','00000000-0000-0000-0000-000000000003');
+select pg_temp.expect_status_denied('has_pending_review','00000000-0000-0000-0000-000000000003');
+select pg_temp.expect_status_denied('has_valid_vog','00000000-0000-0000-0000-00000000000c');
+
+select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000002',false);
+do $$ begin
+  if not public.has_valid_vog('00000000-0000-0000-0000-000000000003') then
+    raise exception 'FAIL: organization lost candidate VOG eligibility';
+  end if;
+  perform public.has_pending_review(auth.uid());
+end $$;
+select pg_temp.expect_status_denied('has_pending_review','00000000-0000-0000-0000-000000000003');
+select pg_temp.expect_status_denied('has_valid_vog','00000000-0000-0000-0000-00000000000c');
+select pg_temp.expect_status_denied('has_valid_vog',null);
+
+select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-00000000000b',false);
+do $$ begin
+  if public.has_valid_vog('00000000-0000-0000-0000-00000000000c') then
+    raise exception 'FAIL: missing demo VOG became valid';
+  end if;
+end $$;
+select pg_temp.expect_status_denied('has_valid_vog','00000000-0000-0000-0000-00000000000a');
+select pg_temp.expect_status_denied('has_valid_vog','00000000-0000-0000-0000-000000000001');
+select pg_temp.expect_status_denied('has_pending_review','00000000-0000-0000-0000-00000000000c');
+reset role;
+update public.organization_members set state='removed'
+where user_id='00000000-0000-0000-0000-00000000000b';
+set role authenticated;
+select pg_temp.expect_status_denied('has_valid_vog','00000000-0000-0000-0000-00000000000c');
+select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000009',false);
+do $$ begin
+  if not public.has_valid_vog('00000000-0000-0000-0000-000000000003') then
+    raise exception 'FAIL: admin lost document eligibility check';
+  end if;
+  perform public.has_pending_review('00000000-0000-0000-0000-000000000003');
+end $$;
+select set_config('request.jwt.claim.sub','',false);
+select pg_temp.expect_status_denied('has_valid_vog','00000000-0000-0000-0000-000000000003');
+select pg_temp.expect_status_denied('has_pending_review','00000000-0000-0000-0000-000000000003');
+reset role;
+do $$ begin
+  if has_function_privilege('authenticated','private.has_valid_vog(uuid)','execute')
+    or has_function_privilege('authenticated','private.has_pending_review(uuid)','execute')
+    or has_function_privilege('anon','private.has_valid_vog(uuid)','execute')
+    or has_function_privilege('anon','private.has_pending_review(uuid)','execute') then
+    raise exception 'FAIL: internal status check callable directly';
+  end if;
+end $$;
 select 'ALLE SMOKETESTS GESLAAGD' as resultaat;
