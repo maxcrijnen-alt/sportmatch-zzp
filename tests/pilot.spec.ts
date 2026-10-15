@@ -154,18 +154,30 @@ test("nieuwe sportschool en zzp-instructeur doorlopen de volledige samenwerking"
     await expect(school.getByText("Beoordelingen", { exact: true })).toBeVisible();
     await school.screenshot({ path: testInfo.outputPath("pilot-school-completed.png"), fullPage: true });
   } finally {
-    // Playwright may already close this context after a test timeout. Still run
-    // account cleanup and preserve the original failing action in the report.
-    await instructorContext.close().catch(() => undefined);
+    // Stop both clients before deleting fixtures: realtime/auth refresh from an
+    // open school page must not race identity deletion. Contexts can already be
+    // closed after a timeout; still clean the database in that case.
+    await Promise.allSettled([instructorContext.close(), school.context().close()]);
     const users = await admin.from("profiles").select("id").in("email", [schoolEmail, instructorEmail]);
     expect(users.error).toBeNull();
-    for (const user of users.data ?? []) {
-      const orgs = await admin.from("organizations").select("id").eq("created_by", user.id);
+    const userIds = (users.data ?? []).map(user => user.id);
+    // Remove the fixture graph before either identity, independent of the
+    // unspecified ordering of the profiles query.
+    if (userIds.length > 0) {
+      const orgs = await admin.from("organizations").select("id").in("created_by", userIds);
+      expect(orgs.error).toBeNull();
       for (const org of orgs.data ?? []) {
         expect((await admin.from("jobs").delete().eq("organization_id", org.id)).error).toBeNull();
         expect((await admin.from("organizations").delete().eq("id", org.id)).error).toBeNull();
       }
-      expect((await admin.auth.admin.deleteUser(user.id)).error).toBeNull();
     }
+    for (const userId of userIds) {
+      const removed = await admin.auth.admin.deleteUser(userId);
+      expect(removed.error, JSON.stringify({ operation: "pilot identity cleanup",
+        status: removed.error?.status, code: removed.error?.code })).toBeNull();
+    }
+    const remaining = await admin.from("profiles").select("id").in("email", [schoolEmail, instructorEmail]);
+    expect(remaining.error).toBeNull();
+    expect(remaining.data).toHaveLength(0);
   }
 });
