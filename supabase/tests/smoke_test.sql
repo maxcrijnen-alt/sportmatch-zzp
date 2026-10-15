@@ -1100,7 +1100,7 @@ end $$;
 -- Regressie: publieke SECURITY DEFINER-functies mogen niet rechtstreeks door
 -- anon worden uitgevoerd en moeten een vastgezette, lege search_path hebben.
 reset role;
-do $
+do $rpc_audit$
 begin
   if exists (
     select 1 from pg_proc p
@@ -1120,13 +1120,13 @@ begin
   ) then
     raise exception 'FAIL: SECURITY DEFINER zonder vastgezette lege search_path';
   end if;
-end $;
+end $rpc_audit$;
 
 -- Een gewone instructeur mag niet via de rechtstreeks uitvoerbare admin-RPC's
 -- gegevens zien of betalingsstatussen aanpassen.
 set role authenticated;
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-00000000000a', false);
-do $
+do $rpc_audit$
 begin
   if exists (select 1 from public.admin_list_profiles()) then
     raise exception 'FAIL: niet-admin ziet profielen via admin-RPC';
@@ -1142,7 +1142,7 @@ begin
       raise exception 'FAIL: admin-RPC weigerde om onverwachte reden: %', sqlerrm;
     end if;
   end;
-end $;
+end $rpc_audit$;
 
 reset role;
 select 'ALLE SMOKETESTS GESLAAGD' as resultaat;
