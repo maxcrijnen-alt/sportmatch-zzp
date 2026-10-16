@@ -220,4 +220,6 @@ test("herstellink uit de echte lokale SMTP-mail herstelt het wachtwoord", async 
   await page.waitForURL(/\/$/);
   await login(page, localUser.email, password);
   await expect(page).toHaveURL(/\/dashboard$/);
+  const replay = await request.get(link.href, { maxRedirects: 0 });
+  expect(replay.headers().location).toBe(new URL("/login?fout=link-verlopen", baseURL).href);
 });

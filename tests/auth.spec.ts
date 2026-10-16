@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 import { expect, test } from "@playwright/test";
+import { setLegacyLocalPassword } from "./helpers/expire-recovery";
 
 test.skip(process.env.RUN_DEMO_E2E !== "true", "Local Supabase E2E is not enabled");
 
@@ -25,7 +26,7 @@ test("Auth weigert een te kort wachtwoord ook buiten het formulier", async () =>
   }
 });
 
-test("inloggen controleert wachtwoord en uitloggen beschermt de sessie", async ({ page }) => {
+test("bestaand wachtwoord van zes tekens blijft geldig en uitloggen beschermt de sessie", async ({ page }) => {
   // playwright.config.ts rejects remote Supabase URLs before this code runs.
   const admin = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -33,14 +34,15 @@ test("inloggen controleert wachtwoord en uitloggen beschermt de sessie", async (
     { auth: { autoRefreshToken: false, persistSession: false } },
   );
   const email = `ci-${randomUUID()}@example.test`;
-  const password = `CI-${randomUUID()}-aA1!`;
+  const password = "old123";
   const { data, error } = await admin.auth.admin.createUser({
-    email, password, email_confirm: true,
+    email, password: `CI-${randomUUID()}-aA1!`, email_confirm: true,
     user_metadata: { role: "instructor", full_name: "CI Instructeur" },
   });
   expect(error).toBeNull();
   const userId = data.user!.id;
   try {
+    setLegacyLocalPassword(userId);
     const profile = await admin.from("profiles").update({ onboarding_completed: true }).eq("id", userId);
     expect(profile.error).toBeNull();
     const instructor = await admin.from("instructor_profiles").insert({ user_id: userId });
