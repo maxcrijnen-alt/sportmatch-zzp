@@ -10,17 +10,22 @@ import { cleanupDemoSession } from "@/lib/demo/factory";
 
 const credentialsSchema = z.object({
   email: z.string().email("Vul een geldig e-mailadres in."),
-  password: z.string().min(8, "Wachtwoord moet minimaal 8 tekens zijn."),
+  // Existing passwords remain valid when the creation policy becomes stricter.
+  password: z.string().min(1, "Vul je wachtwoord in."),
 });
 
 const registerSchema = credentialsSchema.extend({
+  password: z.string().min(8, "Wachtwoord moet minimaal 8 tekens zijn."),
   fullName: z.string().min(2, "Vul je naam in."),
   role: z.enum(["instructor", "organization"]),
 });
 
 export interface AuthActionState {
   error: string | null;
+  success?: string;
 }
+
+const confirmationMessage = "Controleer je e-mail om je account te bevestigen. Heb je al een account? Log dan in of vraag een herstellink aan. Controleer ook je spamfolder.";
 
 export async function signInAction(
   _previous: AuthActionState,
@@ -72,10 +77,11 @@ export async function registerAction(
     return { error: parsed.error.issues[0]?.message ?? "Ongeldige invoer." };
   }
 
-  const { error } = await supabase.auth.signUp({
+  const { data, error } = await supabase.auth.signUp({
     email: parsed.data.email,
     password: parsed.data.password,
     options: {
+      emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/auth/confirm?next=/onboarding`,
       data: {
         full_name: parsed.data.fullName,
         role: parsed.data.role,
@@ -85,9 +91,15 @@ export async function registerAction(
 
   if (error) {
     if (error.code === "user_already_exists") {
-      return { error: "Er bestaat al een account met dit e-mailadres." };
+      return { error: null, success: confirmationMessage };
     }
     return { error: "Registreren is niet gelukt. Probeer het opnieuw." };
+  }
+
+  // Confirmation-enabled Auth returns a user but no authenticated session.
+  // Do not send that visitor into protected onboarding or reveal duplicates.
+  if (!data.session) {
+    return { error: null, success: confirmationMessage };
   }
 
   revalidatePath("/", "layout");

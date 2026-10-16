@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { expect, test as base, type Page } from "@playwright/test";
+import { expireLocalRecovery } from "./helpers/expire-recovery";
 
 type LocalUser = {
   admin: SupabaseClient;
@@ -167,6 +168,19 @@ test("herstel zonder sessie blijft beschermd en onbekende e-mail krijgt hetzelfd
   await page.getByLabel("E-mailadres").fill(`unknown-${randomUUID()}@example.test`);
   await page.getByRole("button", { name: "Stuur herstellink" }).click();
   await expect(page.getByText("Als dit e-mailadres bekend is,", { exact: false })).toBeVisible();
+});
+
+test("een echt verlopen hersteltoken kan geen sessie openen", async ({ page, request, baseURL, localUser }) => {
+  const params = await recoveryLink(localUser);
+  params.set("next", "/wachtwoord-herstellen");
+  expireLocalRecovery(localUser.id);
+  const response = await request.get(`/auth/confirm?${params}`, { maxRedirects: 0 });
+  expect(response.status()).toBe(307);
+  expect(response.headers().location).toBe(new URL("/login?fout=link-verlopen", baseURL).href);
+  await page.goto("/login?fout=link-verlopen");
+  await expect(page.getByText("Deze link is ongeldig, verlopen of al gebruikt.", { exact: false })).toBeVisible();
+  await page.goto("/wachtwoord-herstellen");
+  await expect(page).toHaveURL(/\/login$/);
 });
 
 test("herstellink uit de echte lokale SMTP-mail herstelt het wachtwoord", async ({ page, request, baseURL, localUser }) => {

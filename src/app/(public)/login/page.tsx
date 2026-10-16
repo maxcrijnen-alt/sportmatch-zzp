@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { LoginForm } from "@/components/auth/login-form";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Card,
   CardContent,
@@ -15,7 +16,10 @@ export const metadata: Metadata = {
   title: "Inloggen",
 };
 
-export default async function LoginPage() {
+export default async function LoginPage({ searchParams }: {
+  searchParams: Promise<{ fout?: string }>;
+}) {
+  const { fout } = await searchParams;
   const profile = await getSessionProfile();
 
   if (profile) {
@@ -32,6 +36,11 @@ export default async function LoginPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {fout === "link-verlopen" ? (
+            <Alert className="mb-4" variant="destructive">
+              <AlertDescription>Deze link is ongeldig, verlopen of al gebruikt. Log in als je al bevestigd bent, of vraag bij wachtwoordherstel een nieuwe link aan.</AlertDescription>
+            </Alert>
+          ) : null}
           <LoginForm />
           <div className="mt-4 space-y-1 text-sm text-muted-foreground">
             <p>

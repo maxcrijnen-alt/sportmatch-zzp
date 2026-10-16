@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import Link from "next/link";
 import { RoleIcon } from "@/components/brand/role-icon";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,15 @@ export function RegisterForm({
     registerAction,
     initialState,
   );
+
+  if (state.success) {
+    return (
+      <div className="space-y-4">
+        <Alert role="status"><AlertDescription>{state.success}</AlertDescription></Alert>
+        <Link className="text-sm font-medium text-primary hover:underline" href="/login">Naar inloggen</Link>
+      </div>
+    );
+  }
 
   return (
     <form action={formAction} className="space-y-4">
