@@ -11,8 +11,7 @@ import {
 } from "lucide-react";
 import { InstructorOnboardingForm } from "@/components/onboarding/instructor-onboarding-form";
 import { OrganizationOnboardingForm } from "@/components/onboarding/organization-onboarding-form";
-import { Button } from "@/components/ui/button";
-import { acceptOrgInviteAction } from "@/lib/org/actions";
+import { AcceptInviteForm } from "@/components/org/accept-invite-form";
 import {
   Card,
   CardContent,
@@ -206,18 +205,11 @@ export default async function OnboardingPage() {
             </CardHeader>
             <CardContent className="space-y-0 pt-0">
               {invites.map((invite) => (
-                <form
-                  action={acceptOrgInviteAction.bind(null, invite.id)}
-                  className="flex items-center justify-between gap-3 border-t border-border py-3 first:border-t-0 first:pt-0"
+                <AcceptInviteForm
                   key={invite.id}
-                >
-                  <p className="text-sm font-medium">
-                    {invite.organization?.name ?? "Organisatie"}
-                  </p>
-                  <Button size="sm" type="submit">
-                    Uitnodiging accepteren
-                  </Button>
-                </form>
+                  memberId={invite.id}
+                  organizationName={invite.organization?.name ?? "Organisatie"}
+                />
               ))}
             </CardContent>
           </Card>
