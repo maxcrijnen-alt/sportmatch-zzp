@@ -1,11 +1,12 @@
 import { randomUUID } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 import { devices, expect, test, type Page } from "@playwright/test";
+import { authMailLink } from "./helpers/auth-mail";
 
 test.skip(process.env.RUN_DEMO_E2E !== "true", "Isolated local Supabase is required");
 test.use({ actionTimeout: 15_000, navigationTimeout: 30_000 });
 
-test("nieuwe sportschool en zzp-instructeur doorlopen de volledige samenwerking", async ({ page: school, browser }, testInfo) => {
+test("nieuwe sportschool en zzp-instructeur doorlopen de volledige samenwerking", async ({ page: school, browser, request, baseURL }, testInfo) => {
   test.setTimeout(180_000);
   const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!,
     { auth: { autoRefreshToken: false, persistSession: false } });
@@ -27,6 +28,8 @@ test("nieuwe sportschool en zzp-instructeur doorlopen de volledige samenwerking"
     await page.getByLabel("E-mailadres").fill(email);
     await page.getByLabel("Wachtwoord", { exact: true }).fill(password);
     await page.getByRole("button", { name: "Gratis account aanmaken" }).click();
+    await expect(page.getByRole("status")).toContainText("Controleer je e-mail");
+    await page.goto((await authMailLink(request, email, baseURL!, "email")).href);
     await page.waitForURL("**/onboarding");
   }
 
