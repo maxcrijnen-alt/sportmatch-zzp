@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 import { expect, test } from "@playwright/test";
 import { setLegacyLocalPassword } from "./helpers/expire-recovery";
+import { logout } from "./helpers/logout";
 
 test.skip(process.env.RUN_DEMO_E2E !== "true", "Local Supabase E2E is not enabled");
 
@@ -56,9 +57,9 @@ test("bestaand wachtwoord van zes tekens blijft geldig en uitloggen beschermt de
     await page.getByLabel("Wachtwoord", { exact: true }).fill(password);
     await page.getByRole("main").getByRole("button", { name: "Inloggen", exact: true }).click();
     await page.waitForURL("**/dashboard");
-    await expect(page.getByRole("link", { name: "Beschikbaarheid", exact: true }).first()).toBeVisible();
-    await page.getByRole("button", { name: /uitloggen/i }).click();
-    await page.waitForURL(/\/$/);
+    await page.goto("/beschikbaarheid");
+    await expect(page).toHaveURL(/\/beschikbaarheid$/);
+    await logout(page);
     await page.goto("/dashboard");
     await page.waitForURL("**/login");
   } finally {

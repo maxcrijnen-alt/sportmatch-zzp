@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { expect, test as base, type Page } from "@playwright/test";
 import { expireLocalRecovery } from "./helpers/expire-recovery";
+import { logout } from "./helpers/logout";
 
 type LocalUser = {
   admin: SupabaseClient;
@@ -113,8 +114,7 @@ test.describe("e-mailbevestiging", () => {
     // Replaying the link elsewhere must not destroy the original session.
     await page.goto("/beschikbaarheid");
     await expect(page).toHaveURL(/\/beschikbaarheid$/);
-    await page.getByRole("button", { name: /uitloggen/i }).click();
-    await page.waitForURL(/\/$/);
+    await logout(page);
     await page.goto("/beschikbaarheid");
     await expect(page).toHaveURL(/\/login$/);
   });
@@ -135,8 +135,7 @@ test("wachtwoordherstel houdt interne redirect en verandert het echte wachtwoord
   await page.getByLabel("Herhaal nieuw wachtwoord").fill(password);
   await page.getByRole("button", { name: "Wachtwoord wijzigen" }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
-  await page.getByRole("button", { name: /uitloggen/i }).click();
-  await page.waitForURL(/\/$/);
+  await logout(page);
 
   await login(page, localUser.email, localUser.password);
   await expect(page.getByText("Inloggen mislukt.", { exact: false })).toBeVisible();
@@ -216,8 +215,7 @@ test("herstellink uit de echte lokale SMTP-mail herstelt het wachtwoord", async 
   await page.getByLabel("Herhaal nieuw wachtwoord", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Wachtwoord wijzigen", exact: true }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
-  await page.getByRole("button", { name: /uitloggen/i }).click();
-  await page.waitForURL(/\/$/);
+  await logout(page);
   await login(page, localUser.email, password);
   await expect(page).toHaveURL(/\/dashboard$/);
   const replay = await request.get(link.href, { maxRedirects: 0 });

@@ -137,4 +137,3 @@ aangewezen mailbox. Mailpit en admin.generateLink zijn hiervoor geen vervanging.
 - [Supabase SMTP, limieten en misbruik](https://supabase.com/docs/guides/auth/auth-smtp)
 - [Auth-rate limits](https://supabase.com/docs/guides/auth/rate-limits)
 - [Emailtemplates, scanners en tracking](https://supabase.com/docs/guides/auth/auth-email-templates)
-

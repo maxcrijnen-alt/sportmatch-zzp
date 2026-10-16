@@ -148,4 +148,3 @@ do $$ begin
 end $$;
 rollback;
 select 'WORKFLOW SECURITY TESTS GESLAAGD' as resultaat;
-

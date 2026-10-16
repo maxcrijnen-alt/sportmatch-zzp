@@ -116,4 +116,3 @@ geen claim van volledige serialiseerbaarheid. Behandel eventuele concurrentie-
 problemen apart met reproduceerbare tests en consistente lockvolgorde.
 
 [Supabase Advisor-uitleg](https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable)
-
