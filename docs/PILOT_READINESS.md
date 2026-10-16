@@ -91,11 +91,10 @@ bestaande klantrechten in als alternatief.
 
 **Aanbeveling: Pro vóór een pilot met echte persoonsgegevens en VOG's.**
 Capaciteit is niet de reden: de huidige read-only inventaris is 28 niet-demo-
-profielen, circa 18,2 MB database en 0 Storage-objecten. Een voorgestelde pilot
-heeft geen onbevestigde bestaande accounts als voorwaarde: de actuele 28
-niet-demo-accounts hebben allemaal email_confirmed_at. Deze telling vervangt
-de accounttoegangscontrole bij activeren niet. De pilot
-met 6 deelnemers blijft ruim onder Free (50.000 MAU, 500 MB DB, 1 GB Storage,
+profielen, circa 18,2 MB database en 0 Storage-objecten. Alle 28 niet-demo-accounts
+hebben email_confirmed_at; deze telling vervangt de accounttoegangscontrole bij
+activeren niet. De voorgestelde pilot met 6 deelnemers blijft ruim onder Free
+(50.000 MAU, 500 MB DB, 1 GB Storage,
 5 GB egress). Chat-/documentgebruik meten; geen prognose als meting presenteren.
 
 Pro begint volgens de [actuele prijspagina](https://supabase.com/pricing) bij
