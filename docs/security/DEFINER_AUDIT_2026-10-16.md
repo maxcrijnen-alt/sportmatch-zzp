@@ -3,7 +3,10 @@
 Datum: 16 oktober 2026. Bron: read-only pg_proc/pg_get_functiondef en grants op
 het bestaande productieproject fdlhhkwemjbctsmgwgvt, actuele main e8c3e95.
 Geen onbekende functieversie uit een oude migration aangenomen.
-Wijzigingen staan in PR #65 en zijn hieronder nog **niet als uitgerold** aangemerkt.
+Databaseguards uit PR #65 zijn na groene volledige CI eenmaal op productie
+toegepast als versie 20261016094828. Bestandsnaam volgt de door de migration-tool
+geregistreerde versie; geteste SQL-inhoud niet gewijzigd. De PR/releasecontrole
+bevat de definitieve applicatie-deploymentstatus.
 
 ## Methode en grenzen
 
@@ -76,7 +79,7 @@ onkwetsbaar zijn.
 
 ## Gerichte oplossing en regressie
 
-Migration: 20261016092406_revalidate_pending_workflow_actions.sql.
+Migration: 20261016094828_revalidate_pending_workflow_actions.sql.
 Alleen zes CREATE OR REPLACE-functies; geen rijmutaties, schema-/prijs-/trialwijzigingen.
 Bestaande returntypes, grants, search_path en definer-eigenschappen behouden.
 Opnieuw uitvoeren is idempotent; oude toegepaste migrations niet gewijzigd.
@@ -93,9 +96,10 @@ workflow_security_test.sql gebruikt nieuwe tijdelijke fixtures binnen BEGIN/ROLL
 - Catalogus bewaakt alle 34 endpoints, anon-revokes, lege search_path,
   service-role-only demo_sessions en beide pool-RPC's als INVOKER.
 
-Lokaal gereproduceerd tegen baseline: confirm_job accepteerde whole_closed,
-zonder dat een review-/overlapgate de test maskeerde. Dezelfde test slaagt na
-de migration in PGlite. PGlite vervangt alleen de onbeschikbare pgcrypto-extension
+Lokaal gereproduceerd tegen baseline: alle acht onderzochte status-/toegangs-
+bypasses, inclusief confirm_job op whole_closed, zonder dat een review-/overlapgate
+de test maskeerde. De gerichte tests slagen na de migration in PGlite, ook na
+idempotent herhalen. PGlite vervangt alleen de onbeschikbare pgcrypto-extension
 door de ingebouwde UUID-generator; dit is aanvullend bewijs, geen vervanging
 voor de volledige PostgreSQL/Supabase-CI.
 
