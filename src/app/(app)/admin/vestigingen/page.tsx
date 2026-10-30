@@ -53,7 +53,7 @@ export default async function AdminVestigingenPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold tracking-tight">Vestigingen</h1>
+      <h1 className="text-2xl font-semibold tracking-tight">Vestigingen</h1>
       <Card>
         <Table>
           <TableHeader>

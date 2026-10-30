@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { ArrowUpRight, BellOff } from "lucide-react";
+import { ArrowUpRight, BellOff, CheckCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Page, PageHeader } from "@/components/ui/page";
 import { getSessionProfile } from "@/lib/auth/session";
 import { formatDateTime } from "@/lib/labels";
 import {
@@ -36,42 +38,38 @@ export default async function MeldingenPage() {
   const hasUnread = notifications.some((notification) => !notification.read_at);
 
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-4 px-4 py-8">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Meldingen</h1>
-          <p className="text-sm text-muted-foreground">
-            Updates over opdrachten, reacties en berichten.
-          </p>
-        </div>
-        {hasUnread ? (
-          <form action={markAllNotificationsRead}>
-            <Button size="sm" type="submit" variant="outline">
-              Alles gelezen
-            </Button>
-          </form>
-        ) : null}
-      </div>
+    <Page width="narrow">
+      <PageHeader
+        actions={
+          hasUnread ? (
+            <form action={markAllNotificationsRead}>
+              <Button className="w-full sm:w-auto" size="sm" type="submit" variant="outline">
+                <CheckCheck className="h-4 w-4" />
+                Alles gelezen
+              </Button>
+            </form>
+          ) : null
+        }
+        title="Meldingen"
+      />
 
       {notifications.length === 0 ? (
         <Card>
-          <CardContent className="flex flex-col items-center gap-3 py-8 text-center">
-            <BellOff className="h-8 w-8 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">
-              Nog geen meldingen. Zodra er iets gebeurt, zie je het hier.
-            </p>
-          </CardContent>
+          <EmptyState
+            icon={BellOff}
+            title="Nog geen meldingen. Zodra er iets gebeurt, zie je het hier."
+          />
         </Card>
       ) : (
-        <div className="overflow-hidden rounded-lg border border-border bg-card">
+        <div className="overflow-hidden rounded-xl border border-border bg-card shadow-card">
           {notifications.map((notification) => {
             const inner = (
               <div
                 className={cn(
-                  "border-t border-border p-3 transition-colors first:border-t-0",
+                  "border-t border-border px-4 py-3.5 transition-colors first:border-t-0 sm:px-5",
                   notification.read_at
-                    ? "bg-card"
-                    : "bg-primary/5",
+                    ? "bg-card hover:bg-subtle"
+                    : "bg-primary-soft/60 hover:bg-primary-soft",
                 )}
               >
                 <div className="flex items-start justify-between gap-3">
@@ -119,6 +117,6 @@ export default async function MeldingenPage() {
           })}
         </div>
       )}
-    </div>
+    </Page>
   );
 }

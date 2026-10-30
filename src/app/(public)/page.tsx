@@ -134,7 +134,7 @@ export default function HomePage() {
               30 dagen gratis proberen
             </Badge>
             <div className="space-y-4">
-              <h1 className="max-w-3xl text-4xl font-bold leading-tight tracking-tight sm:text-5xl lg:text-6xl">
+              <h1 className="max-w-3xl text-4xl font-semibold leading-[1.08] tracking-tight sm:text-5xl lg:text-6xl">
                 De snelle match tussen sportschool en sportinstructeur.
               </h1>
               <p className="max-w-2xl text-lg leading-8 text-secondary-foreground/80">
@@ -152,12 +152,12 @@ export default function HomePage() {
                 </Button>
               </Link>
               <Link href="/registreren?rol=instructeur">
-                <Button className="w-full sm:w-auto" size="lg">
+                <Button className="w-full border-white/20 bg-white/5 text-white shadow-none hover:border-white/40 hover:bg-white/10 sm:w-auto" size="lg" variant="outline">
                   Start als instructeur
                 </Button>
               </Link>
               <Link href="/demo">
-                <Button className="w-full sm:w-auto" size="lg">
+                <Button className="w-full text-white/80 hover:bg-white/10 hover:text-white sm:w-auto" size="lg" variant="ghost">
                   Bekijk eerst demo
                 </Button>
               </Link>
@@ -258,7 +258,7 @@ export default function HomePage() {
       <section className="mx-auto w-full max-w-6xl px-4 py-14 sm:py-16">
         <div className="grid gap-6 lg:grid-cols-3 lg:items-start">
           <div className="lg:pr-6">
-            <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
+            <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
               Eén platform voor twee kanten van hetzelfde rooster
             </h2>
             <p className="mt-3 text-muted-foreground">
@@ -307,7 +307,7 @@ export default function HomePage() {
       <section className="bg-muted/50">
         <div className="mx-auto w-full max-w-6xl px-4 py-14 sm:py-16">
           <div className="max-w-2xl">
-            <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
+            <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
               Concrete opdrachten waarvoor je SportMatch gebruikt
             </h2>
             <p className="mt-3 text-muted-foreground">
@@ -337,9 +337,9 @@ export default function HomePage() {
 
       {/* Sportscholen en instructeurs */}
       <section className="mx-auto grid w-full max-w-6xl gap-8 px-4 py-14 sm:py-16 lg:grid-cols-2">
-        <div className="rounded-lg border border-border bg-card p-6 shadow-sm sm:p-8">
+        <div className="rounded-xl border border-border bg-card p-6 shadow-card sm:p-8">
           <Timer className="h-8 w-8 text-primary" />
-          <h2 className="mt-4 text-2xl font-bold tracking-tight">
+          <h2 className="mt-4 text-2xl font-semibold tracking-tight">
             Sportschool: plaats je opdracht en vergelijk reacties
           </h2>
           <p className="mt-3 text-muted-foreground">
@@ -366,9 +366,9 @@ export default function HomePage() {
           </div>
         </div>
 
-        <div className="rounded-lg border border-border bg-card p-6 shadow-sm sm:p-8">
+        <div className="rounded-xl border border-border bg-card p-6 shadow-card sm:p-8">
           <Search className="h-8 w-8 text-primary" />
-          <h2 className="mt-4 text-2xl font-bold tracking-tight">
+          <h2 className="mt-4 text-2xl font-semibold tracking-tight">
             Instructeur: vind werk dat bij je past
           </h2>
           <p className="mt-3 text-muted-foreground">
@@ -401,7 +401,7 @@ export default function HomePage() {
         <div className="mx-auto w-full max-w-6xl px-4 py-14 sm:py-16">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
+              <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
                 Zo werkt het in vier stappen
               </h2>
               <p className="mt-3 max-w-2xl text-secondary-foreground/75">
@@ -444,7 +444,7 @@ export default function HomePage() {
       <section className="mx-auto w-full max-w-6xl px-4 py-14 sm:py-16">
         <div className="grid gap-8 lg:grid-cols-[0.8fr_1.2fr] lg:items-start">
           <div>
-            <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
+            <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
               Vertrouwen en veiligheid zonder valse beloftes
             </h2>
             <p className="mt-3 text-muted-foreground">
@@ -486,7 +486,7 @@ export default function HomePage() {
             <Badge className="mb-4 w-fit" variant="accent">
               30 dagen gratis
             </Badge>
-            <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
+            <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
               Ontdek of SportMatch bij je past
             </h2>
             <p className="mt-3 max-w-2xl text-muted-foreground">
@@ -512,7 +512,7 @@ export default function HomePage() {
       {/* FAQ */}
       <section className="mx-auto w-full max-w-4xl px-4 py-14 sm:py-16">
         <div className="text-center">
-          <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
+          <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
             Veelgestelde vragen
           </h2>
           <p className="mt-3 text-muted-foreground">
@@ -554,12 +554,12 @@ export default function HomePage() {
               </Button>
             </Link>
             <Link href="/registreren?rol=instructeur">
-              <Button className="w-full sm:w-auto" size="lg">
+              <Button className="w-full border-white/20 bg-white/5 text-white shadow-none hover:border-white/40 hover:bg-white/10 sm:w-auto" size="lg" variant="outline">
                 Ik zoek opdrachten
               </Button>
             </Link>
             <Link href="/demo">
-              <Button className="w-full sm:w-auto" size="lg">
+              <Button className="w-full text-white/80 hover:bg-white/10 hover:text-white sm:w-auto" size="lg" variant="ghost">
                 Eerst demo bekijken
               </Button>
             </Link>

@@ -82,7 +82,7 @@ export default async function AdminBillingPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold tracking-tight">Billing</h1>
+      <h1 className="text-2xl font-semibold tracking-tight">Billing</h1>
 
       <Card>
         <CardHeader>

@@ -40,7 +40,7 @@ export default async function AdminOpdrachtenPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold tracking-tight">Opdrachten</h1>
+      <h1 className="text-2xl font-semibold tracking-tight">Opdrachten</h1>
       <Card>
         <Table>
           <TableHeader>

@@ -16,16 +16,16 @@ function ReviewFilters({
 }) {
   return (
     <form
-      className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto_auto] sm:items-end"
+      className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-end"
       method="get"
     >
       {Object.entries(hiddenParams).map(([name, value]) =>
         value ? <input key={name} name={name} type="hidden" value={value} /> : null,
       )}
 
-      <label className="space-y-1 text-[11px] font-medium text-muted-foreground">
+      <label className="space-y-1 text-[11px] font-medium text-muted-foreground sm:w-40">
         Sterren
-        <Select defaultValue={stars?.toString() ?? ""} name="stars">
+        <Select className="h-9 sm:h-8" defaultValue={stars?.toString() ?? ""} name="stars">
           <option value="">Alle sterren</option>
           <option value="5">5 sterren</option>
           <option value="4">4 sterren</option>
@@ -35,9 +35,9 @@ function ReviewFilters({
         </Select>
       </label>
 
-      <label className="space-y-1 text-[11px] font-medium text-muted-foreground">
+      <label className="space-y-1 text-[11px] font-medium text-muted-foreground sm:w-40">
         Sorteren
-        <Select defaultValue={sort} name="sort">
+        <Select className="h-9 sm:h-8" defaultValue={sort} name="sort">
           <option value="recent">Meest recent</option>
           <option value="oldest">Oudste</option>
           <option value="highest">Hoogste score</option>
@@ -50,7 +50,7 @@ function ReviewFilters({
       </Button>
 
       <Link className="w-full sm:w-auto" href={resetHref}>
-        <Button className="w-full" size="sm" type="button" variant="outline">
+        <Button className="w-full" size="sm" type="button" variant="ghost">
           Reset
         </Button>
       </Link>

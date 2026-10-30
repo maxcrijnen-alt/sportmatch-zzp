@@ -12,6 +12,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Page, PageHeader } from "@/components/ui/page";
 import { getSessionProfile } from "@/lib/auth/session";
 import { conversionFeeStatusLabels, organizationTypeLabels } from "@/lib/labels";
 import { getOrgContext } from "@/lib/org/context";
@@ -69,25 +70,30 @@ export default async function OrganisatiePage() {
   const fees = (feesData as ConversionFee[] | null) ?? [];
 
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-4 px-4 py-8">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">
-          {orgContext.organization.name}
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          {organizationTypeLabels[orgContext.organization.org_type]} · Jouw rol:{" "}
-          {orgContext.memberRole === "owner"
-            ? "eigenaar"
-            : orgContext.memberRole === "planner"
-              ? "planner"
-              : "vestigingsmanager"}
-        </p>
-      </div>
+    <Page width="narrow">
+      <PageHeader
+        meta={
+          <>
+            <Badge variant="outline">
+              {organizationTypeLabels[orgContext.organization.org_type]}
+            </Badge>
+            <Badge variant="muted">
+              Jouw rol:{" "}
+              {orgContext.memberRole === "owner"
+                ? "eigenaar"
+                : orgContext.memberRole === "planner"
+                  ? "planner"
+                  : "vestigingsmanager"}
+            </Badge>
+          </>
+        }
+        title={orgContext.organization.name}
+      />
 
       <Card>
-        <CardContent className="flex flex-wrap items-center justify-between gap-3 p-3">
+        <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="rounded-md bg-primary/10 p-2 text-primary">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary-soft text-primary">
               <Building2 className="h-4 w-4" />
             </div>
             <div className="min-w-0">
@@ -156,6 +162,6 @@ export default async function OrganisatiePage() {
           ) : null}
         </CardContent>
       </Card>
-    </div>
+    </Page>
   );
 }

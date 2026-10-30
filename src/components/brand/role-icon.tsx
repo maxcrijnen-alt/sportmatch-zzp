@@ -3,23 +3,18 @@ import { cn } from "@/lib/utils";
 
 type RoleIconRole = "organization" | "instructor";
 
-const roleStyles: Record<
-  RoleIconRole,
-  {
-    src: string;
-    className: string;
-    imageClassName: string;
-  }
-> = {
+/*
+ * Beide rolicons zijn uitsneden uit hetzelfde vector-beeldmerk: dezelfde
+ * schaal, lijndikte en kaderverhouding, in de groen/rood-kleuren van het logo.
+ */
+const roleStyles: Record<RoleIconRole, { src: string; className: string }> = {
   organization: {
     src: "/sportmatch-role-organization.svg",
-    className: "bg-emerald-500/10",
-    imageClassName: "h-5 w-7",
+    className: "bg-brand-green/[0.07] ring-brand-green/15",
   },
   instructor: {
     src: "/sportmatch-role-instructor.svg",
-    className: "bg-red-500/10",
-    imageClassName: "h-6 w-6",
+    className: "bg-brand-red/[0.06] ring-brand-red/15",
   },
 };
 
@@ -38,15 +33,14 @@ function RoleIcon({
     <span
       aria-hidden="true"
       className={cn(
-        "inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg",
+        "inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ring-1 ring-inset",
         roleStyle.className,
         className,
       )}
     >
       <span
         className={cn(
-          "relative inline-flex items-center justify-center",
-          roleStyle.imageClassName,
+          "relative inline-flex h-6 w-6 items-center justify-center",
           iconClassName,
         )}
       >
@@ -55,7 +49,7 @@ function RoleIcon({
           aria-hidden="true"
           className="h-full w-full object-contain"
           fill
-          sizes="32px"
+          sizes="48px"
           src={roleStyle.src}
         />
       </span>

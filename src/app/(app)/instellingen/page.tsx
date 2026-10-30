@@ -11,6 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Page, PageHeader } from "@/components/ui/page";
 import { getSessionProfile } from "@/lib/auth/session";
 import { BRAND } from "@/lib/branding";
 
@@ -26,13 +27,8 @@ export default async function InstellingenPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-4 px-4 py-8">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Instellingen</h1>
-        <p className="text-sm text-muted-foreground">
-          Account- en notificatie-instellingen.
-        </p>
-      </div>
+    <Page width="narrow">
+      <PageHeader title="Instellingen" />
 
       <Card>
         <CardHeader className="pb-3">
@@ -112,6 +108,6 @@ export default async function InstellingenPage() {
           naleving van wet- en regelgeving.
         </AlertDescription>
       </Alert>
-    </div>
+    </Page>
   );
 }

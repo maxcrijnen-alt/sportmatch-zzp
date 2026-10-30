@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import {
   Building2,
   CalendarDays,
+  ChevronRight,
   Clock,
   Mail,
   MapPin,
@@ -11,11 +12,13 @@ import {
   Phone,
   Star,
   Users,
+  Wallet,
 } from "lucide-react";
 import { ApplyForm } from "@/components/jobs/apply-form";
 import { CancelForm } from "@/components/jobs/cancel-form";
 import { ConfirmJobForm } from "@/components/jobs/confirm-job-form";
 import { CounterofferForm } from "@/components/jobs/counteroffer-form";
+import { JobFacts } from "@/components/jobs/job-facts";
 import { ProblemReportForm } from "@/components/jobs/problem-report-form";
 import { ReplacementForm } from "@/components/jobs/replacement-form";
 import { ReviewForm } from "@/components/jobs/review-form";
@@ -29,6 +32,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Page, PageHeader } from "@/components/ui/page";
 import { getSessionProfile } from "@/lib/auth/session";
 import {
   applicationStatusLabels,
@@ -251,72 +255,92 @@ export default async function OpdrachtDetailPage({
     .maybeSingle();
 
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-4 px-4 py-8">
-      <div className="space-y-2">
-        <div className="flex flex-wrap items-center gap-1.5">
-          <Badge
-            variant={
-              job.job_type === "urgent_substitute" ? "destructive" : "secondary"
-            }
-          >
-            {jobTypeLabels[job.job_type]}
-          </Badge>
-          {job.sport ? <Badge variant="muted">{job.sport.name}</Badge> : null}
-          <Badge variant="outline">
-            {job.custom_lesson_type ||
-              job.lesson_type?.name ||
-              "Lesvorm niet opgegeven"}
-          </Badge>
-          <Badge variant="outline">{jobStatusLabels[job.status]}</Badge>
-        </div>
-        <h1 className="text-2xl font-bold tracking-tight">{job.title}</h1>
-        <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
-          {job.organization ? (
-            <Link
-              className="inline-flex items-center gap-1.5 transition-colors hover:text-foreground hover:underline"
-              href={`/organisaties/${job.organization.id}/reviews`}
+    <Page width="narrow">
+      <PageHeader
+        back={{ href: "/opdrachten", label: "Opdrachten" }}
+        meta={
+          <>
+            <Badge
+              variant={
+                job.job_type === "urgent_substitute" ? "destructive" : "secondary"
+              }
             >
-              <Building2 className="h-3.5 w-3.5" />
-              <span>{job.organization.name}</span>
+              {jobTypeLabels[job.job_type]}
+            </Badge>
+            {job.sport ? <Badge variant="default">{job.sport.name}</Badge> : null}
+            <Badge variant="outline">
+              {job.custom_lesson_type ||
+                job.lesson_type?.name ||
+                "Lesvorm niet opgegeven"}
+            </Badge>
+            <Badge variant="muted">{jobStatusLabels[job.status]}</Badge>
+          </>
+        }
+        title={job.title}
+      />
+
+      {job.organization ? (
+        <Link
+          className="group flex items-center justify-between gap-3 rounded-xl border border-border bg-card px-4 py-3 shadow-card transition-colors hover:border-border-strong"
+          href={`/organisaties/${job.organization.id}/reviews`}
+        >
+          <span className="flex min-w-0 items-center gap-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+              <Building2 className="h-4 w-4" />
+            </span>
+            <span className="min-w-0">
+              <span className="block truncate text-sm font-semibold group-hover:text-primary">
+                {job.organization.name}
+              </span>
               {organizationReviewAverage ? (
-                <span className="inline-flex items-center gap-1 text-warning">
-                  <Star className="h-3.5 w-3.5 fill-warning" />
-                  {organizationReviewAverage} ({organizationReviews.length})
+                <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                  <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+                  <span className="font-medium text-foreground">
+                    {organizationReviewAverage}
+                  </span>
+                  ({organizationReviews.length})
                 </span>
               ) : (
                 <span className="text-xs text-muted-foreground">Nog geen reviews</span>
               )}
-            </Link>
-          ) : null}
-          <span className="inline-flex items-center gap-1.5">
-            <MapPin className="h-3.5 w-3.5" />
-            {job.location?.name} · {job.location?.city?.name}
-          </span>
-          <span className="inline-flex items-center gap-1.5">
-            <CalendarDays className="h-3.5 w-3.5" />
-            {formatDate(job.starts_on)}
-          </span>
-          <span className="inline-flex items-center gap-1.5">
-            <Clock className="h-3.5 w-3.5" />
-            {formatTime(job.start_time)}–{formatTime(job.end_time)}
-          </span>
-          {job.expected_participants ? (
-            <span className="inline-flex items-center gap-1.5">
-              <Users className="h-3.5 w-3.5" />~{job.expected_participants} deelnemers
             </span>
-          ) : null}
-        </div>
-      </div>
+          </span>
+          <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+        </Link>
+      ) : null}
+
+      <JobFacts
+        items={[
+          {
+            icon: MapPin,
+            label: "Locatie",
+            value: `${job.location?.name ?? "—"} · ${job.location?.city?.name ?? ""}`,
+          },
+          { icon: CalendarDays, label: "Datum", value: formatDate(job.starts_on) },
+          {
+            icon: Clock,
+            label: "Tijd",
+            value: (
+              <>
+                {formatTime(job.start_time)}–{formatTime(job.end_time)}
+                {job.expected_participants ? (
+                  <span className="mt-0.5 flex items-center gap-1 text-xs font-normal text-muted-foreground">
+                    <Users className="h-3 w-3" />~{job.expected_participants} deelnemers
+                  </span>
+                ) : null}
+              </>
+            ),
+          },
+          { icon: Wallet, label: "Vergoeding", value: describePay(job) },
+        ]}
+      />
 
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Vergoeding</CardTitle>
-          <CardDescription className="text-base font-medium text-foreground">
-            {describePay(job)}
-          </CardDescription>
+          <CardTitle>Over deze opdracht</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3 pt-0 text-sm">
-          <p className="whitespace-pre-line text-muted-foreground">
+          <p className="whitespace-pre-line leading-6 text-foreground/85">
             {job.description}
           </p>
           {job.recurrence_note ? (
@@ -686,6 +710,6 @@ export default async function OpdrachtDetailPage({
           </CardContent>
         </Card>
       ) : null}
-    </div>
+    </Page>
   );
 }

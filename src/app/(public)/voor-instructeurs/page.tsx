@@ -110,7 +110,7 @@ export default function VoorInstructeursPage() {
           <Badge className="w-fit" variant="accent">
             Voor zzp-instructeurs en sportprofessionals
           </Badge>
-          <h1 className="max-w-3xl text-3xl font-bold tracking-tight sm:text-5xl">
+          <h1 className="max-w-3xl text-3xl font-semibold tracking-tight sm:text-5xl">
             Vind opdrachten die passen bij je sport, agenda en reisafstand.
           </h1>
           <p className="max-w-2xl text-lg leading-8 text-muted-foreground">
@@ -138,7 +138,7 @@ export default function VoorInstructeursPage() {
           </p>
         </div>
 
-        <div className="rounded-lg border border-primary/30 bg-primary/5 p-5">
+        <div className="rounded-xl border border-primary/20 bg-primary-soft p-5">
           <p className="text-sm font-semibold text-primary">
             Wat zie je in de demo?
           </p>
@@ -160,7 +160,7 @@ export default function VoorInstructeursPage() {
       <section className="mt-14">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h2 className="text-2xl font-bold tracking-tight">
+            <h2 className="text-2xl font-semibold tracking-tight">
               Voorbeelden van opdrachten
             </h2>
             <p className="mt-2 max-w-2xl text-muted-foreground">
@@ -206,7 +206,7 @@ export default function VoorInstructeursPage() {
 
       <section className="mt-14 grid gap-8 lg:grid-cols-[0.8fr_1.2fr] lg:items-start">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">
+          <h2 className="text-2xl font-semibold tracking-tight">
             Je profiel moet meteen vertrouwen geven
           </h2>
           <p className="mt-3 text-muted-foreground">
@@ -227,7 +227,7 @@ export default function VoorInstructeursPage() {
 
       <section className="mt-14 grid gap-8 lg:grid-cols-[0.8fr_1.2fr] lg:items-start">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">
+          <h2 className="text-2xl font-semibold tracking-tight">
             Minder zoeken, betere keuzes
           </h2>
           <p className="mt-3 text-muted-foreground">

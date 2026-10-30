@@ -45,10 +45,10 @@ export function RegisterForm({
       <div className="grid grid-cols-2 gap-3">
         <button
           className={cn(
-            "flex flex-col items-center gap-2 rounded-lg border p-4 text-sm font-medium transition-colors",
+            "flex flex-col items-center gap-2 rounded-xl border p-4 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40",
             role === "instructor"
-              ? "border-primary bg-primary/5 text-foreground"
-              : "border-border text-muted-foreground hover:bg-muted",
+              ? "border-primary/40 bg-primary-soft text-foreground ring-1 ring-primary/20"
+              : "border-border text-muted-foreground hover:border-border-strong hover:bg-subtle",
           )}
           onClick={() => setRole("instructor")}
           type="button"
@@ -58,10 +58,10 @@ export function RegisterForm({
         </button>
         <button
           className={cn(
-            "flex flex-col items-center gap-2 rounded-lg border p-4 text-sm font-medium transition-colors",
+            "flex flex-col items-center gap-2 rounded-xl border p-4 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40",
             role === "organization"
-              ? "border-primary bg-primary/5 text-foreground"
-              : "border-border text-muted-foreground hover:bg-muted",
+              ? "border-primary/40 bg-primary-soft text-foreground ring-1 ring-primary/20"
+              : "border-border text-muted-foreground hover:border-border-strong hover:bg-subtle",
           )}
           onClick={() => setRole("organization")}
           type="button"

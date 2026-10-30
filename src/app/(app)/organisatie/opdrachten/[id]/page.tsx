@@ -4,14 +4,17 @@ import { notFound, redirect } from "next/navigation";
 import {
   CalendarDays,
   Clock,
+  Inbox,
   Mail,
   MapPin,
   MessageSquare,
   Phone,
   Star,
+  Wallet,
 } from "lucide-react";
 import { CancelForm } from "@/components/jobs/cancel-form";
 import { CounterofferForm } from "@/components/jobs/counteroffer-form";
+import { JobFacts } from "@/components/jobs/job-facts";
 import { InviteForm } from "@/components/jobs/invite-form";
 import { PoolInviteForm } from "@/components/jobs/pool-invite-form";
 import { NoShowForm } from "@/components/jobs/no-show-form";
@@ -30,6 +33,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Page, PageHeader } from "@/components/ui/page";
 import { getSessionProfile } from "@/lib/auth/session";
 import {
   applicationStatusLabels,
@@ -316,613 +320,636 @@ export default async function OrganisatieOpdrachtDetailPage({
   );
 
   return (
-    <div className="mx-auto w-full max-w-4xl space-y-4 px-4 py-8">
-      <div className="space-y-2">
-        <div className="flex flex-wrap items-center gap-1.5">
-          <Badge
-            variant={
-              job.job_type === "urgent_substitute" ? "destructive" : "secondary"
-            }
-          >
-            {jobTypeLabels[job.job_type]}
-          </Badge>
-          {job.sport ? <Badge variant="muted">{job.sport.name}</Badge> : null}
-          <Badge variant="outline">
-            {job.custom_lesson_type ||
-              job.lesson_type?.name ||
-              "Lesvorm niet opgegeven"}
-          </Badge>
-          <Badge variant="outline">{jobStatusLabels[job.status]}</Badge>
-        </div>
-        <h1 className="text-2xl font-bold tracking-tight">{job.title}</h1>
-        <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
-          <span className="inline-flex items-center gap-1.5">
-            <MapPin className="h-3.5 w-3.5" />
-            {job.location?.name}
-          </span>
-          <span className="inline-flex items-center gap-1.5">
-            <CalendarDays className="h-3.5 w-3.5" />
-            {formatDate(job.starts_on)}
-          </span>
-          <span className="inline-flex items-center gap-1.5">
-            <Clock className="h-3.5 w-3.5" />
-            {formatTime(job.start_time)}–{formatTime(job.end_time)}
-          </span>
-          <span className="font-medium text-foreground">{describePay(job)}</span>
-        </div>
+    <Page>
+      <PageHeader
+        back={{ href: "/organisatie/opdrachten", label: "Opdrachten" }}
+        meta={
+          <>
+            <Badge
+              variant={
+                job.job_type === "urgent_substitute" ? "destructive" : "secondary"
+              }
+            >
+              {jobTypeLabels[job.job_type]}
+            </Badge>
+            {job.sport ? <Badge variant="default">{job.sport.name}</Badge> : null}
+            <Badge variant="outline">
+              {job.custom_lesson_type ||
+                job.lesson_type?.name ||
+                "Lesvorm niet opgegeven"}
+            </Badge>
+            <Badge variant="muted">{jobStatusLabels[job.status]}</Badge>
+          </>
+        }
+        title={job.title}
+      />
+
+      <JobFacts
+        items={[
+          { icon: MapPin, label: "Vestiging", value: job.location?.name ?? "—" },
+          { icon: CalendarDays, label: "Datum", value: formatDate(job.starts_on) },
+          {
+            icon: Clock,
+            label: "Tijd",
+            value: `${formatTime(job.start_time)}–${formatTime(job.end_time)}`,
+          },
+          { icon: Wallet, label: "Vergoeding", value: describePay(job) },
+        ]}
+      />
+
+      <div className="flex flex-wrap items-start gap-2 empty:hidden">
+        {/* Statusacties */}
+        {job.status === "open" ? (
+          <div className="flex flex-wrap gap-2">
+            <StopSearchForm jobId={job.id} />
+            <Link href={`/organisatie/opdrachten/nieuw?duplicate=${job.id}`}>
+              <Button size="sm" variant="outline">Opdracht dupliceren</Button>
+            </Link>
+            <form action={saveJobAsTemplateAction.bind(null, job.id)}>
+              <Button size="sm" type="submit" variant="outline">Opslaan als sjabloon</Button>
+            </form>
+          </div>
+        ) : null}
+
+        {job.status === "confirmed" ||
+        job.status === "completed" ||
+        confirmedSegmentInstructorIds.length > 0 ? (
+          <ProblemReportForm jobId={job.id} />
+        ) : null}
       </div>
 
-      {job.segments.length > 0 ? (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Lessenblok</CardTitle>
-            <CardDescription>
-              {job.segments.length} aaneengesloten lessen binnen deze opdracht.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-2 pt-0">
-            {job.segments.map((segment) => (
-              <div
-                className="flex flex-wrap items-center justify-between gap-2 border-t border-border py-2.5 first:border-t-0 first:pt-0"
-                key={segment.id}
-              >
-                <span className="font-medium">
-                  {segment.custom_lesson_type ||
-                    segment.lesson_type?.name ||
-                    "Lesvorm niet opgegeven"}
-                </span>
-                <span className="text-sm text-muted-foreground">
-                  {formatTime(segment.start_time)}–{formatTime(segment.end_time)}
-                </span>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      ) : null}
-
-      {/* Statusacties */}
-      {job.status === "open" ? (
-        <div className="flex flex-wrap gap-2">
-          <StopSearchForm jobId={job.id} />
-          <Link href={`/organisatie/opdrachten/nieuw?duplicate=${job.id}`}>
-            <Button size="sm" variant="outline">Opdracht dupliceren</Button>
-          </Link>
-          <form action={saveJobAsTemplateAction.bind(null, job.id)}>
-            <Button size="sm" type="submit" variant="outline">Opslaan als sjabloon</Button>
-          </form>
-        </div>
-      ) : null}
-
-      {job.status === "confirmed" ||
-      job.status === "completed" ||
-      confirmedSegmentInstructorIds.length > 0 ? (
-        <ProblemReportForm jobId={job.id} />
-      ) : null}
-
-      {cancellation ? (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Annuleringsregistratie</CardTitle>
-            <CardDescription>
-              {cancellation.force_majeure_claimed
-                ? cancellation.force_majeure_status === "pending_review"
-                  ? "Het overmachtsverzoek wacht op beoordeling door SportMatch."
-                  : cancellation.force_majeure_status === "approved"
-                    ? "Overmacht is goedgekeurd; de vergoeding is aangepast."
-                    : "Het overmachtsverzoek is afgewezen."
-                : "De normale annuleringsregeling is geregistreerd."}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-0 pt-0 text-sm">
-            {cancellations.map((item) => (
-              <div
-                className="border-t border-border py-3 first:border-t-0 first:pt-0"
-                key={item.id}
-              >
-                <p className="font-medium">
-                  {item.instructor_id
-                    ? profilesById.get(item.instructor_id)?.full_name ?? "Instructeur"
-                    : "Opdracht"}
-                  {item.segment_ids.length > 0
-                    ? ` · ${item.segment_ids.length} lesonderdeel${item.segment_ids.length === 1 ? "" : "en"}`
-                    : ""}
-                </p>
-                <p className="text-muted-foreground">{item.reason}</p>
-                <p>{formatEuro(item.compensation_amount_cents ?? 0)}</p>
-              </div>
-            ))}
-            <p className="font-medium">
-              Totale geregistreerde vergoeding: {formatEuro(totalCancellationAmount)}
-              {cancellation.force_majeure_status !== "approved"
-                ? " (150% van de afgesproken dienst)"
-                : ""}
-            </p>
-            <p className="text-muted-foreground">
-              Dit is een registratie; SportMatch voert nog geen automatische betaling uit.
-            </p>
-          </CardContent>
-        </Card>
-      ) : null}
-
-      {/* Bevestigde instructeur */}
-      {confirmation?.confirmed_at ? (
-        <Card className="border-primary">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Bevestigde instructeur</CardTitle>
-            <CardDescription>
-              {confirmedApplication?.instructor?.full_name ??
-                "De opdracht is bevestigd."}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3 pt-0">
-            {contact ? (
-              <div className="space-y-1 text-sm">
-                <p className="font-medium">{contact.full_name}</p>
-                <p className="inline-flex items-center gap-2 text-muted-foreground">
-                  <Mail className="h-3.5 w-3.5" /> {contact.email}
-                </p>
-                <br />
-                <p className="inline-flex items-center gap-2 text-muted-foreground">
-                  <Phone className="h-3.5 w-3.5" /> {contact.phone}
-                </p>
-              </div>
-            ) : null}
-
-            {job.status === "confirmed" ? (
-              <div className="flex flex-wrap gap-2 border-t border-border pt-3">
-                <form action={completeJobAction.bind(null, job.id)}>
-                  <Button size="sm" type="submit">
-                    Opdracht afronden
-                  </Button>
-                </form>
-                <NoShowForm jobId={job.id} />
-                <CancelForm jobId={job.id} />
-              </div>
-            ) : null}
-          </CardContent>
-        </Card>
-      ) : null}
-
-      {activeSegmentConfirmations.length > 0 ? (
-        <Card className="border-primary">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Toewijzing lessenblok</CardTitle>
-            <CardDescription>
-              {confirmedSegmentInstructorIds.length > 0
-                ? `${confirmedSegmentInstructorIds.length} instructeur${confirmedSegmentInstructorIds.length === 1 ? "" : "s"} definitief ingepland.`
-                : "De gekozen instructeur(s) moeten de lesonderdelen nog bevestigen."}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3 pt-0">
-            <div className="space-y-2 text-sm">
-              {activeSegmentConfirmations.map((segmentConfirmation) => {
-                const segment = job.segments.find(
-                  (item) => item.id === segmentConfirmation.segment_id,
-                );
-                const instructor = profilesById.get(
-                  segmentConfirmation.instructor_id,
-                );
-                return (
-                  <div
-                    className="flex flex-wrap items-center justify-between gap-2 border-t border-border py-2.5 first:border-t-0 first:pt-0"
-                    key={segmentConfirmation.id}
-                  >
-                    <span>
-                      {segment
-                        ? `${formatTime(segment.start_time)}–${formatTime(segment.end_time)}`
-                        : "Lesonderdeel"}{" "}
-                      · {instructor?.full_name ?? "Instructeur"}
-                    </span>
-                    <Badge
-                      variant={
-                        segmentConfirmation.confirmed_at ? "success" : "warning"
-                      }
-                    >
-                      {segmentConfirmation.confirmed_at
-                        ? "Bevestigd"
-                        : "Wacht op bevestiging"}
-                    </Badge>
-                  </div>
-                );
-              })}
-            </div>
-
-            {contacts.length > 0 ? (
-              <div className="grid gap-3 border-t border-border pt-3 sm:grid-cols-2">
-                {contacts.map((item) => (
-                  <div className="text-sm" key={`${item.email}-${item.phone}`}>
-                    <p className="font-medium">{item.full_name}</p>
-                    <p className="text-muted-foreground">{item.email}</p>
-                    <p className="text-muted-foreground">{item.phone}</p>
-                  </div>
-                ))}
-              </div>
-            ) : null}
-
-            {job.status === "confirmed" || confirmedSegmentInstructorIds.length > 0 ? (
-              <div className="flex flex-wrap gap-2 border-t border-border pt-3">
-                {job.status === "confirmed" ? (
-                  <form action={completeJobAction.bind(null, job.id)}>
-                    <Button size="sm" type="submit">
-                      Lessenblok afronden
-                    </Button>
-                  </form>
-                ) : null}
-                <CancelForm jobId={job.id} />
-              </div>
-            ) : null}
-          </CardContent>
-        </Card>
-      ) : null}
-
-      {/* Vervangingsvoorstellen */}
-      {replacements.length > 0 ? (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Vervangingsvoorstellen</CardTitle>
-            <CardDescription>
-              Jij bepaalt of een vervanger geschikt is.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-0 pt-0">
-            {replacements.map((replacement) => (
-              <div
-                className="flex flex-wrap items-center justify-between gap-3 border-t border-border py-3 text-sm first:border-t-0 first:pt-0"
-                key={replacement.id}
-              >
-                <div>
-                  <p className="font-medium">
-                    Vervanger voorgesteld
-                    <Badge className="ml-2" variant={
-                      replacement.status === "approved"
-                        ? "success"
-                        : replacement.status === "rejected"
-                          ? "destructive"
-                          : "secondary"
-                    }>
-                      {replacement.status === "proposed"
-                        ? "Te beoordelen"
-                        : replacement.status === "approved"
-                          ? "Goedgekeurd"
-                          : "Afgewezen"}
-                    </Badge>
-                  </p>
-                  {replacement.reason ? (
-                    <p className="text-muted-foreground">
-                      Reden: {replacement.reason}
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+        <div className="min-w-0 space-y-6">
+          {/* Bevestigde instructeur */}
+          {confirmation?.confirmed_at ? (
+            <Card className="border-primary">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Bevestigde instructeur</CardTitle>
+                <CardDescription>
+                  {confirmedApplication?.instructor?.full_name ??
+                    "De opdracht is bevestigd."}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3 pt-0">
+                {contact ? (
+                  <div className="space-y-1 text-sm">
+                    <p className="font-medium">{contact.full_name}</p>
+                    <p className="inline-flex items-center gap-2 text-muted-foreground">
+                      <Mail className="h-3.5 w-3.5" /> {contact.email}
                     </p>
-                  ) : null}
-                </div>
-                {replacement.status === "proposed" ? (
-                  <div className="flex gap-2">
-                    <form
-                      action={decideReplacementAction.bind(
-                        null,
-                        replacement.id,
-                        true,
-                        job.id,
-                      )}
-                    >
-                      <Button size="sm" type="submit">
-                        Goedkeuren
-                      </Button>
-                    </form>
-                    <form
-                      action={decideReplacementAction.bind(
-                        null,
-                        replacement.id,
-                        false,
-                        job.id,
-                      )}
-                    >
-                      <Button size="sm" type="submit" variant="outline">
-                        Afwijzen
-                      </Button>
-                    </form>
+                    <br />
+                    <p className="inline-flex items-center gap-2 text-muted-foreground">
+                      <Phone className="h-3.5 w-3.5" /> {contact.phone}
+                    </p>
                   </div>
                 ) : null}
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      ) : null}
 
-      {/* Review */}
-      {job.status === "completed" && confirmation && !hasReviewed ? (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Beoordeel de instructeur</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <ReviewForm jobId={job.id} />
-          </CardContent>
-        </Card>
-      ) : null}
+                {job.status === "confirmed" ? (
+                  <div className="flex flex-wrap gap-2 border-t border-border pt-3">
+                    <form action={completeJobAction.bind(null, job.id)}>
+                      <Button size="sm" type="submit">
+                        Opdracht afronden
+                      </Button>
+                    </form>
+                    <NoShowForm jobId={job.id} />
+                    <CancelForm jobId={job.id} />
+                  </div>
+                ) : null}
+              </CardContent>
+            </Card>
+          ) : null}
 
-      {job.status === "completed" && confirmedSegmentInstructorIds.length > 0 ? (
-        <div className="space-y-4">
-          {confirmedSegmentInstructorIds
-            .filter((instructorId) => !reviewedInstructorIds.has(instructorId))
-            .map((instructorId) => (
-              <Card key={instructorId}>
-                <CardHeader>
-                  <CardTitle>
-                    Beoordeel {profilesById.get(instructorId)?.full_name ?? "de instructeur"}
-                  </CardTitle>
-                  <CardDescription>
-                    Ieder bevestigd lid van het lessenblok krijgt een eigen,
-                    dubbelblinde beoordeling.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ReviewForm jobId={job.id} revieweeId={instructorId} />
-                </CardContent>
-              </Card>
-            ))}
-        </div>
-      ) : null}
-
-      {releasedReviews.length > 0 ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Beoordelingen</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2 text-sm">
-            {releasedReviews.map((review) => (
-              <p key={review.id}>
-                {"★".repeat(review.rating)}
-                {"☆".repeat(5 - review.rating)}{" "}
-                <span className="text-muted-foreground">
-                  door {review.side === "instructor" ? "instructeur" : "organisatie"}
-                </span>
-              </p>
-            ))}
-          </CardContent>
-        </Card>
-      ) : null}
-
-      {/* Kandidaten */}
-      <Card>
-        <CardHeader className="flex-row items-center justify-between space-y-0 pb-3">
-          <div>
-            <CardTitle className="text-base">Kandidaten</CardTitle>
-            <CardDescription>Reacties op deze opdracht.</CardDescription>
-          </div>
-          <span className="rounded-full border border-border px-2.5 py-1 text-xs font-semibold text-muted-foreground">
-            {applications.length}
-          </span>
-        </CardHeader>
-        <CardContent className="space-y-0 pt-0">
-          {applications.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              Nog geen reacties. Nodig hieronder zelf instructeurs uit.
-            </p>
-          ) : (
-            applications.map((application) => {
-              const stats = statsByInstructor.get(application.instructor_id);
-              const offers = counteroffers.filter(
-                (offer) => offer.application_id === application.id,
-              );
-              const selectableSegmentIds = (
-                segmentIdsByApplication.get(application.id) ?? []
-              ).filter((segmentId) => !occupiedSegmentIds.has(segmentId));
-
-              return (
-                <div
-                  className="space-y-2.5 border-t border-border py-3 first:border-t-0 first:pt-0"
-                  key={application.id}
-                >
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div className="flex min-w-0 items-center gap-3">
-                      <Avatar
-                        name={application.instructor?.full_name ?? "?"}
-                        src={application.instructor?.avatar_url}
-                      />
-                      <div className="min-w-0">
-                        <p className="truncate font-medium">
-                          {application.instructor?.full_name}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {application.instructor?.city?.name ?? "Onbekende plaats"}
-                          {" · "}
-                          {applicationStatusLabels[application.status]}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex flex-wrap gap-1.5 text-xs">
-                      {stats?.avg_rating != null ? (
-                        <Badge variant="accent">
-                          <Star className="h-3 w-3" /> {stats.avg_rating}
+          {activeSegmentConfirmations.length > 0 ? (
+            <Card className="border-primary">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Toewijzing lessenblok</CardTitle>
+                <CardDescription>
+                  {confirmedSegmentInstructorIds.length > 0
+                    ? `${confirmedSegmentInstructorIds.length} instructeur${confirmedSegmentInstructorIds.length === 1 ? "" : "s"} definitief ingepland.`
+                    : "De gekozen instructeur(s) moeten de lesonderdelen nog bevestigen."}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3 pt-0">
+                <div className="space-y-2 text-sm">
+                  {activeSegmentConfirmations.map((segmentConfirmation) => {
+                    const segment = job.segments.find(
+                      (item) => item.id === segmentConfirmation.segment_id,
+                    );
+                    const instructor = profilesById.get(
+                      segmentConfirmation.instructor_id,
+                    );
+                    return (
+                      <div
+                        className="flex flex-wrap items-center justify-between gap-2 border-t border-border py-2.5 first:border-t-0 first:pt-0"
+                        key={segmentConfirmation.id}
+                      >
+                        <span>
+                          {segment
+                            ? `${formatTime(segment.start_time)}–${formatTime(segment.end_time)}`
+                            : "Lesonderdeel"}{" "}
+                          · {instructor?.full_name ?? "Instructeur"}
+                        </span>
+                        <Badge
+                          variant={
+                            segmentConfirmation.confirmed_at ? "success" : "warning"
+                          }
+                        >
+                          {segmentConfirmation.confirmed_at
+                            ? "Bevestigd"
+                            : "Wacht op bevestiging"}
                         </Badge>
-                      ) : (
-                        <Badge variant="muted">Eerste klus</Badge>
-                      )}
-                      {stats ? (
-                        <>
-                          <Badge variant="muted">
-                            {stats.completed_count} afgerond
-                          </Badge>
-                          {stats.no_show_count > 0 ? (
-                            <Badge variant="warning">
-                              {stats.no_show_count} no-show
-                            </Badge>
-                          ) : null}
-                          {stats.reliability_score != null ? (
-                            <Badge variant="outline">
-                              Betrouwbaarheid {stats.reliability_score}%
-                            </Badge>
-                          ) : null}
-                        </>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {contacts.length > 0 ? (
+                  <div className="grid gap-3 border-t border-border pt-3 sm:grid-cols-2">
+                    {contacts.map((item) => (
+                      <div className="text-sm" key={`${item.email}-${item.phone}`}>
+                        <p className="font-medium">{item.full_name}</p>
+                        <p className="text-muted-foreground">{item.email}</p>
+                        <p className="text-muted-foreground">{item.phone}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+
+                {job.status === "confirmed" || confirmedSegmentInstructorIds.length > 0 ? (
+                  <div className="flex flex-wrap gap-2 border-t border-border pt-3">
+                    {job.status === "confirmed" ? (
+                      <form action={completeJobAction.bind(null, job.id)}>
+                        <Button size="sm" type="submit">
+                          Lessenblok afronden
+                        </Button>
+                      </form>
+                    ) : null}
+                    <CancelForm jobId={job.id} />
+                  </div>
+                ) : null}
+              </CardContent>
+            </Card>
+          ) : null}
+
+          {/* Vervangingsvoorstellen */}
+          {replacements.length > 0 ? (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Vervangingsvoorstellen</CardTitle>
+                <CardDescription>
+                  Jij bepaalt of een vervanger geschikt is.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-0 pt-0">
+                {replacements.map((replacement) => (
+                  <div
+                    className="flex flex-wrap items-center justify-between gap-3 border-t border-border py-3 text-sm first:border-t-0 first:pt-0"
+                    key={replacement.id}
+                  >
+                    <div>
+                      <p className="font-medium">
+                        Vervanger voorgesteld
+                        <Badge className="ml-2" variant={
+                          replacement.status === "approved"
+                            ? "success"
+                            : replacement.status === "rejected"
+                              ? "destructive"
+                              : "secondary"
+                        }>
+                          {replacement.status === "proposed"
+                            ? "Te beoordelen"
+                            : replacement.status === "approved"
+                              ? "Goedgekeurd"
+                              : "Afgewezen"}
+                        </Badge>
+                      </p>
+                      {replacement.reason ? (
+                        <p className="text-muted-foreground">
+                          Reden: {replacement.reason}
+                        </p>
                       ) : null}
                     </div>
-                  </div>
-
-                  {application.message ? (
-                    <p className="text-sm leading-5 text-muted-foreground">
-                      “{application.message}”
-                    </p>
-                  ) : null}
-                  {application.availability_note ? (
-                    <p className="text-xs text-muted-foreground">
-                      Beschikbaarheid: {application.availability_note}
-                    </p>
-                  ) : null}
-
-                  {offers.length > 0 ? (
-                    <div className="space-y-2">
-                      {offers.map((offer) => (
-                        <div
-                          className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-muted p-2.5 text-sm"
-                          key={offer.id}
+                    {replacement.status === "proposed" ? (
+                      <div className="flex gap-2">
+                        <form
+                          action={decideReplacementAction.bind(
+                            null,
+                            replacement.id,
+                            true,
+                            job.id,
+                          )}
                         >
-                          <span>
-                            Tegenvoorstel: {formatEuro(offer.amount_cents)}{" "}
-                            {offer.pay_type === "hourly" ? "per uur" : "vast"} (
-                            {offer.status === "pending"
-                              ? "in afwachting"
-                              : offer.status === "accepted"
-                                ? "geaccepteerd"
-                                : "afgewezen"}
-                            )
-                          </span>
-                          {offer.status === "pending" &&
-                          offer.side === "instructor" ? (
-                            <span className="flex gap-2">
-                              <form
-                                action={respondCounterofferAction.bind(
-                                  null,
-                                  offer.id,
-                                  true,
-                                  `/organisatie/opdrachten/${job.id}`,
-                                )}
-                              >
-                                <Button size="sm" type="submit">
-                                  Accepteren
-                                </Button>
-                              </form>
-                              <form
-                                action={respondCounterofferAction.bind(
-                                  null,
-                                  offer.id,
-                                  false,
-                                  `/organisatie/opdrachten/${job.id}`,
-                                )}
-                              >
-                                <Button size="sm" type="submit" variant="outline">
-                                  Afwijzen
-                                </Button>
-                              </form>
-                            </span>
-                          ) : null}
-                        </div>
-                      ))}
-                    </div>
-                  ) : null}
+                          <Button size="sm" type="submit">
+                            Goedkeuren
+                          </Button>
+                        </form>
+                        <form
+                          action={decideReplacementAction.bind(
+                            null,
+                            replacement.id,
+                            false,
+                            job.id,
+                          )}
+                        >
+                          <Button size="sm" type="submit" variant="outline">
+                            Afwijzen
+                          </Button>
+                        </form>
+                      </div>
+                    ) : null}
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          ) : null}
 
-                  {job.status === "open" &&
-                  application.status === "pending" &&
-                  (job.segments.length === 0 || selectableSegmentIds.length > 0) ? (
-                    <div className="flex flex-wrap gap-2 border-t border-border pt-2.5">
-                      <SelectCandidateForm
-                        applicationId={application.id}
-                        candidateName={
-                          application.instructor?.full_name ?? "deze kandidaat"
-                        }
-                        jobId={job.id}
-                        segmentIds={selectableSegmentIds}
-                      />
-                      <details>
-                        <summary className="cursor-pointer text-sm text-primary">
-                          Tegenvoorstel doen
-                        </summary>
-                        <div className="mt-2">
-                          <CounterofferForm applicationId={application.id} />
-                        </div>
-                      </details>
-                    </div>
-                  ) : null}
-                </div>
-              );
-            })
-          )}
-        </CardContent>
-      </Card>
+          {/* Review */}
+          {job.status === "completed" && confirmation && !hasReviewed ? (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Beoordeel de instructeur</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <ReviewForm jobId={job.id} />
+              </CardContent>
+            </Card>
+          ) : null}
 
-      {/* Uitnodigen */}
-      {job.status === "open" ? (
-        <Card>
-          <CardHeader className="pb-3">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <CardTitle className="text-base">Instructeurs uitnodigen</CardTitle>
-                <CardDescription>
-                  Instructeurs met {job.sport?.name ?? "deze sport"} als
-                  specialisatie.
-                </CardDescription>
-              </div>
-              {poolCount > 0 ? <PoolInviteForm count={poolCount} jobId={job.id} /> : null}
+          {job.status === "completed" && confirmedSegmentInstructorIds.length > 0 ? (
+            <div className="space-y-4">
+              {confirmedSegmentInstructorIds
+                .filter((instructorId) => !reviewedInstructorIds.has(instructorId))
+                .map((instructorId) => (
+                  <Card key={instructorId}>
+                    <CardHeader>
+                      <CardTitle>
+                        Beoordeel {profilesById.get(instructorId)?.full_name ?? "de instructeur"}
+                      </CardTitle>
+                      <CardDescription>
+                        Ieder bevestigd lid van het lessenblok krijgt een eigen,
+                        dubbelblinde beoordeling.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <ReviewForm jobId={job.id} revieweeId={instructorId} />
+                    </CardContent>
+                  </Card>
+                ))}
             </div>
-          </CardHeader>
-          <CardContent className="pt-0">
-            {suggestions.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                Geen extra suggesties gevonden.
-              </p>
-            ) : (
-              <div className="grid gap-2 sm:grid-cols-2">
-                {suggestions.map((suggestion) => {
-                  const stats = statsByInstructor.get(suggestion.user_id);
+          ) : null}
+
+          {releasedReviews.length > 0 ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>Beoordelingen</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm">
+                {releasedReviews.map((review) => (
+                  <p key={review.id}>
+                    {"★".repeat(review.rating)}
+                    {"☆".repeat(5 - review.rating)}{" "}
+                    <span className="text-muted-foreground">
+                      door {review.side === "instructor" ? "instructeur" : "organisatie"}
+                    </span>
+                  </p>
+                ))}
+              </CardContent>
+            </Card>
+          ) : null}
+
+          {/* Kandidaten */}
+          <Card>
+            <CardHeader className="flex-row items-center justify-between gap-3 border-b border-border py-3.5">
+              <div className="flex items-center gap-3">
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-50 text-status-pending">
+                  <Inbox className="h-4 w-4" />
+                </span>
+                <div>
+                  <CardTitle>Kandidaten</CardTitle>
+                  <CardDescription className="text-xs leading-5">Reacties op deze opdracht.</CardDescription>
+                </div>
+              </div>
+              <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-md bg-muted px-1.5 text-xs font-semibold tabular-nums text-muted-foreground">
+                {applications.length}
+              </span>
+            </CardHeader>
+            <CardContent className="space-y-0 py-0">
+              {applications.length === 0 ? (
+                <p className="py-5 text-sm text-muted-foreground">
+                  Nog geen reacties. Nodig hieronder zelf instructeurs uit.
+                </p>
+              ) : (
+                applications.map((application) => {
+                  const stats = statsByInstructor.get(application.instructor_id);
+                  const offers = counteroffers.filter(
+                    (offer) => offer.application_id === application.id,
+                  );
+                  const selectableSegmentIds = (
+                    segmentIdsByApplication.get(application.id) ?? []
+                  ).filter((segmentId) => !occupiedSegmentIds.has(segmentId));
+
                   return (
                     <div
-                      className="flex items-center justify-between gap-3 rounded-md border border-border p-2.5"
-                      key={suggestion.user_id}
+                      className="space-y-3 border-t border-border py-4 first:border-t-0"
+                      key={application.id}
                     >
-                      <div className="flex items-center gap-3">
-                        <Avatar
-                          name={suggestion.profile?.full_name ?? "?"}
-                          size="sm"
-                          src={suggestion.profile?.avatar_url}
-                        />
-                        <div>
-                          <p className="text-sm font-medium">
-                            {suggestion.profile?.full_name}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {suggestion.profile?.city?.name ?? "Onbekende plaats"}
-                          </p>
-                          {stats?.review_count ? (
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div className="flex min-w-0 items-center gap-3">
+                          <Link
+                            className="shrink-0 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                            href={`/organisatie/kandidaten/${application.instructor_id}?job=${job.id}`}
+                          >
+                            <Avatar
+                              name={application.instructor?.full_name ?? "?"}
+                              src={application.instructor?.avatar_url}
+                            />
+                          </Link>
+                          <div className="min-w-0">
+                            <Link
+                              className="block truncate font-semibold hover:text-primary"
+                              href={`/organisatie/kandidaten/${application.instructor_id}?job=${job.id}`}
+                            >
+                              {application.instructor?.full_name}
+                            </Link>
                             <p className="text-xs text-muted-foreground">
-                              ★ {stats.avg_rating} · {stats.review_count} reviews ·{" "}
-                              {stats.completed_count} afgerond
+                              {application.instructor?.city?.name ?? "Onbekende plaats"}
+                              {" · "}
+                              {applicationStatusLabels[application.status]}
                             </p>
-                          ) : (
-                            <Badge className="mt-1" variant="muted">
-                              Eerste klus
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap gap-1.5 text-xs">
+                          {stats?.avg_rating != null ? (
+                            <Badge variant="outline">
+                              <Star className="h-3 w-3 fill-amber-400 text-amber-400" />{" "}
+                              {stats.avg_rating}
                             </Badge>
+                          ) : (
+                            <Badge variant="muted">Eerste klus</Badge>
                           )}
+                          {stats ? (
+                            <>
+                              <Badge variant="muted">
+                                {stats.completed_count} afgerond
+                              </Badge>
+                              {stats.no_show_count > 0 ? (
+                                <Badge variant="warning">
+                                  {stats.no_show_count} no-show
+                                </Badge>
+                              ) : null}
+                              {stats.reliability_score != null ? (
+                                <Badge variant="outline">
+                                  Betrouwbaarheid {stats.reliability_score}%
+                                </Badge>
+                              ) : null}
+                            </>
+                          ) : null}
                         </div>
                       </div>
-                      <InviteForm instructorId={suggestion.user_id} jobId={job.id} />
+
+                      {application.message ? (
+                        <p className="rounded-lg bg-subtle px-3 py-2 text-sm leading-6 text-foreground/85">
+                          “{application.message}”
+                        </p>
+                      ) : null}
+                      {application.availability_note ? (
+                        <p className="text-xs text-muted-foreground">
+                          Beschikbaarheid: {application.availability_note}
+                        </p>
+                      ) : null}
+
+                      {offers.length > 0 ? (
+                        <div className="space-y-2">
+                          {offers.map((offer) => (
+                            <div
+                              className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-muted p-2.5 text-sm"
+                              key={offer.id}
+                            >
+                              <span>
+                                Tegenvoorstel: {formatEuro(offer.amount_cents)}{" "}
+                                {offer.pay_type === "hourly" ? "per uur" : "vast"} (
+                                {offer.status === "pending"
+                                  ? "in afwachting"
+                                  : offer.status === "accepted"
+                                    ? "geaccepteerd"
+                                    : "afgewezen"}
+                                )
+                              </span>
+                              {offer.status === "pending" &&
+                              offer.side === "instructor" ? (
+                                <span className="flex gap-2">
+                                  <form
+                                    action={respondCounterofferAction.bind(
+                                      null,
+                                      offer.id,
+                                      true,
+                                      `/organisatie/opdrachten/${job.id}`,
+                                    )}
+                                  >
+                                    <Button size="sm" type="submit">
+                                      Accepteren
+                                    </Button>
+                                  </form>
+                                  <form
+                                    action={respondCounterofferAction.bind(
+                                      null,
+                                      offer.id,
+                                      false,
+                                      `/organisatie/opdrachten/${job.id}`,
+                                    )}
+                                  >
+                                    <Button size="sm" type="submit" variant="outline">
+                                      Afwijzen
+                                    </Button>
+                                  </form>
+                                </span>
+                              ) : null}
+                            </div>
+                          ))}
+                        </div>
+                      ) : null}
+
+                      {job.status === "open" &&
+                      application.status === "pending" &&
+                      (job.segments.length === 0 || selectableSegmentIds.length > 0) ? (
+                        <div className="flex flex-wrap gap-2 border-t border-border pt-2.5">
+                          <SelectCandidateForm
+                            applicationId={application.id}
+                            candidateName={
+                              application.instructor?.full_name ?? "deze kandidaat"
+                            }
+                            jobId={job.id}
+                            segmentIds={selectableSegmentIds}
+                          />
+                          <details>
+                            <summary className="cursor-pointer text-sm text-primary">
+                              Tegenvoorstel doen
+                            </summary>
+                            <div className="mt-2">
+                              <CounterofferForm applicationId={application.id} />
+                            </div>
+                          </details>
+                        </div>
+                      ) : null}
                     </div>
                   );
-                })}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      ) : null}
+                })
+              )}
+            </CardContent>
+          </Card>
 
-      {/* Chats voor deze opdracht */}
-      <Alert>
-        <AlertDescription className="flex items-center gap-2">
-          <MessageSquare className="h-3.5 w-3.5" />
-          Alle gesprekken met kandidaten vind je onder{" "}
-          <Link className="font-medium text-primary hover:underline" href="/berichten">
-            Berichten
-          </Link>
-          .
-        </AlertDescription>
-      </Alert>
-    </div>
+          {/* Uitnodigen */}
+          {job.status === "open" ? (
+            <Card>
+              <CardHeader className="pb-3">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <CardTitle className="text-base">Instructeurs uitnodigen</CardTitle>
+                    <CardDescription>
+                      Instructeurs met {job.sport?.name ?? "deze sport"} als
+                      specialisatie.
+                    </CardDescription>
+                  </div>
+                  {poolCount > 0 ? <PoolInviteForm count={poolCount} jobId={job.id} /> : null}
+                </div>
+              </CardHeader>
+              <CardContent className="pt-0">
+                {suggestions.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    Geen extra suggesties gevonden.
+                  </p>
+                ) : (
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {suggestions.map((suggestion) => {
+                      const stats = statsByInstructor.get(suggestion.user_id);
+                      return (
+                        <div
+                          className="flex items-center justify-between gap-3 rounded-md border border-border p-2.5"
+                          key={suggestion.user_id}
+                        >
+                          <div className="flex items-center gap-3">
+                            <Avatar
+                              name={suggestion.profile?.full_name ?? "?"}
+                              size="sm"
+                              src={suggestion.profile?.avatar_url}
+                            />
+                            <div>
+                              <p className="text-sm font-medium">
+                                {suggestion.profile?.full_name}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {suggestion.profile?.city?.name ?? "Onbekende plaats"}
+                              </p>
+                              {stats?.review_count ? (
+                                <p className="text-xs text-muted-foreground">
+                                  ★ {stats.avg_rating} · {stats.review_count} reviews ·{" "}
+                                  {stats.completed_count} afgerond
+                                </p>
+                              ) : (
+                                <Badge className="mt-1" variant="muted">
+                                  Eerste klus
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                          <InviteForm instructorId={suggestion.user_id} jobId={job.id} />
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ) : null}
+        </div>
+
+        <aside className="space-y-6">
+          {job.segments.length > 0 ? (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Lessenblok</CardTitle>
+                <CardDescription>
+                  {job.segments.length} aaneengesloten lessen binnen deze opdracht.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2 pt-0">
+                {job.segments.map((segment) => (
+                  <div
+                    className="flex flex-wrap items-center justify-between gap-2 border-t border-border py-2.5 first:border-t-0 first:pt-0"
+                    key={segment.id}
+                  >
+                    <span className="font-medium">
+                      {segment.custom_lesson_type ||
+                        segment.lesson_type?.name ||
+                        "Lesvorm niet opgegeven"}
+                    </span>
+                    <span className="text-sm text-muted-foreground">
+                      {formatTime(segment.start_time)}–{formatTime(segment.end_time)}
+                    </span>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          ) : null}
+
+          {cancellation ? (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Annuleringsregistratie</CardTitle>
+                <CardDescription>
+                  {cancellation.force_majeure_claimed
+                    ? cancellation.force_majeure_status === "pending_review"
+                      ? "Het overmachtsverzoek wacht op beoordeling door SportMatch."
+                      : cancellation.force_majeure_status === "approved"
+                        ? "Overmacht is goedgekeurd; de vergoeding is aangepast."
+                        : "Het overmachtsverzoek is afgewezen."
+                    : "De normale annuleringsregeling is geregistreerd."}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-0 pt-0 text-sm">
+                {cancellations.map((item) => (
+                  <div
+                    className="border-t border-border py-3 first:border-t-0 first:pt-0"
+                    key={item.id}
+                  >
+                    <p className="font-medium">
+                      {item.instructor_id
+                        ? profilesById.get(item.instructor_id)?.full_name ?? "Instructeur"
+                        : "Opdracht"}
+                      {item.segment_ids.length > 0
+                        ? ` · ${item.segment_ids.length} lesonderdeel${item.segment_ids.length === 1 ? "" : "en"}`
+                        : ""}
+                    </p>
+                    <p className="text-muted-foreground">{item.reason}</p>
+                    <p>{formatEuro(item.compensation_amount_cents ?? 0)}</p>
+                  </div>
+                ))}
+                <p className="font-medium">
+                  Totale geregistreerde vergoeding: {formatEuro(totalCancellationAmount)}
+                  {cancellation.force_majeure_status !== "approved"
+                    ? " (150% van de afgesproken dienst)"
+                    : ""}
+                </p>
+                <p className="text-muted-foreground">
+                  Dit is een registratie; SportMatch voert nog geen automatische betaling uit.
+                </p>
+              </CardContent>
+            </Card>
+          ) : null}
+
+          {/* Chats voor deze opdracht */}
+          <Alert>
+            <MessageSquare />
+            <AlertDescription>
+              Alle gesprekken met kandidaten vind je onder{" "}
+              <Link className="font-medium text-primary hover:underline" href="/berichten">
+                Berichten
+              </Link>
+              .
+            </AlertDescription>
+          </Alert>
+        </aside>
+      </div>
+    </Page>
   );
 }

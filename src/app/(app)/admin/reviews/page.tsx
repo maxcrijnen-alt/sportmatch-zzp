@@ -38,7 +38,7 @@ export default async function AdminReviewsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold tracking-tight">Reviews</h1>
+      <h1 className="text-2xl font-semibold tracking-tight">Reviews</h1>
       <Card>
         <Table>
           <TableHeader>
