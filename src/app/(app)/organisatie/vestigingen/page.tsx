@@ -10,6 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Page, PageHeader } from "@/components/ui/page";
 import { getSessionProfile } from "@/lib/auth/session";
 import { subscriptionGrantsAccess } from "@/lib/billing/access";
 import { subscriptionStatusLabels } from "@/lib/labels";
@@ -51,19 +52,17 @@ export default async function VestigingenPage() {
   const cityNameById = new Map(cities.map((city) => [city.id, city.name]));
 
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-4 px-4 py-8">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Vestigingen</h1>
-        <p className="text-sm text-muted-foreground">
-          Elke vestiging heeft een eigen abonnement van € 5 per maand (excl.
-          btw) na 30 dagen gratis.
-        </p>
-      </div>
+    <Page width="narrow">
+      <PageHeader
+        back={{ href: "/organisatie", label: "Organisatie" }}
+        description="Elke vestiging heeft een eigen abonnement van € 5 per maand (excl. btw) na 30 dagen gratis."
+        title="Vestigingen"
+      />
 
       <Card>
         <CardHeader className="flex-row items-center justify-between space-y-0 pb-3">
           <CardTitle className="text-base">Huidige vestigingen</CardTitle>
-          <span className="rounded-full border border-border px-2.5 py-1 text-xs font-semibold text-muted-foreground">
+          <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-md bg-muted px-1.5 text-xs font-semibold tabular-nums text-muted-foreground">
             {orgContext.locations.length}
           </span>
         </CardHeader>
@@ -114,6 +113,6 @@ export default async function VestigingenPage() {
           </CardContent>
         </Card>
       ) : null}
-    </div>
+    </Page>
   );
 }

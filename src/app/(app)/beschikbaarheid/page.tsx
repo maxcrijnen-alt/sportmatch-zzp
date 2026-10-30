@@ -13,6 +13,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Page, PageHeader } from "@/components/ui/page";
 import { getSessionProfile } from "@/lib/auth/session";
 import { WEEKDAYS } from "@/lib/availability/constants";
 import {
@@ -66,14 +67,8 @@ export default async function BeschikbaarheidPage() {
   const exceptions = (exceptionsResult.data as Exception[] | null) ?? [];
 
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-4 px-4 py-8">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Beschikbaarheid</h1>
-        <p className="text-sm text-muted-foreground">
-          Geef aan wanneer je standaard beschikbaar bent en blokkeer losse
-          datums.
-        </p>
-      </div>
+    <Page width="narrow">
+      <PageHeader title="Beschikbaarheid" />
 
       <Card>
         <CardHeader className="pb-3">
@@ -88,10 +83,10 @@ export default async function BeschikbaarheidPage() {
               Nog geen beschikbaarheid ingesteld.
             </p>
           ) : (
-            <div className="space-y-0">
+            <div className="space-y-2">
               {rules.map((rule) => (
                 <div
-                  className="flex items-center justify-between gap-3 border-t border-border py-2.5 text-sm first:border-t-0 first:pt-0"
+                  className="flex items-center justify-between gap-3 rounded-lg border border-border bg-subtle px-3 py-1.5 text-sm"
                   key={rule.id}
                 >
                   <span>
@@ -129,10 +124,10 @@ export default async function BeschikbaarheidPage() {
               Geen geblokkeerde datums.
             </p>
           ) : (
-            <div className="space-y-0">
+            <div className="space-y-2">
               {exceptions.map((exception) => (
                 <div
-                  className="flex items-center justify-between gap-3 border-t border-border py-2.5 text-sm first:border-t-0 first:pt-0"
+                  className="flex items-center justify-between gap-3 rounded-lg border border-border bg-subtle px-3 py-1.5 text-sm"
                   key={exception.id}
                 >
                   <span>
@@ -168,6 +163,6 @@ export default async function BeschikbaarheidPage() {
           <AddExceptionForm />
         </CardContent>
       </Card>
-    </div>
+    </Page>
   );
 }

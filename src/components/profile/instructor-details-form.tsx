@@ -5,6 +5,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { choiceChipClassName, FormSection } from "@/components/ui/form-section";
 import { Textarea } from "@/components/ui/textarea";
 import { instructorStatusLabels } from "@/lib/labels";
 import {
@@ -89,7 +90,7 @@ export function InstructorDetailsForm({
   };
 
   return (
-    <form action={formAction} className="space-y-4">
+    <form action={formAction} className="space-y-5">
       {state.error ? (
         <Alert variant="destructive">
           <AlertDescription>{state.error}</AlertDescription>
@@ -101,157 +102,164 @@ export function InstructorDetailsForm({
         </Alert>
       ) : null}
 
-      <div className="grid gap-3 sm:grid-cols-3">
-        <div className="space-y-1.5">
-          <Label htmlFor="hourlyRateEuro">Uurtarief (€)</Label>
-          <Input
-            defaultValue={
-              details.hourly_rate_cents != null
-                ? details.hourly_rate_cents / 100
-                : undefined
-            }
-            id="hourlyRateEuro"
-            min={1}
-            name="hourlyRateEuro"
-            required
-            step="0.50"
-            type="number"
-          />
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="travelDistanceKm">Reisafstand (km)</Label>
-          <Input
-            defaultValue={details.travel_distance_km}
-            id="travelDistanceKm"
-            max={250}
-            min={1}
-            name="travelDistanceKm"
-            required
-            type="number"
-          />
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="yearsExperience">Jaren ervaring</Label>
-          <Input
-            defaultValue={details.years_experience}
-            id="yearsExperience"
-            max={60}
-            min={0}
-            name="yearsExperience"
-            required
-            type="number"
-          />
-        </div>
-      </div>
-
-      <div className="space-y-1.5">
-        <Label>Jouw situatie</Label>
-        <div className="flex flex-wrap gap-2">
-          {statusOptions.map(([status, label]) => (
-            <label
-              className={cn(
-                "cursor-pointer rounded-full border px-2.5 py-1 text-sm transition-colors",
-                statuses.includes(status)
-                  ? "border-primary bg-primary/10 font-medium text-primary"
-                  : "border-border text-muted-foreground hover:bg-muted",
-              )}
-              key={status}
-            >
-              <input
-                checked={statuses.includes(status)}
-                className="sr-only"
-                name="statuses"
-                onChange={() => toggleStatus(status)}
-                type="checkbox"
-                value={status}
-              />
-              {label}
-            </label>
-          ))}
-        </div>
-      </div>
-
-      {isZzp ? (
-        <div className="grid gap-3 rounded-lg border border-border bg-muted/30 p-3 sm:grid-cols-2">
+      <FormSection title="Tarief en reisafstand">
+        <div className="grid gap-3 sm:grid-cols-3">
           <div className="space-y-1.5">
-            <Label htmlFor="kvkNumber">KvK-nummer</Label>
+            <Label htmlFor="hourlyRateEuro">Uurtarief (€)</Label>
             <Input
-              defaultValue={details.kvk_number}
-              id="kvkNumber"
-              name="kvkNumber"
+              defaultValue={
+                details.hourly_rate_cents != null
+                  ? details.hourly_rate_cents / 100
+                  : undefined
+              }
+              id="hourlyRateEuro"
+              min={1}
+              name="hourlyRateEuro"
               required
+              step="0.50"
+              type="number"
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="btwNumber">Btw-nummer (optioneel)</Label>
+            <Label htmlFor="travelDistanceKm">Reisafstand (km)</Label>
             <Input
-              defaultValue={details.btw_number}
-              id="btwNumber"
-              name="btwNumber"
+              defaultValue={details.travel_distance_km}
+              id="travelDistanceKm"
+              max={250}
+              min={1}
+              name="travelDistanceKm"
+              required
+              type="number"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="yearsExperience">Jaren ervaring</Label>
+            <Input
+              defaultValue={details.years_experience}
+              id="yearsExperience"
+              max={60}
+              min={0}
+              name="yearsExperience"
+              required
+              type="number"
             />
           </div>
         </div>
-      ) : null}
+      </FormSection>
 
-      <div className="space-y-1.5">
-        <Label>Specialisaties</Label>
-        <div className="flex flex-wrap gap-2">
-          {sports.map((sport) => (
-            <label
-              className="cursor-pointer rounded-full border border-border px-2.5 py-1 text-sm text-muted-foreground transition-colors hover:bg-muted has-checked:border-primary has-checked:bg-primary/10 has-checked:font-medium has-checked:text-primary"
-              key={sport.id}
-            >
-              <input
-                checked={sportIds.includes(sport.id)}
-                className="sr-only"
-                name="sportIds"
-                onChange={() => toggleSport(sport.id)}
-                type="checkbox"
-                value={sport.id}
-              />
-              {sport.name}
-            </label>
-          ))}
-        </div>
-      </div>
-
-      {visibleLessonTypes.length > 0 ? (
+      <FormSection title="Jouw situatie">
         <div className="space-y-1.5">
-          <Label>Lesvormen</Label>
-          <p className="text-xs text-muted-foreground">
-            Optioneel. Kies de lesvormen waarvoor sportscholen je gericht mogen
-            uitnodigen.
-          </p>
+          <Label className="sr-only">Jouw situatie</Label>
           <div className="flex flex-wrap gap-2">
-            {visibleLessonTypes.map((lessonType) => (
+            {statusOptions.map(([status, label]) => (
               <label
-                className="cursor-pointer rounded-full border border-border px-2.5 py-1 text-sm text-muted-foreground transition-colors hover:bg-muted has-checked:border-primary has-checked:bg-primary/10 has-checked:font-medium has-checked:text-primary"
-                key={lessonType.id}
+                className={cn(
+                  choiceChipClassName,
+                  statuses.includes(status) &&
+                    "border-primary/40 bg-primary-soft font-medium text-primary-soft-foreground",
+                )}
+                key={status}
               >
                 <input
-                  checked={lessonTypeIds.includes(lessonType.id)}
+                  checked={statuses.includes(status)}
                   className="sr-only"
-                  name="lessonTypeIds"
-                  onChange={() => toggleLessonType(lessonType.id)}
+                  name="statuses"
+                  onChange={() => toggleStatus(status)}
                   type="checkbox"
-                  value={lessonType.id}
+                  value={status}
                 />
-                {lessonType.name}
+                {label}
               </label>
             ))}
           </div>
         </div>
-      ) : null}
 
-      <div className="space-y-1.5">
-        <Label htmlFor="workExperience">Werkervaring</Label>
-        <Textarea
-          defaultValue={details.work_experience}
-          id="workExperience"
-          name="workExperience"
-          rows={4}
-        />
-      </div>
+        {isZzp ? (
+          <div className="grid gap-3 rounded-lg border border-border bg-subtle p-3 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="kvkNumber">KvK-nummer</Label>
+              <Input
+                defaultValue={details.kvk_number}
+                id="kvkNumber"
+                name="kvkNumber"
+                required
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="btwNumber">Btw-nummer (optioneel)</Label>
+              <Input
+                defaultValue={details.btw_number}
+                id="btwNumber"
+                name="btwNumber"
+              />
+            </div>
+          </div>
+        ) : null}
+      </FormSection>
+
+      <FormSection title="Sporten en lesvormen">
+        <div className="space-y-1.5">
+          <Label>Specialisaties</Label>
+          <div className="flex flex-wrap gap-2">
+            {sports.map((sport) => (
+              <label
+                className={choiceChipClassName}
+                key={sport.id}
+              >
+                <input
+                  checked={sportIds.includes(sport.id)}
+                  className="sr-only"
+                  name="sportIds"
+                  onChange={() => toggleSport(sport.id)}
+                  type="checkbox"
+                  value={sport.id}
+                />
+                {sport.name}
+              </label>
+            ))}
+          </div>
+        </div>
+
+        {visibleLessonTypes.length > 0 ? (
+          <div className="space-y-1.5">
+            <Label>Lesvormen</Label>
+            <p className="text-xs text-muted-foreground">
+              Optioneel. Kies de lesvormen waarvoor sportscholen je gericht mogen
+              uitnodigen.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {visibleLessonTypes.map((lessonType) => (
+                <label
+                  className={choiceChipClassName}
+                  key={lessonType.id}
+                >
+                  <input
+                    checked={lessonTypeIds.includes(lessonType.id)}
+                    className="sr-only"
+                    name="lessonTypeIds"
+                    onChange={() => toggleLessonType(lessonType.id)}
+                    type="checkbox"
+                    value={lessonType.id}
+                  />
+                  {lessonType.name}
+                </label>
+              ))}
+            </div>
+          </div>
+        ) : null}
+      </FormSection>
+
+      <FormSection title="Ervaring en omschrijving">
+        <div className="space-y-1.5">
+          <Label htmlFor="workExperience">Werkervaring</Label>
+          <Textarea
+            defaultValue={details.work_experience}
+            id="workExperience"
+            name="workExperience"
+            rows={4}
+          />
+        </div>
+      </FormSection>
 
       <Button disabled={isPending} type="submit">
         {isPending ? "Instructeursprofiel opslaan…" : "Instructeursprofiel opslaan"}

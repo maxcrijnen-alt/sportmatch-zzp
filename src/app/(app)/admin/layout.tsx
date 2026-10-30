@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
+import { AdminNav } from "@/components/admin/admin-nav";
 import { getSessionProfile } from "@/lib/auth/session";
 
 const adminNav = [
@@ -27,18 +27,8 @@ export default async function AdminLayout({
   }
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 py-8">
-      <div className="mb-6 flex flex-wrap gap-2 border-b border-border pb-4">
-        {adminNav.map((item) => (
-          <Link
-            className="rounded-full border border-border px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-            href={item.href}
-            key={item.href}
-          >
-            {item.label}
-          </Link>
-        ))}
-      </div>
+    <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+      <AdminNav items={adminNav} />
       {children}
     </div>
   );

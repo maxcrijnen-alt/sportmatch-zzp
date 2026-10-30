@@ -10,6 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Page, PageHeader } from "@/components/ui/page";
 import { getSessionProfile } from "@/lib/auth/session";
 import {
   applicationStatusLabels,
@@ -96,31 +97,26 @@ export default async function MijnReactiesPage() {
     ) : null;
 
   return (
-    <div className="mx-auto w-full max-w-4xl space-y-4 px-4 py-8">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Mijn reacties</h1>
-        <p className="text-sm text-muted-foreground">
-          Je reacties, uitnodigingen en bevestigde opdrachten op één plek.
-        </p>
-      </div>
+    <Page width="medium">
+      <PageHeader title="Mijn reacties" />
 
       {invitations.length > 0 ? (
-        <Card className="border-primary/40">
-          <CardHeader className="flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-base">Openstaande uitnodigingen</CardTitle>
-            <span className="rounded-full border border-border px-2.5 py-1 text-xs font-semibold text-muted-foreground">
+        <Card className="border-primary/30 ring-1 ring-primary/10">
+          <CardHeader className="flex-row items-center justify-between gap-3 border-b border-border py-3.5">
+            <CardTitle>Openstaande uitnodigingen</CardTitle>
+            <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-md bg-muted px-1.5 text-xs font-semibold tabular-nums text-muted-foreground">
               {invitations.length}
             </span>
           </CardHeader>
-          <CardContent className="space-y-2 pt-0">
+          <CardContent className="space-y-0 py-1">
             {invitations.map((invitation) => (
               <div
-                className="flex flex-wrap items-center justify-between gap-3 border-t border-border py-3 first:border-t-0 first:pt-0"
+                className="flex flex-wrap items-center justify-between gap-3 border-t border-border py-3.5 first:border-t-0"
                 key={invitation.id}
               >
                 <div>
                   <Link
-                    className="font-medium text-primary hover:underline"
+                    className="font-semibold text-foreground hover:text-primary"
                     href={`/opdrachten/${invitation.job_id}`}
                   >
                     {invitation.job?.title}
@@ -151,21 +147,21 @@ export default async function MijnReactiesPage() {
 
       {confirmations.length > 0 ? (
         <Card>
-          <CardHeader className="flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-base">Bevestigde opdrachten</CardTitle>
-            <span className="rounded-full border border-border px-2.5 py-1 text-xs font-semibold text-muted-foreground">
+          <CardHeader className="flex-row items-center justify-between gap-3 border-b border-border py-3.5">
+            <CardTitle>Bevestigde opdrachten</CardTitle>
+            <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-md bg-muted px-1.5 text-xs font-semibold tabular-nums text-muted-foreground">
               {confirmations.length}
             </span>
           </CardHeader>
-          <CardContent className="space-y-2 pt-0">
+          <CardContent className="space-y-0 py-1">
             {confirmations.map((confirmation) => (
               <div
-                className="flex flex-wrap items-center justify-between gap-3 border-t border-border py-3 first:border-t-0 first:pt-0"
+                className="flex flex-wrap items-center justify-between gap-3 border-t border-border py-3.5 first:border-t-0"
                 key={confirmation.id}
               >
                 <div>
                   <Link
-                    className="font-medium text-primary hover:underline"
+                    className="font-semibold text-foreground hover:text-primary"
                     href={`/opdrachten/${confirmation.job_id}`}
                   >
                     {confirmation.job?.title}
@@ -192,13 +188,13 @@ export default async function MijnReactiesPage() {
       ) : null}
 
       <Card>
-        <CardHeader className="flex-row items-center justify-between space-y-0 pb-3">
-          <CardTitle className="text-base">Reacties</CardTitle>
-          <span className="rounded-full border border-border px-2.5 py-1 text-xs font-semibold text-muted-foreground">
+        <CardHeader className="flex-row items-center justify-between gap-3 border-b border-border py-3.5">
+          <CardTitle>Reacties</CardTitle>
+          <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-md bg-muted px-1.5 text-xs font-semibold tabular-nums text-muted-foreground">
             {applications.length}
           </span>
         </CardHeader>
-        <CardContent className="space-y-2 pt-0">
+        <CardContent className="space-y-0 py-1">
           {applications.length === 0 ? (
             <div className="flex flex-col items-center gap-3 py-6 text-center">
               <Inbox className="h-8 w-8 text-muted-foreground" />
@@ -216,12 +212,12 @@ export default async function MijnReactiesPage() {
           ) : (
             applications.map((application) => (
               <div
-                className="flex flex-wrap items-center justify-between gap-3 border-t border-border py-3 first:border-t-0 first:pt-0"
+                className="flex flex-wrap items-center justify-between gap-3 border-t border-border py-3.5 first:border-t-0"
                 key={application.id}
               >
                 <div>
                   <Link
-                    className="font-medium text-primary hover:underline"
+                    className="font-semibold text-foreground hover:text-primary"
                     href={`/opdrachten/${application.job_id}`}
                   >
                     {application.job?.title}
@@ -262,6 +258,6 @@ export default async function MijnReactiesPage() {
           )}
         </CardContent>
       </Card>
-    </div>
+    </Page>
   );
 }

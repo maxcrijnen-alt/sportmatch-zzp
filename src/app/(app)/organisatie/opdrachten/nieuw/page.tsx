@@ -14,6 +14,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Page, PageHeader } from "@/components/ui/page";
 import { getSessionProfile } from "@/lib/auth/session";
 import { subscriptionGrantsAccess } from "@/lib/billing/access";
 import { getOrgContext } from "@/lib/org/context";
@@ -175,13 +176,11 @@ export default async function NieuweOpdrachtPage({
   }
 
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-4 px-4 py-8">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Nieuwe opdracht</h1>
-        <p className="text-sm text-muted-foreground">
-          Plaats een opdracht of vacature voor {orgContext.organization.name}.
-        </p>
-      </div>
+    <Page width="narrow">
+      <PageHeader
+        back={{ href: "/organisatie/opdrachten", label: "Opdrachten" }}
+        title="Nieuwe opdracht"
+      />
 
       {activeLocations.length === 0 ? (
         <Alert variant="warning">
@@ -212,24 +211,24 @@ export default async function NieuweOpdrachtPage({
             </Card>
           ) : null}
           <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Opdrachtgegevens</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <CreateJobForm
-              defaultContactName={profile.full_name}
-              locations={activeLocations}
-              lessonTypes={(lessonTypesResult.data as LessonType[]) ?? []}
-              qualifications={
-                (qualificationsResult.data as Qualification[]) ?? []
-              }
-              sports={(sportsResult.data as Sport[]) ?? []}
-              defaults={defaults}
-            />
-          </CardContent>
+            <CardHeader className="border-b border-border">
+              <CardTitle>Opdrachtgegevens</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-5">
+              <CreateJobForm
+                defaultContactName={profile.full_name}
+                locations={activeLocations}
+                lessonTypes={(lessonTypesResult.data as LessonType[]) ?? []}
+                qualifications={
+                  (qualificationsResult.data as Qualification[]) ?? []
+                }
+                sports={(sportsResult.data as Sport[]) ?? []}
+                defaults={defaults}
+              />
+            </CardContent>
           </Card>
         </div>
       )}
-    </div>
+    </Page>
   );
 }

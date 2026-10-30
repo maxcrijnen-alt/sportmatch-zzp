@@ -17,12 +17,12 @@ export function LocationSelector({
   onChange: (locationId: string) => void;
 }) {
   return (
-    <label className="flex min-w-0 items-center gap-2 text-sm">
-      <MapPin className="hidden h-4 w-4 shrink-0 text-muted-foreground sm:block" />
+    <label className="relative flex min-w-0 items-center text-sm">
+      <MapPin className="pointer-events-none absolute left-2.5 h-4 w-4 text-primary" />
       <span className="sr-only">Vestiging</span>
       <Select
         aria-label="Vestiging filteren"
-        className="h-9 max-w-48 min-w-32"
+        className="h-9 w-auto min-w-0 max-w-44 rounded-lg bg-subtle pl-8 font-medium sm:min-w-40 sm:max-w-56"
         onChange={(event) => onChange(event.target.value)}
         value={value}
       >

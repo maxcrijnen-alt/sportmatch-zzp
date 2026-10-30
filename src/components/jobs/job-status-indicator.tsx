@@ -1,4 +1,4 @@
-import { Check, Clock3, X } from "lucide-react";
+import { Check, Clock3, Inbox, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { AgendaEventState } from "@/lib/agenda/types";
 
@@ -11,61 +11,85 @@ const labels: Record<AgendaEventState, string> = {
   cancelled: "Geannuleerd",
 };
 
+/*
+ * Vierkante statusindicator: rood kruis (nog niemand), oranje (reacties of
+ * lopende bevestiging), groen vinkje (bevestigd). Afgerond en geannuleerd
+ * blijven herkenbaar maar rustiger, omdat ze geen actie meer vragen.
+ */
 const toneClasses: Record<AgendaEventState, string> = {
-  searching:
-    "border-red-200 bg-red-50 text-red-600 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-400",
-  action_required:
-    "border-amber-200 bg-amber-50 text-amber-600 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-400",
-  planned:
-    "border-amber-200 bg-amber-50 text-amber-600 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-400",
-  confirmed:
-    "border-emerald-200 bg-emerald-50 text-emerald-600 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-400",
-  completed:
-    "border-emerald-200 bg-emerald-50 text-emerald-600 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-400",
-  cancelled:
-    "border-border bg-muted text-muted-foreground",
+  searching: "border-status-searching bg-status-searching text-white",
+  action_required: "border-status-pending bg-status-pending text-white",
+  planned: "border-status-pending bg-status-pending text-white",
+  confirmed: "border-status-confirmed bg-status-confirmed text-white",
+  completed: "border-status-confirmed/40 bg-success-soft text-status-confirmed",
+  cancelled: "border-border-strong bg-muted text-muted-foreground",
+};
+
+const labelToneClasses: Record<AgendaEventState, string> = {
+  searching: "text-status-searching",
+  action_required: "text-status-pending",
+  planned: "text-status-pending",
+  confirmed: "text-status-confirmed",
+  completed: "text-muted-foreground",
+  cancelled: "text-muted-foreground",
+};
+
+const sizeClasses = {
+  xs: "h-4 w-4 rounded-[4px] [&_svg]:h-2.5 [&_svg]:w-2.5",
+  sm: "h-5 w-5 rounded-[5px] [&_svg]:h-3 [&_svg]:w-3",
+  md: "h-6 w-6 rounded-md [&_svg]:h-3.5 [&_svg]:w-3.5",
 };
 
 function StatusIcon({ state }: { state: AgendaEventState }) {
   if (state === "searching" || state === "cancelled") {
-    return <X className="h-4 w-4" strokeWidth={2.5} />;
+    return <X strokeWidth={3} />;
   }
-  if (state === "action_required" || state === "planned") {
-    return <Clock3 className="h-4 w-4" strokeWidth={2.5} />;
+  if (state === "action_required") {
+    return <Inbox strokeWidth={2.75} />;
   }
-  return <Check className="h-4 w-4" strokeWidth={2.5} />;
+  if (state === "planned") {
+    return <Clock3 strokeWidth={2.75} />;
+  }
+  return <Check strokeWidth={3} />;
 }
 
 export function JobStatusIndicator({
   state,
   showLabel = true,
+  size = "md",
   className,
 }: {
   state: AgendaEventState;
   showLabel?: boolean;
+  size?: keyof typeof sizeClasses;
   className?: string;
 }) {
   const label = labels[state];
 
   return (
     <span
-      aria-label={label}
       className={cn(
         "inline-flex shrink-0 items-center gap-2",
-        showLabel && "text-xs font-medium",
+        showLabel && "text-[13px] font-medium",
         className,
       )}
       title={label}
     >
       <span
+        aria-hidden="true"
         className={cn(
-          "flex h-8 w-8 shrink-0 items-center justify-center rounded-md border",
+          "flex shrink-0 items-center justify-center border",
+          sizeClasses[size],
           toneClasses[state],
         )}
       >
         <StatusIcon state={state} />
       </span>
-      {showLabel ? <span>{label}</span> : null}
+      <span className={showLabel ? labelToneClasses[state] : "sr-only"}>
+        {label}
+      </span>
     </span>
   );
 }
+
+export { labels as jobStatusIndicatorLabels };

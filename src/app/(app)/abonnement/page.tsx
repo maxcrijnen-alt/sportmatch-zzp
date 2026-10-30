@@ -10,6 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Page, PageHeader } from "@/components/ui/page";
 import { getSessionProfile } from "@/lib/auth/session";
 import {
   subscriptionGrantsAccess,
@@ -160,15 +161,13 @@ export default async function AbonnementPage({ searchParams }: {
   }
 
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-4 px-4 py-8">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Abonnement</h1>
-        <p className="text-sm text-muted-foreground">
-          {orgContext
-            ? "Elke vestiging heeft een eigen abonnement."
-            : "Je abonnement en proefperiode."}
-        </p>
-      </div>
+    <Page width="narrow">
+      <PageHeader
+        description={
+          orgContext ? "Elke vestiging heeft een eigen abonnement." : undefined
+        }
+        title="Abonnement"
+      />
 
       {fout === "activatie" || fout === "opzeggen" ? (
         <Alert variant="destructive">
@@ -189,6 +188,6 @@ export default async function AbonnementPage({ searchParams }: {
       </Alert>
 
       <div className="space-y-3">{cards}</div>
-    </div>
+    </Page>
   );
 }

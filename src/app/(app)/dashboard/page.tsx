@@ -6,11 +6,31 @@ import {
   AlertTriangle,
   ArrowRight,
   CalendarCheck,
+  ChevronRight,
+  Clock3,
+  Inbox,
+  Mail,
+  Plus,
+  Send,
   ShieldCheck,
+  X,
 } from "lucide-react";
 import { DashboardTodoList } from "@/components/dashboard/dashboard-todo-list";
+import { FocusCard } from "@/components/dashboard/focus-card";
+import { JobStatusIndicator } from "@/components/jobs/job-status-indicator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { DateBadge } from "@/components/ui/date-badge";
+import {
+  Page,
+  PageHeader,
+  Panel,
+  PanelEmpty,
+  PanelHeader,
+  PanelList,
+} from "@/components/ui/page";
+import { StatTile } from "@/components/ui/stat-tile";
 import { getSessionProfile } from "@/lib/auth/session";
 import { subscriptionGrantsAccess } from "@/lib/billing/access";
 import { getOrgContext } from "@/lib/org/context";
@@ -80,9 +100,6 @@ export default async function DashboardPage({
     const locationIds = selectedLocationId
       ? [selectedLocationId]
       : orgContext.locations.map((location) => location.id);
-    const selectedLocation = orgContext.locations.find(
-      (location) => location.id === selectedLocationId,
-    );
 
     let jobsQuery = supabase
       .from("jobs")
@@ -262,17 +279,18 @@ export default async function DashboardPage({
               };
 
     return (
-      <div className="mx-auto w-full max-w-5xl space-y-6 px-4 py-8">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">
-            {orgContext.organization.name}
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            {selectedLocation
-              ? `Je startpunt voor opdrachten, kandidaten en planning van ${selectedLocation.name}.`
-              : "Je startpunt voor opdrachten, kandidaten en planning van alle vestigingen."}
-          </p>
-        </div>
+      <Page>
+        <PageHeader
+          actions={
+            <Link href="/organisatie/opdrachten/nieuw">
+              <Button className="w-full sm:w-auto">
+                <Plus className="h-4 w-4" />
+                Nieuwe opdracht
+              </Button>
+            </Link>
+          }
+          title={orgContext.organization.name}
+        />
 
         {hasInactiveLocation ? (
           <Alert variant="warning">
@@ -288,129 +306,110 @@ export default async function DashboardPage({
           </Alert>
         ) : null}
 
-        <section className="rounded-lg border border-primary/30 bg-primary/5 p-4">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div className="max-w-2xl">
-              <p className="text-sm font-medium text-primary">Wat vraagt aandacht?</p>
-              <h2 className="mt-1 text-lg font-semibold tracking-tight">
-                {primaryAction.title}
-              </h2>
-              <p className="mt-1.5 text-sm leading-5 text-muted-foreground">
-                {primaryAction.text}
-              </p>
-            </div>
-            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
-              <Link href={primaryAction.href}>
-                <Button className="w-full sm:w-auto">
-                  {primaryAction.cta}
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              </Link>
-              {primaryAction.href !== "/organisatie/opdrachten/nieuw" ? (
-                <Link href="/organisatie/opdrachten/nieuw">
-                  <Button className="w-full sm:w-auto" variant="outline">
-                    Nieuwe opdracht
-                  </Button>
-                </Link>
-              ) : null}
-            </div>
-          </div>
+        <FocusCard
+          cta={primaryAction.cta}
+          href={primaryAction.href}
+          text={primaryAction.text}
+          title={primaryAction.title}
+        />
 
-          <div className="mt-4 grid gap-2 md:grid-cols-3">
-            <Link
-              className="rounded-lg border border-border bg-background p-3 transition-colors hover:border-primary/40 hover:bg-primary/5"
-              href="/organisatie/opdrachten"
-            >
-              <p className="text-sm font-medium text-muted-foreground">
-                Nog iemand zoeken
-              </p>
-              <p className="mt-0.5 text-2xl font-bold tracking-tight">
-                {searchingJobCount}
-              </p>
-            </Link>
+        <div className="grid grid-cols-3 gap-2 sm:gap-3">
+          <StatTile
+            href="/organisatie/opdrachten"
+            icon={X}
+            label="Nog iemand zoeken"
+            tone={searchingJobCount > 0 ? "danger" : "default"}
+            value={searchingJobCount}
+          />
+          <StatTile
+            href="/organisatie/kandidaten"
+            icon={Inbox}
+            label="Reacties te beoordelen"
+            tone={pendingApplicationCount > 0 ? "warning" : "default"}
+            value={pendingApplicationCount}
+          />
+          <StatTile
+            href="/organisatie/opdrachten"
+            icon={Clock3}
+            label="Wacht op bevestiging"
+            tone={pendingConfirmationCount > 0 ? "warning" : "default"}
+            value={pendingConfirmationCount}
+          />
+        </div>
 
-            <Link
-              className="rounded-lg border border-border bg-background p-3 transition-colors hover:border-primary/40 hover:bg-primary/5"
-              href="/organisatie/kandidaten"
-            >
-              <p className="text-sm font-medium text-muted-foreground">
-                Reacties te beoordelen
-              </p>
-              <p className="mt-0.5 text-2xl font-bold tracking-tight">
-                {pendingApplicationCount}
-              </p>
-            </Link>
+        <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+          <Panel>
+            <PanelHeader
+              count={urgentJobs.length}
+              description="Binnen 7 dagen"
+              icon={AlertTriangle}
+              iconClassName="bg-destructive-soft text-destructive"
+              title="Urgentie"
+            />
 
-            <Link
-              className="rounded-lg border border-border bg-background p-3 transition-colors hover:border-primary/40 hover:bg-primary/5"
-              href="/organisatie/opdrachten"
-            >
-              <p className="text-sm font-medium text-muted-foreground">
-                Wacht op bevestiging
-              </p>
-              <p className="mt-0.5 text-2xl font-bold tracking-tight">
-                {pendingConfirmationCount}
-              </p>
-            </Link>
-          </div>
-        </section>
+            {urgentJobs.length > 0 ? (
+              <PanelList>
+                {urgentJobs.slice(0, 5).map((job) => {
+                  const workflowState = pendingConfirmationJobIds.has(job.id)
+                    ? ("planned" as const)
+                    : pendingApplicationJobIds.has(job.id)
+                      ? ("action_required" as const)
+                      : ("searching" as const);
+                  const workflowLabel = pendingConfirmationJobIds.has(job.id)
+                    ? "Wacht op bevestiging"
+                    : pendingApplicationJobIds.has(job.id)
+                      ? "Reacties binnen"
+                      : "Nog zoeken";
 
-        <DashboardTodoList items={todoItems} />
-
-        <section className="rounded-lg border border-destructive/25 bg-card">
-          <div className="flex items-center justify-between border-b border-border px-4 py-3">
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-destructive" />
-              <h2 className="font-semibold">Urgentie</h2>
-            </div>
-            <span className="rounded-full border border-border px-2.5 py-1 text-xs font-semibold text-muted-foreground">
-              {urgentJobs.length}
-            </span>
-          </div>
-
-          {urgentJobs.length > 0 ? (
-            <div className="divide-y divide-border">
-              {urgentJobs.slice(0, 5).map((job) => {
-                const workflowLabel = pendingConfirmationJobIds.has(job.id)
-                  ? "Wacht op bevestiging"
-                  : pendingApplicationJobIds.has(job.id)
-                    ? "Reacties binnen"
-                    : "Nog zoeken";
-
-                return (
+                  return (
+                    <Link
+                      className="group flex items-center gap-3 px-4 py-3 transition-colors hover:bg-subtle sm:px-5"
+                      href={`/organisatie/opdrachten/${job.id}`}
+                      key={job.id}
+                    >
+                      <DateBadge date={job.starts_on} />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium group-hover:text-primary">
+                          {job.title}
+                        </p>
+                        <p className="text-[13px] tabular-nums text-muted-foreground">
+                          {formatTime(job.start_time)}
+                        </p>
+                      </div>
+                      <span className="flex shrink-0 items-center gap-2">
+                        <span
+                          aria-hidden="true"
+                          className="hidden text-[13px] font-medium text-muted-foreground sm:inline"
+                        >
+                          {workflowLabel}
+                        </span>
+                        <JobStatusIndicator
+                          showLabel={false}
+                          size="sm"
+                          state={workflowState}
+                        />
+                      </span>
+                    </Link>
+                  );
+                })}
+                {urgentJobs.length > 5 ? (
                   <Link
-                    className="flex flex-col gap-2 px-4 py-3 transition-colors hover:bg-muted/50 sm:flex-row sm:items-center sm:justify-between"
-                    href={`/organisatie/opdrachten/${job.id}`}
-                    key={job.id}
+                    className="flex items-center gap-1 px-4 py-3 text-sm font-medium text-primary hover:bg-subtle sm:px-5"
+                    href="/organisatie/opdrachten"
                   >
-                    <div className="min-w-0">
-                      <p className="truncate font-medium">{job.title}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {formatDate(job.starts_on)} · {formatTime(job.start_time)}
-                      </p>
-                    </div>
-                    <span className="shrink-0 rounded-md border border-destructive/25 bg-destructive/5 px-2.5 py-1 text-xs font-medium text-destructive">
-                      {workflowLabel}
-                    </span>
+                    Bekijk alle urgente opdrachten
+                    <ChevronRight className="h-4 w-4" />
                   </Link>
-                );
-              })}
-              {urgentJobs.length > 5 ? (
-                <Link
-                  className="block px-4 py-3 text-sm font-medium text-primary hover:underline"
-                  href="/organisatie/opdrachten"
-                >
-                  Bekijk alle urgente opdrachten
-                </Link>
-              ) : null}
-            </div>
-          ) : (
-            <p className="px-4 py-3 text-sm text-muted-foreground">
-              Geen open opdrachten binnen 7 dagen.
-            </p>
-          )}
-        </section>
-      </div>
+                ) : null}
+              </PanelList>
+            ) : (
+              <PanelEmpty>Geen open opdrachten binnen 7 dagen.</PanelEmpty>
+            )}
+          </Panel>
+
+          <DashboardTodoList items={todoItems} />
+        </div>
+      </Page>
     );
   }
 
@@ -663,17 +662,15 @@ export default async function DashboardPage({
                     cta: "Opdrachten bekijken",
                   };
 
+  const vogStatus = vogValid
+    ? { label: "Goedgekeurd", variant: "success" as const }
+    : latestVog?.status === "pending"
+      ? { label: "Wacht op controle", variant: "warning" as const }
+      : { label: "Geen geldige VOG", variant: "destructive" as const };
+
   return (
-    <div className="mx-auto w-full max-w-5xl space-y-6 px-4 py-8">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">
-          Hoi {profile.full_name.split(" ")[0]}!
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Je overzicht voor uitnodigingen, reacties, bevestigingen en aankomende
-          opdrachten.
-        </p>
-      </div>
+    <Page>
+      <PageHeader title={`Hoi ${profile.full_name.split(" ")[0]}!`} />
 
       {!hasAccess ? (
         <Alert variant="warning">
@@ -688,147 +685,119 @@ export default async function DashboardPage({
         </Alert>
       ) : null}
 
-      <section className="rounded-lg border border-primary/30 bg-primary/5 p-4">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div className="max-w-2xl">
-            <p className="text-sm font-medium text-primary">Wat vraagt aandacht?</p>
-            <h2 className="mt-1 text-lg font-semibold tracking-tight">
-              {primaryAction.title}
-            </h2>
-            <p className="mt-1.5 text-sm leading-5 text-muted-foreground">
-              {primaryAction.text}
-            </p>
-          </div>
-          <Link href={primaryAction.href}>
-            <Button className="w-full sm:w-auto">
-              {primaryAction.cta}
-              <ArrowRight className="h-4 w-4" />
-            </Button>
-          </Link>
-        </div>
+      <FocusCard
+        cta={primaryAction.cta}
+        href={primaryAction.href}
+        text={primaryAction.text}
+        title={primaryAction.title}
+      />
 
-        <div className="mt-4 grid gap-2 md:grid-cols-3">
-          <Link
-            className="rounded-lg border border-border bg-background p-3 transition-colors hover:border-primary/40 hover:bg-primary/5"
-            href="/mijn-reacties"
-          >
-            <p className="text-sm font-medium text-muted-foreground">
-              Uitnodigingen
-            </p>
-            <p className="mt-0.5 text-2xl font-bold tracking-tight">
-              {pendingInvitationCount}
-            </p>
-          </Link>
+      <div className="grid grid-cols-3 gap-2 sm:gap-3">
+        <StatTile
+          href="/mijn-reacties"
+          icon={Mail}
+          label="Uitnodigingen"
+          tone={pendingInvitationCount > 0 ? "primary" : "default"}
+          value={pendingInvitationCount}
+        />
+        <StatTile
+          href="/mijn-reacties"
+          icon={Send}
+          label="Open reacties"
+          value={pendingApplicationCount}
+        />
+        <StatTile
+          href={
+            firstPendingConfirmationJobId
+              ? `/opdrachten/${firstPendingConfirmationJobId}`
+              : "/mijn-reacties"
+          }
+          icon={Clock3}
+          label="Wacht op jouw bevestiging"
+          tone={pendingConfirmationCount > 0 ? "warning" : "default"}
+          value={pendingConfirmationCount}
+        />
+      </div>
 
-          <Link
-            className="rounded-lg border border-border bg-background p-3 transition-colors hover:border-primary/40 hover:bg-primary/5"
-            href="/mijn-reacties"
-          >
-            <p className="text-sm font-medium text-muted-foreground">
-              Open reacties
-            </p>
-            <p className="mt-0.5 text-2xl font-bold tracking-tight">
-              {pendingApplicationCount}
-            </p>
-          </Link>
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+        <DashboardTodoList items={todoItems} />
 
-          <Link
-            className="rounded-lg border border-border bg-background p-3 transition-colors hover:border-primary/40 hover:bg-primary/5"
-            href={
-              firstPendingConfirmationJobId
-                ? `/opdrachten/${firstPendingConfirmationJobId}`
-                : "/mijn-reacties"
-            }
-          >
-            <p className="text-sm font-medium text-muted-foreground">
-              Wacht op jouw bevestiging
-            </p>
-            <p className="mt-0.5 text-2xl font-bold tracking-tight">
-              {pendingConfirmationCount}
-            </p>
-          </Link>
-        </div>
-      </section>
-
-      <DashboardTodoList items={todoItems} />
-
-      <div className="grid gap-4 md:grid-cols-2">
-        <section className="rounded-lg border border-border bg-card p-4">
-          <div className="flex items-start gap-3">
-            <CalendarCheck className="mt-0.5 h-5 w-5 text-primary" />
-            <div className="min-w-0">
-              <p className="font-semibold">Eerstvolgende bevestigde klus</p>
-              {nextConfirmedJob ? (
-                <>
-                  <p className="mt-1 truncate text-sm font-medium">
+        <div className="space-y-6">
+          <Panel>
+            <PanelHeader
+              icon={CalendarCheck}
+              iconClassName="bg-primary-soft text-primary"
+              title="Eerstvolgende bevestigde klus"
+            />
+            {nextConfirmedJob ? (
+              <Link
+                className="group flex items-center gap-3 px-4 py-4 transition-colors hover:bg-subtle sm:px-5"
+                href={`/opdrachten/${nextConfirmedJob.id}`}
+              >
+                <DateBadge date={nextConfirmedJob.starts_on} />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium group-hover:text-primary">
                     {nextConfirmedJob.title}
                   </p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {formatDate(nextConfirmedJob.starts_on)} ·{" "}
+                  <p className="text-[13px] tabular-nums text-muted-foreground">
                     {formatTime(nextConfirmedJob.start_time)}
                   </p>
-                  <Link
-                    className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
-                    href={`/opdrachten/${nextConfirmedJob.id}`}
-                  >
-                    Bekijk opdracht
-                    <ArrowRight className="h-3.5 w-3.5" />
-                  </Link>
-                </>
-              ) : (
-                <>
-                  <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                    Er staat nu geen bevestigde toekomstige klus in je planning.
-                  </p>
-                  <Link
-                    className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
-                    href="/opdrachten"
-                  >
-                    Bekijk opdrachten
-                    <ArrowRight className="h-3.5 w-3.5" />
-                  </Link>
-                </>
-              )}
-            </div>
-          </div>
-        </section>
-
-        <section className="rounded-lg border border-border bg-card p-4">
-          <div className="flex items-start gap-3">
-            <ShieldCheck
-              className={`mt-0.5 h-5 w-5 ${
-                vogValid ? "text-primary" : "text-amber-600"
-              }`}
-            />
-            <div>
-              <p className="font-semibold">Profiel & VOG</p>
-              <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                {vogValid
-                  ? profileNeedsAttention
-                    ? "Je VOG is goedgekeurd. Je profiel kan nog completer voor betere matching."
-                    : "Je VOG is goedgekeurd en je basisprofiel is compleet."
-                  : latestVog?.status === "pending"
-                    ? "Je VOG wacht op beoordeling."
-                    : "Je hebt nog geen geldige, goedgekeurde VOG."}
-              </p>
-              <div className="mt-3 flex flex-wrap gap-3 text-sm">
+                </div>
+                <JobStatusIndicator showLabel={false} size="sm" state="confirmed" />
+              </Link>
+            ) : (
+              <div className="space-y-3 px-4 py-4 sm:px-5">
+                <p className="text-sm text-muted-foreground">
+                  Er staat nu geen bevestigde toekomstige klus in je planning.
+                </p>
                 <Link
-                  className="font-medium text-primary hover:underline"
-                  href="/documenten"
+                  className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+                  href="/opdrachten"
                 >
-                  Documenten
-                </Link>
-                <Link
-                  className="font-medium text-primary hover:underline"
-                  href="/profiel"
-                >
-                  Profiel
+                  Bekijk opdrachten
+                  <ArrowRight className="h-3.5 w-3.5" />
                 </Link>
               </div>
-            </div>
-          </div>
-        </section>
+            )}
+          </Panel>
+
+          <Panel>
+            <PanelHeader
+              icon={ShieldCheck}
+              iconClassName={
+                vogValid
+                  ? "bg-primary-soft text-primary"
+                  : "bg-warning-soft text-warning"
+              }
+              title="Profiel & VOG"
+            />
+            <PanelList>
+              <Link
+                className="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-subtle sm:px-5"
+                href="/documenten"
+              >
+                <span className="text-sm font-medium">VOG</span>
+                <span className="flex items-center gap-2">
+                  <Badge variant={vogStatus.variant}>{vogStatus.label}</Badge>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                </span>
+              </Link>
+              <Link
+                className="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-subtle sm:px-5"
+                href="/profiel"
+              >
+                <span className="text-sm font-medium">Profiel</span>
+                <span className="flex items-center gap-2">
+                  <Badge variant={profileNeedsAttention ? "warning" : "success"}>
+                    {profileNeedsAttention ? "Aanvullen" : "Compleet"}
+                  </Badge>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                </span>
+              </Link>
+            </PanelList>
+          </Panel>
+        </div>
       </div>
-    </div>
+    </Page>
   );
 }

@@ -15,6 +15,7 @@ import {
   ShieldCheck,
   Star,
   TriangleAlert,
+  UserRound,
   Users,
 } from "lucide-react";
 import type { UserRole } from "@/types/database";
@@ -56,7 +57,7 @@ const adminLinks: NavLink[] = [
   { href: "/admin/klachten", label: "Klachten", icon: TriangleAlert },
   { href: "/admin/opdrachten", label: "Opdrachten", icon: Briefcase },
   { href: "/admin/billing", label: "Billing", icon: CreditCard },
-  { href: "/admin/statistieken", label: "Statistieken", icon: LayoutDashboard },
+  { href: "/admin/statistieken", label: "Statistieken", icon: BarChart3 },
 ];
 
 export function navLinksForRole(role: UserRole): NavLink[] {
@@ -72,6 +73,6 @@ export function navLinksForRole(role: UserRole): NavLink[] {
 
 export const secondaryLinks: NavLink[] = [
   { href: "/meldingen", label: "Meldingen", icon: Bell },
-  { href: "/profiel", label: "Profiel", icon: Users },
+  { href: "/profiel", label: "Profiel", icon: UserRound },
   { href: "/instellingen", label: "Instellingen", icon: Settings },
 ];
