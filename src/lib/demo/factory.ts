@@ -1,3 +1,5 @@
+import { dateInAmsterdam } from "@/lib/datetime/amsterdam";
+import { addCalendarDays } from "@/lib/jobs/schedule";
 import "server-only";
 
 import { randomBytes, randomUUID } from "node:crypto";
@@ -37,11 +39,11 @@ const userSpecs: DemoUserSpec[] = [
 ];
 
 function futureDate(days: number): string {
-  return new Date(Date.now() + days * 86_400_000).toISOString().slice(0, 10);
+  return addCalendarDays(dateInAmsterdam(new Date()), days);
 }
 
 function pastDate(days: number): string {
-  return new Date(Date.now() - days * 86_400_000).toISOString().slice(0, 10);
+  return addCalendarDays(dateInAmsterdam(new Date()), -days);
 }
 
 function demoEmail(sessionId: string, key: DemoUserSpec["key"]): string {

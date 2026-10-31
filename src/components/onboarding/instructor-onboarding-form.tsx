@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
+import { choiceChipClassName } from "@/components/ui/form-section";
 import { Textarea } from "@/components/ui/textarea";
 import { instructorStatusLabels } from "@/lib/labels";
 import {
@@ -169,10 +170,9 @@ export function InstructorOnboardingForm({
           {statusOptions.map(([status, label]) => (
             <label
               className={cn(
-                "cursor-pointer rounded-full border px-3 py-1.5 text-sm transition-colors",
-                statuses.includes(status)
-                  ? "border-primary bg-primary/10 font-medium text-primary"
-                  : "border-border text-muted-foreground hover:bg-muted",
+                choiceChipClassName,
+                statuses.includes(status) &&
+                  "border-primary/40 bg-primary-soft font-medium text-primary-soft-foreground",
               )}
               key={status}
             >
@@ -191,7 +191,7 @@ export function InstructorOnboardingForm({
       </div>
 
       {isZzp ? (
-        <div className="grid gap-3 rounded-lg border border-border bg-muted/40 p-3 sm:grid-cols-2">
+        <div className="grid gap-3 rounded-lg border border-border bg-subtle p-3 sm:grid-cols-2">
           <div className="space-y-1.5">
             <Label htmlFor="kvkNumber">KvK-nummer</Label>
             <Input
@@ -217,7 +217,7 @@ export function InstructorOnboardingForm({
         <div className="flex flex-wrap gap-2">
           {sports.map((sport) => (
             <label
-              className="cursor-pointer rounded-full border border-border px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted has-checked:border-primary has-checked:bg-primary/10 has-checked:font-medium has-checked:text-primary"
+              className={choiceChipClassName}
               key={sport.id}
             >
               <input
@@ -244,7 +244,7 @@ export function InstructorOnboardingForm({
           <div className="flex flex-wrap gap-2">
             {visibleLessonTypes.map((lessonType) => (
               <label
-                className="cursor-pointer rounded-full border border-border px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted has-checked:border-primary has-checked:bg-primary/10 has-checked:font-medium has-checked:text-primary"
+                className={choiceChipClassName}
                 key={lessonType.id}
               >
                 <input

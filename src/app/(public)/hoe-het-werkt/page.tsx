@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { BRAND } from "@/lib/branding";
 
 export const metadata: Metadata = {
@@ -29,7 +29,7 @@ const organizationSteps = [
 export default function HoeHetWerktPage() {
   return (
     <div className="mx-auto w-full max-w-4xl px-4 py-12">
-      <h1 className="text-3xl font-bold tracking-tight">Hoe het werkt</h1>
+      <h1 className="text-3xl font-semibold tracking-tight">Hoe het werkt</h1>
       <p className="mt-3 text-muted-foreground">
         {BRAND.name} brengt vraag en aanbod in de sportwereld samen. Het
         platform faciliteert matching, communicatie, documentcontrole en
@@ -97,13 +97,15 @@ export default function HoeHetWerktPage() {
       </Alert>
 
       <div className="mt-10 flex gap-3">
-        <Link href="/registreren">
-          <Button size="lg">Gratis account maken</Button>
-        </Link>
-        <Link href="/faq">
-          <Button size="lg" variant="outline">
-            Veelgestelde vragen
-          </Button>
+        <Link
+          href="/registreren"
+          className={buttonVariants({ size: "lg" })}
+        >Gratis account maken</Link>
+        <Link
+          href="/faq"
+          className={buttonVariants({ size: "lg", variant: "outline" })}
+        >
+          Veelgestelde vragen
         </Link>
       </div>
     </div>

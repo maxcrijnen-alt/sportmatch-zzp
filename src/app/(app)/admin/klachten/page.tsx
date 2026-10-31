@@ -1,8 +1,9 @@
+import { cn } from "@/lib/utils";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
@@ -99,7 +100,7 @@ export default async function AdminKlachtenPage({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Klachten en meldingen</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Klachten en meldingen</h1>
         <p className="text-sm text-muted-foreground">
           Privé gemelde problemen rond bevestigde en afgeronde opdrachten.
         </p>
@@ -155,9 +156,10 @@ export default async function AdminKlachtenPage({
               ))}
             </Select>
             <Button type="submit">Filteren</Button>
-            <Link href="/admin/klachten">
-              <Button className="w-full" type="button" variant="outline">Wissen</Button>
-            </Link>
+            <Link
+              href="/admin/klachten"
+              className={cn(buttonVariants({ variant: "outline" }), "w-full")}
+            >Wissen</Link>
           </form>
         </CardContent>
       </Card>

@@ -25,7 +25,7 @@ export function ProblemReportForm({ jobId }: { jobId: string }) {
   }
 
   return (
-    <form action={formAction} className="space-y-3 rounded-lg border border-warning/40 p-4">
+    <form action={formAction} className="w-full space-y-3 rounded-xl border border-warning/30 bg-warning-soft/60 p-4">
       <input name="jobId" type="hidden" value={jobId} />
       <p className="font-medium">Probleem melden bij SportMatch</p>
       <p className="text-xs text-muted-foreground">

@@ -10,6 +10,8 @@ import {
 } from "lucide-react";
 import { ChatPanel } from "@/components/chat/chat-panel";
 import { Badge } from "@/components/ui/badge";
+import { Avatar } from "@/components/ui/avatar";
+import { buttonVariants } from "@/components/ui/button";
 import { getSessionProfile } from "@/lib/auth/session";
 import { subscriptionGrantsAccess } from "@/lib/billing/access";
 import {
@@ -145,34 +147,35 @@ export default async function ChatDetailPage({
     "Lesvorm niet opgegeven";
 
   return (
-    <div className="mx-auto flex w-full max-w-4xl flex-col gap-3 px-4 py-6">
+    <div className="mx-auto flex w-full max-w-4xl flex-col gap-4 px-4 py-6 sm:px-6 lg:px-8">
       <div className="flex items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
           <Link
             aria-label="Terug naar berichten"
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md hover:bg-muted"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground shadow-xs transition-colors hover:text-foreground"
             href="/berichten"
           >
             <ArrowLeft className="h-4 w-4" />
           </Link>
+          <Avatar name={counterpartName} size="sm" />
           <div className="min-w-0">
             <p className="text-xs text-muted-foreground">Gesprek met</p>
             <p className="truncate font-semibold">{counterpartName}</p>
           </div>
         </div>
         {chat.job ? (
-          <Badge variant="outline">{jobStatusLabels[chat.job.status]}</Badge>
+          <Badge variant="muted">{jobStatusLabels[chat.job.status]}</Badge>
         ) : null}
       </div>
 
       {chat.job ? (
         <section
           aria-label="Opdrachtdetails bij dit gesprek"
-          className="rounded-lg border border-border bg-card p-3"
+          className="rounded-xl border border-border bg-card p-4 shadow-card"
         >
           <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                 Concrete opdracht
               </p>
               <h1 className="mt-0.5 text-base font-semibold">{chat.job.title}</h1>
@@ -182,13 +185,13 @@ export default async function ChatDetailPage({
             </div>
             <div className="flex shrink-0 flex-wrap gap-2">
               <Link
-                className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border px-3 text-xs font-medium hover:bg-muted"
+                className={buttonVariants({ size: "sm", variant: "outline" })}
                 href={jobHref}
               >
                 Bekijk opdracht <ExternalLink className="h-3.5 w-3.5" />
               </Link>
               <Link
-                className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border px-3 text-xs font-medium hover:bg-muted"
+                className={buttonVariants({ size: "sm", variant: "outline" })}
                 href={`/agenda?job=${chat.job.id}`}
               >
                 Naar agenda <CalendarDays className="h-3.5 w-3.5" />

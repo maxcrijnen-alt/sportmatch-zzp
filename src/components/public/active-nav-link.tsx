@@ -19,10 +19,11 @@ export function ActiveNavLink({ href, label, mobile }: ActiveNavLinkProps) {
       aria-current={active ? "page" : undefined}
       className={cn(
         mobile
-          ? "rounded-md px-3 py-2 text-sm hover:bg-muted"
-          : "transition-colors hover:text-foreground",
-        active && "font-bold text-foreground",
+          ? "rounded-lg px-3 py-2 text-sm hover:bg-muted"
+          : "rounded-lg px-3 py-2 font-medium transition-colors hover:bg-muted hover:text-foreground",
+        active && "font-semibold text-foreground",
         active && mobile && "bg-muted",
+        active && !mobile && "bg-muted",
       )}
       href={href}
     >

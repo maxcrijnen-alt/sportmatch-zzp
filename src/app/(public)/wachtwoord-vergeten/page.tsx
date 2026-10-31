@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { KeyRound } from "lucide-react";
 import { ForgotPasswordForm } from "@/components/auth/password-forms";
 import {
   Card,
@@ -15,9 +16,10 @@ export const metadata: Metadata = {
 
 export default function WachtwoordVergetenPage() {
   return (
-    <div className="mx-auto flex w-full max-w-md flex-col px-4 py-16">
-      <Card>
+    <div className="mx-auto flex w-full max-w-md flex-col px-4 py-12 sm:py-20">
+      <Card className="shadow-raised">
         <CardHeader>
+          <KeyRound aria-hidden="true" className="mb-2 h-6 w-6 text-primary" />
           <CardTitle className="text-xl">Wachtwoord vergeten</CardTitle>
           <CardDescription>
             Vul je e-mailadres in; we sturen je een link om een nieuw wachtwoord

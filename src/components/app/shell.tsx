@@ -2,14 +2,24 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Bell, LogOut, Menu, Settings, Star, User, X } from "lucide-react";
+import {
+  Bell,
+  ChevronRight,
+  LogOut,
+  Menu,
+  Settings,
+  Star,
+  UserRound,
+  X,
+} from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { Logo } from "@/components/brand/logo";
+import { Logo, LogoMark } from "@/components/brand/logo";
 import {
   LocationSelector,
   type LocationOption,
 } from "@/components/app/location-selector";
 import { navLinksForRole, secondaryLinks } from "@/components/app/nav-links";
+import { Avatar } from "@/components/ui/avatar";
 import { signOutAction } from "@/lib/auth/actions";
 import { LOCATION_FILTER_COOKIE } from "@/lib/org/location-filter-constants";
 import { cn } from "@/lib/utils";
@@ -151,104 +161,148 @@ export function AppShell({
     };
   }, [mobileMenuOpen]);
 
+  const roleLabel =
+    role === "organization"
+      ? "Sportschool"
+      : role === "admin"
+        ? "Beheerder"
+        : "Instructeur";
+
+  const iconLinkClassName = (active: boolean) =>
+    cn(
+      "relative flex h-9 w-9 items-center justify-center rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40",
+      active
+        ? "bg-primary-soft text-primary"
+        : "text-muted-foreground hover:bg-muted hover:text-foreground",
+    );
+
   return (
     <div className="flex min-h-screen">
       {/* Sidebar (desktop) */}
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-border bg-card lg:flex">
-        <div className="flex h-16 items-center border-b border-border px-5">
-          <Link href="/dashboard">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-border bg-card lg:flex">
+        <div className="flex h-16 shrink-0 items-center px-5">
+          <Link
+            className="rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+            href="/dashboard"
+          >
             <Logo />
           </Link>
         </div>
-        <nav className="flex-1 space-y-1 overflow-y-auto p-3">
-          {links.map((link) => (
-            <Link
-              className={cn(
-                "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                isActive(link.href)
-                  ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
-              )}
-              href={withLocation(link.href)}
-              key={link.href}
-            >
-              <link.icon className="h-4 w-4" />
-              {link.label}
-            </Link>
-          ))}
+        <nav
+          aria-label="Hoofdnavigatie"
+          className="flex-1 space-y-0.5 overflow-y-auto px-3 py-3"
+        >
+          {links.map((link) => {
+            const active = isActive(link.href);
+            return (
+              <Link
+                aria-current={active ? "page" : undefined}
+                className={cn(
+                  "group flex h-9 items-center gap-3 rounded-lg px-2.5 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40",
+                  active
+                    ? "bg-primary-soft font-semibold text-primary-soft-foreground"
+                    : "font-medium text-muted-foreground hover:bg-muted hover:text-foreground",
+                )}
+                href={withLocation(link.href)}
+                key={link.href}
+              >
+                <link.icon
+                  className={cn(
+                    "h-[18px] w-[18px] shrink-0",
+                    active
+                      ? "text-primary"
+                      : "text-muted-foreground/80 group-hover:text-foreground",
+                  )}
+                />
+                {link.label}
+              </Link>
+            );
+          })}
         </nav>
-        <div className="border-t border-border p-3">
+        <div className="space-y-1 border-t border-border p-3">
+          <div className="flex items-center gap-3 rounded-lg px-2.5 py-2">
+            <Avatar name={fullName} size="sm" />
+            <div className="min-w-0">
+              <p className="truncate text-sm font-medium leading-5">{fullName}</p>
+              <p className="text-xs leading-4 text-muted-foreground">{roleLabel}</p>
+            </div>
+          </div>
           <form action={signOutAction}>
             <button
-              className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              className="flex h-9 w-full items-center gap-3 rounded-lg px-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
               type="submit"
             >
-              <LogOut className="h-4 w-4" />
+              <LogOut className="h-[18px] w-[18px]" />
               Uitloggen
             </button>
           </form>
         </div>
       </aside>
 
-      <div className="flex min-h-screen w-full flex-col lg:pl-60">
+      <div className="flex min-h-screen w-full min-w-0 flex-col lg:pl-64">
         {/* Topbar */}
-        <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-border bg-background/95 px-4 backdrop-blur">
-          <Link className="lg:hidden" href="/dashboard">
-            <Logo />
-          </Link>
-          <div className="hidden text-sm text-muted-foreground xl:block">
-            Welkom, <span className="font-medium text-foreground">{fullName}</span>
+        <header className="sticky top-0 z-20 flex h-16 items-center justify-between gap-3 border-b border-border bg-card/90 px-4 backdrop-blur-md supports-[backdrop-filter]:bg-card/75 sm:px-6 lg:px-8">
+          <div className="flex min-w-0 items-center gap-3">
+            <Link
+              className="shrink-0 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 lg:hidden"
+              href="/dashboard"
+            >
+              <LogoMark className="h-8 w-8 sm:hidden" />
+              <span className="sr-only sm:hidden">Dashboard</span>
+              <Logo className="hidden sm:inline-flex lg:hidden" />
+            </Link>
+            {role === "organization" && locations.length > 0 ? (
+              <LocationSelector
+                locations={locations}
+                onChange={updateLocation}
+                value={locationId}
+              />
+            ) : null}
           </div>
-          {role === "organization" && locations.length > 0 ? (
-            <LocationSelector
-              locations={locations}
-              onChange={updateLocation}
-              value={locationId}
-            />
-          ) : null}
-          <div className="flex items-center gap-1">
+          <div className="flex shrink-0 items-center gap-1">
             <Link
               aria-label="Meldingen"
-              className="relative flex h-10 w-10 items-center justify-center rounded-md hover:bg-muted"
+              className={iconLinkClassName(isActive("/meldingen"))}
               href="/meldingen"
             >
-              <Bell className="h-5 w-5" />
+              <Bell className="h-[18px] w-[18px]" />
               {unreadCount > 0 ? (
-                <span className="absolute right-1.5 top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[0.6rem] font-bold text-destructive-foreground">
+                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[0.6rem] font-bold text-destructive-foreground ring-2 ring-card">
                   {unreadCount > 9 ? "9+" : unreadCount}
                 </span>
               ) : null}
             </Link>
             <Link
               aria-label="Profiel"
-              className="flex h-10 w-10 items-center justify-center rounded-md hover:bg-muted"
+              className={iconLinkClassName(isActive("/profiel"))}
               href="/profiel"
             >
-              <User className="h-5 w-5" />
+              <UserRound className="h-[18px] w-[18px]" />
             </Link>
             <Link
               aria-label="Instellingen"
-              className="flex h-10 w-10 items-center justify-center rounded-md hover:bg-muted"
+              className={iconLinkClassName(isActive("/instellingen"))}
               href="/instellingen"
             >
-              <Settings className="h-5 w-5" />
+              <Settings className="h-[18px] w-[18px]" />
             </Link>
           </div>
         </header>
 
-        <main className="flex-1 pb-24 lg:pb-8">
+        <main className="flex-1 pb-28 lg:pb-10">
           {hasPendingReview ? (
-            <div className="border-b border-warning/30 bg-warning/10 px-4 py-3">
-              <div className="mx-auto flex max-w-7xl flex-col gap-2 text-sm sm:flex-row sm:items-center sm:justify-between">
-                <p className="flex items-center gap-2 font-medium">
-                  <Star className="h-4 w-4 text-warning" />
+            <div className="border-b border-warning/20 bg-warning-soft px-4 py-2.5 sm:px-6 lg:px-8">
+              <div className="mx-auto flex max-w-6xl flex-col gap-1.5 text-sm sm:flex-row sm:items-center sm:justify-between">
+                <p className="flex items-center gap-2 font-medium text-amber-900">
+                  <Star className="h-4 w-4 fill-warning text-warning" />
                   Je hebt nog een beoordeling openstaan
                 </p>
                 <Link
-                  className="font-semibold text-primary hover:underline"
+                  className="inline-flex items-center gap-1 font-semibold text-amber-800 hover:underline"
                   href={role === "organization" ? "/organisatie/reviews" : "/reviews"}
                 >
                   Beoordeling afronden
+                  <ChevronRight className="h-4 w-4" />
                 </Link>
               </div>
             </div>
@@ -260,24 +314,26 @@ export function AppShell({
           <div className="fixed inset-0 z-40 lg:hidden">
             <button
               aria-label="Sluit meer-menu"
-              className="absolute inset-0 bg-foreground/30"
+              className="absolute inset-0 bg-secondary/40 backdrop-blur-[2px]"
               onClick={() => setMobileMenuOpen(false)}
               type="button"
             />
             <section
               aria-label="Meer navigatie"
-              className="absolute inset-x-0 bottom-[4.25rem] max-h-[72vh] overflow-y-auto rounded-t-2xl border-t border-border bg-card p-4 shadow-2xl"
+              className="absolute inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] max-h-[72vh] overflow-y-auto rounded-t-2xl border-t border-border bg-card px-4 pb-4 pt-2 shadow-overlay"
             >
+              <div className="mx-auto mb-2 h-1 w-10 rounded-full bg-border-strong" />
               <div className="mb-3 flex items-center justify-between">
-                <div>
-                  <p className="font-semibold">Meer</p>
-                  <p className="text-xs text-muted-foreground">
-                    Alle overige onderdelen van SportMatch
-                  </p>
+                <div className="flex min-w-0 items-center gap-3">
+                  <Avatar name={fullName} size="sm" />
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold">{fullName}</p>
+                    <p className="text-xs text-muted-foreground">{roleLabel}</p>
+                  </div>
                 </div>
                 <button
                   aria-label="Sluit menu"
-                  className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+                  className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
                   onClick={() => setMobileMenuOpen(false)}
                   type="button"
                 >
@@ -285,20 +341,26 @@ export function AppShell({
                 </button>
               </div>
 
-              <nav className="grid gap-1" aria-label="Overige hoofdnavigatie">
+              <nav className="grid grid-cols-2 gap-2" aria-label="Overige hoofdnavigatie">
                 {mobileMoreLinks.map((link) => (
                   <Link
+                    aria-current={isActive(link.href) ? "page" : undefined}
                     className={cn(
-                      "flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition-colors",
+                      "flex min-h-12 items-center gap-3 rounded-xl border px-3 py-2.5 text-sm font-medium transition-colors",
                       isActive(link.href)
-                        ? "bg-primary/10 text-primary"
-                        : "text-foreground hover:bg-muted",
+                        ? "border-primary/20 bg-primary-soft text-primary-soft-foreground"
+                        : "border-border text-foreground hover:bg-muted",
                     )}
                     href={withLocation(link.href)}
                     key={link.href}
                     onClick={() => setMobileMenuOpen(false)}
                   >
-                    <link.icon className="h-5 w-5 text-muted-foreground" />
+                    <link.icon
+                      className={cn(
+                        "h-5 w-5 shrink-0",
+                        isActive(link.href) ? "text-primary" : "text-muted-foreground",
+                      )}
+                    />
                     {link.label}
                   </Link>
                 ))}
@@ -306,13 +368,14 @@ export function AppShell({
 
               <div className="my-3 h-px bg-border" />
 
-              <nav className="grid gap-1" aria-label="Accountnavigatie">
+              <nav className="grid gap-0.5" aria-label="Accountnavigatie">
                 {secondaryLinks.map((link) => (
                   <Link
+                    aria-current={isActive(link.href) ? "page" : undefined}
                     className={cn(
-                      "flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition-colors",
+                      "flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium transition-colors",
                       isActive(link.href)
-                        ? "bg-primary/10 text-primary"
+                        ? "bg-primary-soft text-primary-soft-foreground"
                         : "text-foreground hover:bg-muted",
                     )}
                     href={link.href}
@@ -336,7 +399,7 @@ export function AppShell({
 
               <form action={signOutAction}>
                 <button
-                  className="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                  className="flex min-h-11 w-full items-center gap-3 rounded-lg px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                   type="submit"
                 >
                   <LogOut className="h-5 w-5" />
@@ -348,33 +411,51 @@ export function AppShell({
         ) : null}
 
         {/* Bottom nav (mobiel): vier kernacties + Meer */}
-        <nav className="fixed inset-x-0 bottom-0 z-50 flex border-t border-border bg-card lg:hidden">
-          {mobilePrimaryLinks.map((link) => (
-            <Link
-              className={cn(
-                "flex flex-1 flex-col items-center gap-1 py-2.5 text-[0.65rem] font-medium",
-                isActive(link.href) ? "text-primary" : "text-muted-foreground",
-              )}
-              href={withLocation(link.href)}
-              key={link.href}
-            >
-              <link.icon className="h-5 w-5" />
-              {link.label}
-            </Link>
-          ))}
+        <nav className="fixed inset-x-0 bottom-0 z-50 flex border-t border-border bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden">
+          {mobilePrimaryLinks.map((link) => {
+            const active = isActive(link.href);
+            return (
+              <Link
+                aria-current={active ? "page" : undefined}
+                className={cn(
+                  "flex h-16 min-w-0 flex-1 flex-col items-center justify-center gap-1 text-[11px] font-medium",
+                  active ? "text-primary-soft-foreground" : "text-muted-foreground",
+                )}
+                href={withLocation(link.href)}
+                key={link.href}
+              >
+                <span
+                  className={cn(
+                    "flex h-7 w-12 items-center justify-center rounded-full transition-colors",
+                    active && "bg-primary-soft text-primary",
+                  )}
+                >
+                  <link.icon className="h-5 w-5" />
+                </span>
+                <span className="max-w-full truncate px-1">{link.label}</span>
+              </Link>
+            );
+          })}
           <button
             aria-expanded={mobileMenuOpen}
             aria-label="Meer navigatie"
             className={cn(
-              "flex flex-1 flex-col items-center gap-1 py-2.5 text-[0.65rem] font-medium",
+              "flex h-16 min-w-0 flex-1 flex-col items-center justify-center gap-1 text-[11px] font-medium",
               mobileMoreActive || mobileMenuOpen
-                ? "text-primary"
+                ? "text-primary-soft-foreground"
                 : "text-muted-foreground",
             )}
             onClick={() => setMobileMenuOpen((open) => !open)}
             type="button"
           >
-            <Menu className="h-5 w-5" />
+            <span
+              className={cn(
+                "flex h-7 w-12 items-center justify-center rounded-full transition-colors",
+                (mobileMoreActive || mobileMenuOpen) && "bg-primary-soft text-primary",
+              )}
+            >
+              <Menu className="h-5 w-5" />
+            </span>
             Meer
           </button>
         </nav>

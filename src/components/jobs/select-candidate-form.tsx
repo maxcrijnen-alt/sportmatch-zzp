@@ -48,7 +48,7 @@ export function SelectCandidateForm({
   return (
     <form
       action={formAction}
-      className="space-y-3 rounded-lg border border-primary/40 bg-primary/5 p-4"
+      className="w-full space-y-3 rounded-xl border border-primary/20 bg-primary-soft p-4"
     >
       {state.error ? (
         <Alert variant="destructive">

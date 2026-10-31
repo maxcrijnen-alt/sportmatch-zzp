@@ -1,14 +1,18 @@
+import { cn } from "@/lib/utils";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowRight, SearchX } from "lucide-react";
+import { ArrowRight, SearchX, SlidersHorizontal } from "lucide-react";
 import { AgendaView } from "@/components/agenda/agenda-view";
 import { JobCard } from "@/components/jobs/job-card";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Page, PageHeader, SectionHeading } from "@/components/ui/page";
 import { Select } from "@/components/ui/select";
+import { TabLinks } from "@/components/ui/tabs";
 import { sportMatchAgendaProvider } from "@/lib/agenda/sportmatch-provider";
 import { getSessionProfile } from "@/lib/auth/session";
 import { jobTypeLabels } from "@/lib/labels";
@@ -121,38 +125,22 @@ export default async function OpdrachtenPage({
     });
 
   return (
-    <div className="mx-auto w-full max-w-5xl space-y-6 px-4 py-8">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Opdrachten</h1>
-          <p className="text-sm text-muted-foreground">
-            {showAll
-              ? "Alle open opdrachten, ook buiten je reisafstand."
-              : "Passende opdrachten binnen jouw reisafstand, gesorteerd op match."}
-          </p>
-        </div>
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <Link href="/profiel">
-            <Button className="w-full sm:w-auto" variant="outline">
-              Profiel en tarief
-            </Button>
+    <Page>
+      <PageHeader
+        actions={
+          <Link
+            href="/profiel"
+            className={cn(buttonVariants({ variant: "outline" }), "w-full sm:w-auto")}
+          >
+            Profiel en tarief
           </Link>
-          <Link href="/opdrachten?weergave=alles">
-            <Button className="w-full sm:w-auto" variant="outline">
-              Alle opdrachten
-            </Button>
-          </Link>
-        </div>
-      </div>
+        }
+        title="Opdrachten"
+      />
 
       {profile.role === "instructor" ? (
         <section className="space-y-3">
-          <div>
-            <h2 className="text-lg font-semibold tracking-tight">Mijn week</h2>
-            <p className="text-sm text-muted-foreground">
-              Je geplande, bevestigde en afgeronde opdrachten in weekoverzicht.
-            </p>
-          </div>
+          <SectionHeading title="Mijn week" />
           <AgendaView
             defaultView="week"
             events={agendaEvents}
@@ -163,22 +151,26 @@ export default async function OpdrachtenPage({
       ) : null}
 
       <section className="space-y-3">
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="text-lg font-semibold tracking-tight">Filters</h2>
-          {hasFilters ? (
-            <Link
-              className="text-sm font-medium text-primary hover:underline"
-              href="/opdrachten"
-            >
-              Wissen
-            </Link>
-          ) : null}
-        </div>
+        <SectionHeading
+          actions={
+            hasFilters ? (
+              <Link
+                className="text-[13px] font-medium text-primary hover:underline"
+                href="/opdrachten"
+              >
+                Wissen
+              </Link>
+            ) : null
+          }
+          title="Filters"
+        />
         <Card>
-          <CardContent className="pt-5">
-          <form className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6" method="get">
+          <form
+            className="grid gap-3 p-4 sm:grid-cols-3 lg:grid-cols-[repeat(6,minmax(0,1fr))_auto] lg:items-end"
+            method="get"
+          >
             <div className="space-y-1.5">
-              <Label className="text-xs" htmlFor="sport">
+              <Label className="text-xs text-muted-foreground" htmlFor="sport">
                 Sport
               </Label>
               <Select defaultValue={filters.sport ?? ""} id="sport" name="sport">
@@ -191,7 +183,7 @@ export default async function OpdrachtenPage({
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs" htmlFor="type">
+              <Label className="text-xs text-muted-foreground" htmlFor="type">
                 Soort
               </Label>
               <Select defaultValue={filters.type ?? ""} id="type" name="type">
@@ -206,7 +198,7 @@ export default async function OpdrachtenPage({
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs" htmlFor="datum">
+              <Label className="text-xs text-muted-foreground" htmlFor="datum">
                 Datum
               </Label>
               <Input
@@ -215,12 +207,9 @@ export default async function OpdrachtenPage({
                 name="datum"
                 type="date"
               />
-              <p className="text-[11px] leading-4 text-muted-foreground">
-                Laat leeg om alle datums te bekijken.
-              </p>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs" htmlFor="maxkm">
+              <Label className="text-xs text-muted-foreground" htmlFor="maxkm">
                 Max. km
               </Label>
               <Input
@@ -233,7 +222,7 @@ export default async function OpdrachtenPage({
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs" htmlFor="minbedrag">
+              <Label className="text-xs text-muted-foreground" htmlFor="minbedrag">
                 Min. €
               </Label>
               <Input
@@ -246,7 +235,7 @@ export default async function OpdrachtenPage({
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs" htmlFor="weergave">
+              <Label className="text-xs text-muted-foreground" htmlFor="weergave">
                 Weergave
               </Label>
               <Select
@@ -258,76 +247,78 @@ export default async function OpdrachtenPage({
                 <option value="alles">Alle opdrachten</option>
               </Select>
             </div>
-            <div className="flex flex-col gap-2 sm:col-span-3 sm:flex-row lg:col-span-6">
-              <Button className="w-full sm:w-auto" size="sm" type="submit" variant="outline">
-                Filteren
-              </Button>
-            </div>
+            <Button className="w-full sm:col-span-3 lg:col-span-1 lg:w-auto" type="submit" variant="secondary">
+              <SlidersHorizontal className="h-4 w-4" />
+              Filteren
+            </Button>
           </form>
-          </CardContent>
         </Card>
       </section>
 
       <section className="space-y-3">
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="text-lg font-semibold tracking-tight">
-            Beschikbare opdrachten
-          </h2>
-          <span className="rounded-full border border-border px-2.5 py-1 text-xs font-semibold text-muted-foreground">
-            {filtered.length}
-          </span>
-        </div>
+        <SectionHeading count={filtered.length} title="Beschikbare opdrachten" />
+        <TabLinks
+          items={[
+            { href: "/opdrachten", label: "Passend bij mij", active: !showAll },
+            {
+              href: "/opdrachten?weergave=alles",
+              label: "Alle opdrachten",
+              active: showAll,
+            },
+          ]}
+          label="Opdrachtweergave"
+        />
 
-      {filtered.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center gap-4 py-12 text-center">
-            <SearchX className="h-8 w-8 text-muted-foreground" />
-            <div>
-              <p className="font-medium">Geen opdrachten gevonden</p>
-              <p className="mt-2 max-w-md text-sm leading-6 text-muted-foreground">
-                Probeer minder filters, bekijk alle opdrachten of pas je profiel,
-                reisafstand en minimale vergoeding aan.
-              </p>
-            </div>
-            <div className="flex w-full flex-col justify-center gap-2 sm:w-auto sm:flex-row">
-              <Link href="/profiel">
-                <Button className="w-full sm:w-auto" variant="outline">
-                  Profiel aanpassen
-                </Button>
-              </Link>
-              <Link href="/opdrachten">
-                <Button className="w-full sm:w-auto" variant="outline">
-                  Filters wissen
-                </Button>
-              </Link>
-              <Link href="/opdrachten?weergave=alles">
-                <Button className="w-full sm:w-auto">
-                  Alle opdrachten bekijken
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="space-y-4">
-          {filtered.map((job) => (
-            <JobCard
-              actionHref={
-                appliedJobIds.has(job.id)
-                  ? `/opdrachten/${job.id}`
-                  : `/opdrachten/${job.id}#aanmelden`
+        {filtered.length === 0 ? (
+          <Card>
+            <EmptyState
+              action={
+                <>
+                  <Link
+                    href="/profiel"
+                    className={cn(buttonVariants({ variant: "outline" }), "w-full sm:w-auto")}
+                  >
+                    Profiel aanpassen
+                  </Link>
+                  <Link
+                    href="/opdrachten"
+                    className={cn(buttonVariants({ variant: "outline" }), "w-full sm:w-auto")}
+                  >
+                    Filters wissen
+                  </Link>
+                  <Link
+                    href="/opdrachten?weergave=alles"
+                    className={cn(buttonVariants(), "w-full sm:w-auto")}
+                  >
+                    Alle opdrachten bekijken
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </>
               }
-              actionLabel={appliedJobIds.has(job.id) ? "Reactie bekijken" : "Aanmelden"}
-              href={`/opdrachten/${job.id}`}
-              job={job}
-              key={job.id}
-              match={matches.get(job.id)}
+              description="Probeer minder filters, bekijk alle opdrachten of pas je profiel, reisafstand en minimale vergoeding aan."
+              icon={SearchX}
+              title="Geen opdrachten gevonden"
             />
-          ))}
-        </div>
-      )}
+          </Card>
+        ) : (
+          <div className="space-y-3">
+            {filtered.map((job) => (
+              <JobCard
+                actionHref={
+                  appliedJobIds.has(job.id)
+                    ? `/opdrachten/${job.id}`
+                    : `/opdrachten/${job.id}#aanmelden`
+                }
+                actionLabel={appliedJobIds.has(job.id) ? "Reactie bekijken" : "Aanmelden"}
+                href={`/opdrachten/${job.id}`}
+                job={job}
+                key={job.id}
+                match={matches.get(job.id)}
+              />
+            ))}
+          </div>
+        )}
       </section>
-    </div>
+    </Page>
   );
 }

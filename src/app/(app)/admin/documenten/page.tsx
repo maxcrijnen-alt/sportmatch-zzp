@@ -61,7 +61,7 @@ export default async function AdminDocumentenPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold tracking-tight">Documentcontrole</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Documentcontrole</h1>
         <form action={refreshDocumentStatusesAction}>
           <Button size="sm" type="submit" variant="outline">
             Verlopen documenten markeren

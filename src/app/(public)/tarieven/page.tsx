@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Check } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -29,7 +29,7 @@ const included = [
 export default function TarievenPage() {
   return (
     <div className="mx-auto w-full max-w-4xl px-4 py-12">
-      <h1 className="text-3xl font-bold tracking-tight">Tarieven</h1>
+      <h1 className="text-3xl font-semibold tracking-tight">Tarieven</h1>
       <p className="mt-3 max-w-2xl text-muted-foreground">
         Eén simpel abonnement. Geen commissie over je verdiensten of over de
         vergoeding die je afspreekt — die betaling verloopt rechtstreeks tussen
@@ -106,9 +106,10 @@ export default function TarievenPage() {
       </p>
 
       <div className="mt-10">
-        <Link href="/registreren">
-          <Button size="lg">Start je gratis proefperiode</Button>
-        </Link>
+        <Link
+          href="/registreren"
+          className={buttonVariants({ size: "lg" })}
+        >Start je gratis proefperiode</Link>
       </div>
     </div>
   );

@@ -12,12 +12,14 @@ import {
 } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Page, PageHeader } from "@/components/ui/page";
+import { TabLinks } from "@/components/ui/tabs";
 import { getSessionProfile } from "@/lib/auth/session";
 import { formatDate, formatDateTime, formatTime } from "@/lib/labels";
 import { getOrgContext } from "@/lib/org/context";
 import { createClient } from "@/lib/supabase/server";
-import { cn } from "@/lib/utils";
 import type { Chat, ChatMessage, JobStatus } from "@/types/database";
 
 export const metadata: Metadata = {
@@ -225,60 +227,33 @@ export default async function BerichtenPage({
   const visibleChats = chats.filter((chat) => matchesTab(chat, activeTab));
 
   return (
-    <div className="mx-auto w-full max-w-4xl space-y-4 px-4 py-8">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Berichten</h1>
-        <p className="text-sm text-muted-foreground">
-          Gesprekken zijn gekoppeld aan een concrete klus. Contactgegevens
-          worden pas gedeeld na definitieve bevestiging.
-        </p>
-      </div>
+    <Page width="medium">
+      <PageHeader
+        description="Contactgegevens worden pas gedeeld na definitieve bevestiging."
+        title="Berichten"
+      />
 
-      <nav
-        aria-label="Berichtenfilters"
-        className="flex gap-1 overflow-x-auto rounded-lg border border-border bg-card p-1"
-      >
-        {tabs.map((tab) => {
-          const Icon = tab.icon;
-          const selected = tab.id === activeTab;
-          return (
-            <Link
-              aria-current={selected ? "page" : undefined}
-              className={cn(
-                "flex min-w-max flex-1 items-center justify-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors",
-                selected
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
-              )}
-              href={`/berichten?tab=${tab.id}`}
-              key={tab.id}
-            >
-              <Icon className="h-3.5 w-3.5" />
-              {tab.label}
-              <span
-                className={cn(
-                  "rounded-full px-1.5 py-0.5 text-[0.65rem]",
-                  selected ? "bg-primary-foreground/15" : "bg-muted",
-                )}
-              >
-                {tabCounts.get(tab.id) ?? 0}
-              </span>
-            </Link>
-          );
-        })}
-      </nav>
+      <TabLinks
+        fullWidth
+        items={tabs.map((tab) => ({
+          href: `/berichten?tab=${tab.id}`,
+          label: tab.label,
+          icon: tab.icon,
+          count: tabCounts.get(tab.id) ?? 0,
+          active: tab.id === activeTab,
+        }))}
+        label="Berichtenfilters"
+      />
 
       {visibleChats.length === 0 ? (
         <Card>
-          <CardContent className="flex flex-col items-center gap-3 py-8 text-center">
-            <MessageSquare className="h-8 w-8 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">
-              Geen gesprekken in {tabs.find((tab) => tab.id === activeTab)?.label.toLowerCase()}.
-            </p>
-          </CardContent>
+          <EmptyState
+            icon={MessageSquare}
+            title={`Geen gesprekken in ${tabs.find((tab) => tab.id === activeTab)?.label.toLowerCase()}.`}
+          />
         </Card>
       ) : (
-        <div className="overflow-hidden rounded-lg border border-border bg-card">
+        <div className="overflow-hidden rounded-xl border border-border bg-card shadow-card">
           {visibleChats.map((chat) => {
             const counterpartName = orgContext
               ? (instructorNames.get(chat.instructor_id) ?? "Instructeur")
@@ -296,7 +271,7 @@ export default async function BerichtenPage({
                 href={`/berichten/${chat.id}`}
                 key={chat.id}
               >
-                <article className="p-3 transition-colors hover:bg-primary/5">
+                <article className="px-4 py-4 transition-colors hover:bg-subtle sm:px-5">
                   <div className="flex items-start gap-3">
                     <Avatar name={counterpartName} />
                     <div className="min-w-0 flex-1">
@@ -326,7 +301,7 @@ export default async function BerichtenPage({
                         </span>
                       </div>
 
-                      <div className="mt-2 flex items-center justify-between gap-3 border-t border-border pt-2">
+                      <div className="mt-2.5 flex items-center justify-between gap-3 rounded-lg bg-subtle px-3 py-2">
                         <p className="min-w-0 truncate text-sm text-muted-foreground">
                           {latestActivity?.body ?? "Gesprek geopend"}
                         </p>
@@ -344,6 +319,6 @@ export default async function BerichtenPage({
           })}
         </div>
       )}
-    </div>
+    </Page>
   );
 }
