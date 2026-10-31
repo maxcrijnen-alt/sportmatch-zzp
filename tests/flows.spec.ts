@@ -113,7 +113,16 @@ test("sportschooldemo bevat kandidaten, agenda en alle berichtfilters", async ({
   await expect(page.getByText("Eerste klus").first()).toBeVisible();
   await expect(page.getByText(/Eerder mee samengewerkt/i)).toBeVisible();
 
-  await page.goto("/agenda");
+  // Tomorrow's demo training can fall in the next month. Follow its existing
+  // agenda deep link so this assertion checks the event in its own period.
+  await page.goto("/organisatie/opdrachten");
+  const confirmedJob = page.getByRole("link", {
+    name: "Bevestigde training in je agenda",
+    exact: true,
+  });
+  await expect(confirmedJob).toHaveAttribute("href", /\/organisatie\/opdrachten\/[0-9a-f-]+$/);
+  const confirmedJobId = (await confirmedJob.getAttribute("href"))!.split("/").at(-1)!;
+  await page.goto(`/agenda?job=${encodeURIComponent(confirmedJobId)}`);
   await expect(page.getByRole("heading", { name: "Agenda" })).toBeVisible();
   await expect(page.getByText(/Bevestigde training/i).first()).toBeVisible();
 

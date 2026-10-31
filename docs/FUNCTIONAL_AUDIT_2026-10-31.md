@@ -121,6 +121,15 @@ tekstconflict. Deze simulatie heeft geen branches gemerged.
 - De volledige GitHub CI-uitkomst staat op [de checks van PR #68](https://github.com/maxcrijnen-alt/sportmatch-zzp/pull/68/checks).
   De volledige lokale suite wordt niet als geslaagd gepresenteerd.
 
+Een volledige CI-run leverde 203 geslaagde tests en één fout in de bestaande
+demo-agendatest op: de bevestigde training staat op morgen, maar op 31 oktober
+valt morgen buiten de standaard getoonde maand. De agenda filterde correct op
+oktober. De test haalt nu de echte opdracht-id uit het overzicht en opent de
+bestaande `agenda?job=…`-link naar de periode van die training. De zichtbaarheid
+van de bevestigde training blijft verplicht; er zijn geen assertions verwijderd,
+retries toegevoegd of tests overgeslagen. De volledige suite draait bij iedere
+volgende PR-commit opnieuw; de definitieve uitkomst staat bij de hierboven gelinkte checks.
+
 ### Visuele vergelijking
 
 Veertien voor/na-screenshots, met dezelfde browser en viewport, zijn pixel voor pixel
