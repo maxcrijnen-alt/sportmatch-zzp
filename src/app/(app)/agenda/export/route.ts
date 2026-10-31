@@ -1,5 +1,6 @@
 import { getSessionProfile } from "@/lib/auth/session";
 import { sportMatchAgendaProvider } from "@/lib/agenda/sportmatch-provider";
+import { calendarStatusForState } from "@/lib/agenda/status";
 import type { AgendaEvent } from "@/lib/agenda/types";
 import { getOrgContext } from "@/lib/org/context";
 import { resolveLocationFilter } from "@/lib/org/location-filter";
@@ -14,16 +15,6 @@ function escapeIcs(value: string): string {
 
 function icsDate(date: string, time: string): string {
   return `${date.replaceAll("-", "")}T${time.slice(0, 8).replaceAll(":", "")}`;
-}
-
-function eventStatus(event: AgendaEvent): string {
-  if (event.state === "cancelled") {
-    return "CANCELLED";
-  }
-  if (event.state === "planned") {
-    return "TENTATIVE";
-  }
-  return "CONFIRMED";
 }
 
 function toIcs(events: AgendaEvent[]): string {
@@ -51,7 +42,7 @@ function toIcs(events: AgendaEvent[]): string {
       `SUMMARY:${escapeIcs(event.title)}`,
       `LOCATION:${escapeIcs(event.locationName)}`,
       `DESCRIPTION:${escapeIcs(`${event.sportName} · ${event.organizationName} · ${event.payLabel}`)}`,
-      `STATUS:${eventStatus(event)}`,
+      `STATUS:${calendarStatusForState(event.state)}`,
       "END:VEVENT",
     );
   }

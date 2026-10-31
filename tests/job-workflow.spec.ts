@@ -11,6 +11,18 @@ import {
   occurrenceDates,
 } from "@/lib/jobs/schedule";
 import { canNegotiateJob } from "@/lib/jobs/negotiation";
+import { calendarStatusForState } from "@/lib/agenda/status";
+
+for (const [state, expected] of [
+  ["searching", "TENTATIVE"], ["action_required", "TENTATIVE"],
+  ["planned", "TENTATIVE"], ["partially_confirmed", "TENTATIVE"],
+  ["confirmed", "CONFIRMED"], ["completed", "CONFIRMED"],
+  ["closed", "CANCELLED"], ["cancelled", "CANCELLED"],
+] as const) {
+  test(`kalenderexport van ${state} gebruikt ${expected}`, () => {
+    expect(calendarStatusForState(state)).toBe(expected);
+  });
+}
 
 const pending = {
   organization_agreed_at: "2026-07-01T10:00:00Z",

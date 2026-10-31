@@ -251,6 +251,8 @@ test("status, urgentie, onderhandelen en contactvelden blijven consistent", asyn
       ).error,
     ).toBeNull();
 
+    expect((await admin.from("job_confirmations").insert({ job_id: jobs.get("Closed"), application_id: applications.get("Closed"),
+      instructor_id: userIds[1], organization_agreed_at: stamp })).error).toBeNull();
     await login(school, ownerEmail);
     await school.goto("/organisatie/opdrachten");
     for (const [label, state] of [
@@ -264,6 +266,10 @@ test("status, urgentie, onderhandelen en contactvelden blijven consistent", asyn
       });
       await expect(row.getByText(state, { exact: true }).first()).toBeVisible();
     }
+    const exported = await school.request.get(`/agenda/export?location=${centrum}`);
+    expect(exported.ok()).toBe(true);
+    const closedEvent = (await exported.text()).split("BEGIN:VEVENT").find((event) => event.includes("Closed"));
+    expect(closedEvent).toContain("STATUS:CANCELLED");
     await school.goto(`/dashboard?location=${centrum}`);
     const urgent = school.locator("section").filter({
       has: school.getByRole("heading", { name: "Urgentie", exact: true }),
