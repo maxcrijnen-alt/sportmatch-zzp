@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import {
+  countLessonApplications,
   deriveJobWorkflow,
   deriveLessonState,
   type JobWorkflowInput,
@@ -15,6 +16,24 @@ const pending = {
   organization_agreed_at: "2026-07-01T10:00:00Z",
   confirmed_at: null,
 };
+
+test("oude hele-blokreacties blijven meetellen naast gerichte lesreacties", () => {
+  const applications = [
+    { id: "whole", job_id: "block" },
+    { id: "scoped", job_id: "block" },
+    { id: "other", job_id: "other-job" },
+  ];
+  const selections = [{ application_id: "scoped", segment_id: "a" }];
+  expect(countLessonApplications("block", "a", applications, selections)).toBe(
+    2,
+  );
+  expect(countLessonApplications("block", "b", applications, selections)).toBe(
+    1,
+  );
+  expect(
+    countLessonApplications("missing", "a", applications, selections),
+  ).toBe(0);
+});
 const confirmed = { ...pending, confirmed_at: "2026-07-01T11:00:00Z" };
 const empty: JobWorkflowInput = {
   status: "open",

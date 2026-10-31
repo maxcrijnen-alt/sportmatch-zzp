@@ -7,7 +7,7 @@ import type {
   AgendaQueryContext,
 } from "@/lib/agenda/types";
 import { occurrenceDates } from "@/lib/jobs/schedule";
-import { deriveLessonState } from "@/lib/jobs/workflow";
+import { countLessonApplications, deriveLessonState } from "@/lib/jobs/workflow";
 import type { JobStatus, PayType } from "@/types/database";
 
 interface AgendaConfirmationRow {
@@ -398,16 +398,6 @@ class SportMatchAgendaProvider implements AgendaProvider {
       );
     }
 
-    const pendingBySegment = new Map<string, number>();
-    const scopedApplicationIds = new Set<string>();
-    for (const selection of applicationSegments) {
-      pendingBySegment.set(
-        selection.segment_id,
-        (pendingBySegment.get(selection.segment_id) ?? 0) + 1,
-      );
-      scopedApplicationIds.add(selection.application_id);
-    }
-
     const planningEvents =
       context.role === "organization" && context.includeOpenPlanning
         ? planningJobs.flatMap((job): AgendaEvent[] => {
@@ -458,13 +448,9 @@ class SportMatchAgendaProvider implements AgendaProvider {
                 return [];
               }
 
-              const pendingCount =
-                (pendingBySegment.get(segment.id) ?? 0) +
-                pendingApplications.filter(
-                  (application) =>
-                    application.job_id === job.id &&
-                    !scopedApplicationIds.has(application.id),
-                ).length;
+              const pendingCount = countLessonApplications(
+                job.id, segment.id, pendingApplications, applicationSegments,
+              );
               const state = deriveLessonState(
                 job.status,
                 undefined,

@@ -79,3 +79,28 @@ export function deriveLessonState(
     pendingApplicationCount,
   }).state;
 }
+
+/** Legacy whole-block responses still apply when scoped responses also exist. */
+export function countLessonApplications(
+  jobId: string,
+  segmentId: string,
+  applications: readonly { id: string; job_id: string }[],
+  selections: readonly { application_id: string; segment_id: string }[],
+) {
+  const segmentIdsByApplication = new Map<string, Set<string>>();
+  for (const selection of selections) {
+    const ids =
+      segmentIdsByApplication.get(selection.application_id) ??
+      new Set<string>();
+    ids.add(selection.segment_id);
+    segmentIdsByApplication.set(selection.application_id, ids);
+  }
+  return new Set(
+    applications
+      .filter((application) => {
+        const ids = segmentIdsByApplication.get(application.id);
+        return application.job_id === jobId && (!ids || ids.has(segmentId));
+      })
+      .map((application) => application.id),
+  ).size;
+}

@@ -7,6 +7,9 @@
 - Actuele remote designbranch opgehaald: `origin/design/sportmatch-redesign` op
   `a788d64781541694146404188b7e50e1a9643765`. De vereiste ancestorcontrole slaagde.
 - Werkbranch: `fix/sportmatch-functional-hardening`, rechtstreeks van die designbranch.
+- Eerste implementatiecommit: `2981198a425de481f64e90a976c64f32ddd4e517`.
+- Nieuwe PR: [#68](https://github.com/maxcrijnen-alt/sportmatch-zzp/pull/68), doelbranch
+  `design/sportmatch-redesign`.
 - De designbranch bevat de actuele `main`-basis `32abaf6`; er zijn geen extra
   main-wijzigingen meegenomen of overschreven.
 - Open PR's bij aanvang: redesign [#67](https://github.com/maxcrijnen-alt/sportmatch-zzp/pull/67)
@@ -85,14 +88,19 @@ deze gestapelde hardening combineren en de volledige suite opnieuw uitvoeren.
 Na akkoord moet de nieuwe additieve migration vóór de bijbehorende app-release
 worden toegepast; in deze opdracht wordt dat niet op een remote project uitgevoerd.
 
-De designbasis en #66 combineren met `git merge-tree` zonder conflict. De definitieve
-hardening-combinatie wordt afzonderlijk gecontroleerd; met name de mobiele
-Playwright-patronen moeten zowel `membership` uit #66 als de nieuwe hardeningtests houden.
+De designbasis en #66 combineren met `git merge-tree` zonder conflict. De hardening-combinatie is eveneens met `git merge-tree --write-tree --name-only`
+gecontroleerd: **alleen `playwright.config.ts` conflicteert**. Bij oplossen moeten
+de mobiele Playwright-patronen zowel `membership` uit #66 als `hardening` en
+`link-semantics` uit #68 behouden. Onboarding en de SQL-functies combineren zonder
+tekstconflict. Deze simulatie heeft geen branches gemerged.
 
 ## Verificatie en beperkingen
 
 - Dependencies geïnstalleerd met `npm ci`; Node 24.19.0, Supabase CLI 2.121.0.
 - Oorspronkelijke SQL-suite op een verse PostgreSQL 17.6-container: geslaagd.
+- Gecombineerde databasecontrole met de migration en SQL-tests uit PR #66 in een
+  tijdelijke kopie: alle vijf suites geslaagd, inclusief ledenacceptatie en deze
+  hardening; de echte branches zijn niet gemerged.
 - Nieuwe en bestaande SQL-suites na de migration, seed en alle migrations in
   bestandsvolgorde, op een verse container zonder netwerk: geslaagd.
 - ESLint, TypeScript inclusief Next route-types en productiebuild: geslaagd.
@@ -107,8 +115,8 @@ Playwright-patronen moeten zowel `membership` uit #66 als de nieuwe hardeningtes
   Alleen de door deze test gedownloade images zijn opgeruimd. Geen test uitgeschakeld.
 - Het geïnstalleerde volledige Chromium is via een tijdelijke lokale config gebruikt;
   de CI-config blijft de gebruikelijke Playwright-installatie gebruiken.
-- GitHub CI-resultaat en definitieve integratiecontrole worden vóór afronding
-  bijgewerkt. De volledige lokale suite wordt niet als geslaagd gepresenteerd.
+- De volledige GitHub CI-uitkomst staat op [de checks van PR #68](https://github.com/maxcrijnen-alt/sportmatch-zzp/pull/68/checks).
+  De volledige lokale suite wordt niet als geslaagd gepresenteerd.
 
 ### Visuele vergelijking
 

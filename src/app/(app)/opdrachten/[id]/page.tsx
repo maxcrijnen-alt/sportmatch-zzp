@@ -537,9 +537,9 @@ export default async function OpdrachtDetailPage({
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3 pt-0">
-            {contact ? (
+            {contact && (contact.full_name?.trim() || contact.email?.trim() || contact.phone?.trim()) ? (
               <div className="space-y-1 text-sm">
-                <p className="font-medium">{contact.full_name}</p>
+                {contact.full_name?.trim() ? <p className="font-medium">{contact.full_name}</p> : null}
                 {contact.email?.trim() ? (
                   <p className="flex items-center gap-2 text-muted-foreground">
                     <Mail className="h-3.5 w-3.5" /> {contact.email}

@@ -76,16 +76,14 @@ test("status, urgentie, onderhandelen en contactvelden blijven consistent", asyn
     ).toBeNull();
     expect(
       (
-        await admin
-          .from("document_uploads")
-          .insert({
-            user_id: userIds[1],
-            doc_type: "vog",
-            storage_path: `tests/${nonce}/synthetic.pdf`,
-            original_filename: "synthetic.pdf",
-            status: "approved",
-            expires_at: "2099-01-01",
-          })
+        await admin.from("document_uploads").insert({
+          user_id: userIds[1],
+          doc_type: "vog",
+          storage_path: `tests/${nonce}/synthetic.pdf`,
+          original_filename: "synthetic.pdf",
+          status: "approved",
+          expires_at: "2099-01-01",
+        })
       ).error,
     ).toBeNull();
     const city = await admin
@@ -113,13 +111,11 @@ test("status, urgentie, onderhandelen en contactvelden blijven consistent", asyn
     orgId = org.data!.id;
     expect(
       (
-        await admin
-          .from("organization_members")
-          .insert({
-            organization_id: orgId,
-            user_id: userIds[0],
-            member_role: "owner",
-          })
+        await admin.from("organization_members").insert({
+          organization_id: orgId,
+          user_id: userIds[0],
+          member_role: "owner",
+        })
       ).error,
     ).toBeNull();
     const locations = await admin
@@ -154,8 +150,13 @@ test("status, urgentie, onderhandelen en contactvelden blijven consistent", asyn
           title: label,
           starts_on:
             label === "Recurring" ? addCalendarDays(tomorrow, -21) : tomorrow,
-          start_time: label === "Recurring" ? "08:00" : "09:00",
-          end_time: "12:00",
+          start_time:
+            label === "Recurring"
+              ? "08:00"
+              : label === "Covered"
+                ? "13:00"
+                : "09:00",
+          end_time: label === "Covered" ? "14:00" : "12:00",
           pay_type: "hourly",
           pay_hourly_rate_cents: 4500,
           pay_is_negotiable: label !== "Fixed",
@@ -186,13 +187,11 @@ test("status, urgentie, onderhandelen en contactvelden blijven consistent", asyn
     }
     expect(
       (
-        await admin
-          .from("job_recurrence_rules")
-          .insert({
-            job_id: jobs.get("Recurring"),
-            interval_weeks: 1,
-            occurrence_count: 8,
-          })
+        await admin.from("job_recurrence_rules").insert({
+          job_id: jobs.get("Recurring"),
+          interval_weeks: 1,
+          occurrence_count: 8,
+        })
       ).error,
     ).toBeNull();
     for (const label of ["Partial", "Planned"]) {
@@ -215,46 +214,40 @@ test("status, urgentie, onderhandelen en contactvelden blijven consistent", asyn
           : segments.data!.filter((s) => s.position === 1);
       expect(
         (
-          await admin
-            .from("job_application_segments")
-            .insert(
-              segments.data!.map((s) => ({
-                application_id: applications.get(label),
-                segment_id: s.id,
-              })),
-            )
+          await admin.from("job_application_segments").insert(
+            segments.data!.map((s) => ({
+              application_id: applications.get(label),
+              segment_id: s.id,
+            })),
+          )
         ).error,
       ).toBeNull();
       expect(
         (
-          await admin
-            .from("job_segment_confirmations")
-            .insert(
-              selected.map((s) => ({
-                job_id: jobs.get(label),
-                segment_id: s.id,
-                application_id: applications.get(label),
-                instructor_id: userIds[1],
-                organization_agreed_by: userIds[0],
-                organization_agreed_at: stamp,
-                confirmed_at:
-                  label === "Partial" && s.position === 1 ? stamp : null,
-              })),
-            )
+          await admin.from("job_segment_confirmations").insert(
+            selected.map((s) => ({
+              job_id: jobs.get(label),
+              segment_id: s.id,
+              application_id: applications.get(label),
+              instructor_id: userIds[1],
+              organization_agreed_by: userIds[0],
+              organization_agreed_at: stamp,
+              confirmed_at:
+                label === "Partial" && s.position === 1 ? stamp : null,
+            })),
+          )
         ).error,
       ).toBeNull();
     }
     expect(
       (
-        await admin
-          .from("job_confirmations")
-          .insert({
-            job_id: jobs.get("Covered"),
-            application_id: applications.get("Covered"),
-            instructor_id: userIds[1],
-            organization_agreed_at: stamp,
-            confirmed_at: stamp,
-          })
+        await admin.from("job_confirmations").insert({
+          job_id: jobs.get("Covered"),
+          application_id: applications.get("Covered"),
+          instructor_id: userIds[1],
+          organization_agreed_at: stamp,
+          confirmed_at: stamp,
+        })
       ).error,
     ).toBeNull();
 
@@ -266,19 +259,15 @@ test("status, urgentie, onderhandelen en contactvelden blijven consistent", asyn
       ["Covered", "Bevestigd"],
       ["Closed", "Gesloten"],
     ]) {
-      const row = school
-        .locator("li")
-        .filter({
-          has: school.getByRole("link", { name: label, exact: true }),
-        });
+      const row = school.locator("li").filter({
+        has: school.getByRole("link", { name: label, exact: true }),
+      });
       await expect(row.getByText(state, { exact: true }).first()).toBeVisible();
     }
     await school.goto(`/dashboard?location=${centrum}`);
-    const urgent = school
-      .locator("section")
-      .filter({
-        has: school.getByRole("heading", { name: "Urgentie", exact: true }),
-      });
+    const urgent = school.locator("section").filter({
+      has: school.getByRole("heading", { name: "Urgentie", exact: true }),
+    });
     await expect(urgent.getByText("Recurring", { exact: true })).toBeVisible();
     await expect(urgent.getByText("Partial", { exact: true })).toBeVisible();
     await expect(urgent.getByText("Covered", { exact: true })).toHaveCount(0);
@@ -309,6 +298,18 @@ test("status, urgentie, onderhandelen en contactvelden blijven consistent", asyn
         .getByText(/Partial/)
         .first(),
     ).toBeVisible();
+    await instructor.goto(`/opdrachten/${jobs.get("Covered")}`);
+    const organizationContact = instructor
+      .getByRole("heading", { name: "Opdracht bevestigd", exact: true })
+      .locator("..")
+      .locator("..");
+    await expect(organizationContact).toBeVisible();
+    await expect(
+      organizationContact.locator("svg.lucide-phone, svg.lucide-mail"),
+    ).toHaveCount(0);
+    await expect(
+      organizationContact.locator("p").filter({ hasText: /^$/ }),
+    ).toHaveCount(0);
     await instructor.goto(`/opdrachten/${jobs.get("Fixed")}`);
     await expect(
       instructor.getByRole("button", {

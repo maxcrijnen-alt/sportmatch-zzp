@@ -415,9 +415,9 @@ export default async function OrganisatieOpdrachtDetailPage({
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3 pt-0">
-                {contact ? (
+                {contact && (contact.full_name?.trim() || contact.email?.trim() || contact.phone?.trim()) ? (
                   <div className="space-y-1 text-sm">
-                    <p className="font-medium">{contact.full_name}</p>
+                    {contact.full_name?.trim() ? <p className="font-medium">{contact.full_name}</p> : null}
                     {contact.email?.trim() ? (
                       <p className="flex items-center gap-2 text-muted-foreground">
                         <Mail className="h-3.5 w-3.5" /> {contact.email}
@@ -494,7 +494,7 @@ export default async function OrganisatieOpdrachtDetailPage({
                   <div className="grid gap-3 border-t border-border pt-3 sm:grid-cols-2">
                     {contacts.map((item) => (
                       <div className="text-sm" key={`${item.email}-${item.phone}`}>
-                        <p className="font-medium">{item.full_name}</p>
+                        {item.full_name?.trim() ? <p className="font-medium">{item.full_name}</p> : null}
                         {item.email?.trim() ? (
                           <p className="text-muted-foreground">{item.email}</p>
                         ) : null}
