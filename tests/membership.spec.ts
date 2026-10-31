@@ -65,7 +65,7 @@ test("teamuitnodiging behoudt de rol en mislukte acceptatie voltooit onboarding 
     await staff.getByRole("button", { name: "Uitnodiging accepteren", exact: true }).click();
     await staff.waitForURL("**/dashboard");
     await staff.goto("/organisatie/medewerkers");
-    await expect(staff.getByText("CI Teamlid", { exact: true })).toBeVisible();
+    await expect(staff.getByRole("main").getByText("CI Teamlid", { exact: true })).toBeVisible();
     await expect(staff.getByRole("heading", { name: "Medewerker uitnodigen", exact: true })).toHaveCount(0);
     const member = await admin.from("organization_members").select("member_role,state").eq("organization_id", organizationId).eq("user_id", userIds[1]).single();
     expect(member.error).toBeNull();
