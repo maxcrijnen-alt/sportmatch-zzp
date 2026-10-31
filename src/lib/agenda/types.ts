@@ -5,7 +5,9 @@ export type AgendaEventState =
   | "action_required"
   | "planned"
   | "confirmed"
+  | "partially_confirmed"
   | "completed"
+  | "closed"
   | "cancelled";
 
 export interface AgendaEvent {

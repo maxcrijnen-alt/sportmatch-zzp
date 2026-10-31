@@ -70,6 +70,10 @@ zonder ingeschakelde demo-E2E.
 | Lessenblokken, herhaling, sjablonen, poule opslaan/verwijderen, bulkbevestiging, mobiele navigatie | `flows.spec.ts` |
 | RLS, organisatie- en demo-isolatie, VOG, uitnodiging/chat/notificatie, bevestiging, reviews en business gates | `supabase/tests/smoke_test.sql` |
 | Publieke pagina's op desktop/mobiel en Amsterdamse tijd | `public.spec.ts`, `timezone.spec.ts` |
+| Gedeelde opdrachtstatus, dekking per les, herhalingsurgentie en onderhandelen | `job-workflow.spec.ts` |
+| Geen geneste interactieve navigatie, één tabstop en Enter | `link-semantics.spec.ts` (desktop/mobiel) |
+| Segmentstatus, herhaling, vestigingsurgentie, tegenvoorstel en lege contactvelden | `hardening.spec.ts` (desktop/mobiel, lokale Supabase) |
+| Directe tegenvoorstel-/selectie-RPC's en VOG-datum in meerdere sessionzones | `supabase/tests/functional_hardening_test.sql` |
 
 Iedere GitHub-run toont de fasen afzonderlijk. Het artifact
 `sportmatch-test-results-*` bewaart zeven dagen het HTML-/JSON-rapport, de

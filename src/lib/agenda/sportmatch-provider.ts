@@ -3,10 +3,11 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import type {
   AgendaEvent,
-  AgendaEventState,
   AgendaProvider,
   AgendaQueryContext,
 } from "@/lib/agenda/types";
+import { occurrenceDates } from "@/lib/jobs/schedule";
+import { deriveLessonState } from "@/lib/jobs/workflow";
 import type { JobStatus, PayType } from "@/types/database";
 
 interface AgendaConfirmationRow {
@@ -100,20 +101,6 @@ interface AgendaApplicationSegmentRow {
   segment_id: string;
 }
 
-function eventState(
-  jobStatus: JobStatus,
-  confirmedAt: string | null,
-  cancelledAt: string | null = null,
-): AgendaEventState {
-  if (jobStatus === "cancelled" || cancelledAt) {
-    return "cancelled";
-  }
-  if (jobStatus === "completed") {
-    return "completed";
-  }
-  return confirmedAt ? "confirmed" : "planned";
-}
-
 function agendaPayLabel(job: NonNullable<AgendaConfirmationRow["job"]>) {
   const euro = (cents: number) =>
     new Intl.NumberFormat("nl-NL", {
@@ -129,25 +116,6 @@ function agendaPayLabel(job: NonNullable<AgendaConfirmationRow["job"]>) {
           ? `${euro(job.pay_amount_cents)} vast`
           : "In overleg";
   return job.pay_is_negotiable ? `${label} (onderhandelbaar)` : label;
-}
-
-function occurrenceDates(job: NonNullable<AgendaConfirmationRow["job"]>) {
-  if (!job.recurrence) return [job.starts_on];
-
-  const count = Math.min(job.recurrence.occurrence_count ?? 104, 104);
-  const intervalDays = Math.max(1, job.recurrence.interval_weeks) * 7;
-  const end = job.recurrence.ends_on
-    ? new Date(`${job.recurrence.ends_on}T12:00:00Z`)
-    : null;
-  const cursor = new Date(`${job.starts_on}T12:00:00Z`);
-  const dates: string[] = [];
-
-  while (dates.length < count && (!end || cursor <= end)) {
-    dates.push(cursor.toISOString().slice(0, 10));
-    cursor.setUTCDate(cursor.getUTCDate() + intervalDays);
-  }
-
-  return dates.length > 0 ? dates : [job.starts_on];
 }
 
 class SportMatchAgendaProvider implements AgendaProvider {
@@ -266,7 +234,7 @@ class SportMatchAgendaProvider implements AgendaProvider {
           )`,
         )
         .eq("organization_id", context.organizationId)
-        .eq("status", "open");
+        .in("status", ["open", "closed"]);
 
       if (context.locationId) {
         planningQuery = planningQuery.eq("location_id", context.locationId);
@@ -349,28 +317,29 @@ class SportMatchAgendaProvider implements AgendaProvider {
       }
       const job = row.job;
 
-      return occurrenceDates(job).map((date, occurrenceIndex) =>
-        ({
-          id: `${row.id}-${occurrenceIndex}`,
-          jobId: job.id,
-          title: `${job.custom_lesson_type ?? job.lesson_type?.name ?? "Les"} · ${job.title}`,
-          date,
-          startTime: job.start_time,
-          endTime: job.end_time,
-          state: eventState(job.status, row.confirmed_at),
-          jobStatus: job.status,
-          sportName: job.sport?.name ?? "Sportles",
-          payLabel: agendaPayLabel(job),
-          locationId: job.location_id,
-          locationName: job.location?.name ?? "Onbekende vestiging",
-          organizationName: job.organization?.name ?? "Sportschool",
-          instructorName:
+      return occurrenceDates(job).map(
+        (date, occurrenceIndex) =>
+          ({
+            id: `${row.id}-${occurrenceIndex}`,
+            jobId: job.id,
+            title: `${job.custom_lesson_type ?? job.lesson_type?.name ?? "Les"} · ${job.title}`,
+            date,
+            startTime: job.start_time,
+            endTime: job.end_time,
+            state: deriveLessonState(job.status, row),
+            jobStatus: job.status,
+            sportName: job.sport?.name ?? "Sportles",
+            payLabel: agendaPayLabel(job),
+            locationId: job.location_id,
+            locationName: job.location?.name ?? "Onbekende vestiging",
+            organizationName: job.organization?.name ?? "Sportschool",
+            instructorName:
             instructorNames.get(row.instructor_id) ?? "Instructeur",
-          detailHref:
+            detailHref:
             context.role === "organization"
               ? `/organisatie/opdrachten/${job.id}`
               : `/opdrachten/${job.id}`,
-        }) satisfies AgendaEvent,
+          }) satisfies AgendaEvent,
       );
     });
 
@@ -382,32 +351,33 @@ class SportMatchAgendaProvider implements AgendaProvider {
       const segment = row.segment;
 
       const lessonName =
-        segment.custom_lesson_type ??
-        segment.lesson_type?.name ??
-        `Les ${segment.position}`;
+                segment.custom_lesson_type ??
+                segment.lesson_type?.name ??
+                `Les ${segment.position}`;
 
-      return occurrenceDates(job).map((date, occurrenceIndex) =>
-        ({
-          id: `${row.id}-${occurrenceIndex}`,
-          jobId: job.id,
-          title: `${job.title} · ${lessonName}`,
-          date,
-          startTime: segment.start_time,
-          endTime: segment.end_time,
-          state: eventState(job.status, row.confirmed_at, row.cancelled_at),
-          jobStatus: job.status,
-          sportName: job.sport?.name ?? "Sportles",
-          payLabel: agendaPayLabel(job),
-          locationId: job.location_id,
-          locationName: job.location?.name ?? "Onbekende vestiging",
-          organizationName: job.organization?.name ?? "Sportschool",
-          instructorName:
+      return occurrenceDates(job).map(
+        (date, occurrenceIndex) =>
+          ({
+            id: `${row.id}-${occurrenceIndex}`,
+            jobId: job.id,
+            title: `${job.title} · ${lessonName}`,
+            date,
+            startTime: segment.start_time,
+            endTime: segment.end_time,
+            state: deriveLessonState(job.status, row),
+            jobStatus: job.status,
+            sportName: job.sport?.name ?? "Sportles",
+            payLabel: agendaPayLabel(job),
+            locationId: job.location_id,
+            locationName: job.location?.name ?? "Onbekende vestiging",
+            organizationName: job.organization?.name ?? "Sportschool",
+            instructorName:
             instructorNames.get(row.instructor_id) ?? "Instructeur",
-          detailHref:
+            detailHref:
             context.role === "organization"
               ? `/organisatie/opdrachten/${job.id}`
               : `/opdrachten/${job.id}`,
-        }) satisfies AgendaEvent,
+          }) satisfies AgendaEvent,
       );
     });
 
@@ -420,10 +390,8 @@ class SportMatchAgendaProvider implements AgendaProvider {
       ),
     );
     const pendingByJob = new Map<string, number>();
-    const applicationJob = new Map<string, string>();
 
     for (const application of pendingApplications) {
-      applicationJob.set(application.id, application.job_id);
       pendingByJob.set(
         application.job_id,
         (pendingByJob.get(application.job_id) ?? 0) + 1,
@@ -431,16 +399,13 @@ class SportMatchAgendaProvider implements AgendaProvider {
     }
 
     const pendingBySegment = new Map<string, number>();
-    const jobsWithSegmentScopedApplications = new Set<string>();
+    const scopedApplicationIds = new Set<string>();
     for (const selection of applicationSegments) {
       pendingBySegment.set(
         selection.segment_id,
         (pendingBySegment.get(selection.segment_id) ?? 0) + 1,
       );
-      const jobId = applicationJob.get(selection.application_id);
-      if (jobId) {
-        jobsWithSegmentScopedApplications.add(jobId);
-      }
+      scopedApplicationIds.add(selection.application_id);
     }
 
     const planningEvents =
@@ -458,8 +423,11 @@ class SportMatchAgendaProvider implements AgendaProvider {
               }
 
               const pendingCount = pendingByJob.get(job.id) ?? 0;
-              const state: AgendaEventState =
-                pendingCount > 0 ? "action_required" : "searching";
+              const state = deriveLessonState(
+                job.status,
+                undefined,
+                pendingCount,
+              );
               const instructorName =
                 pendingCount > 0
                   ? `${pendingCount} ${pendingCount === 1 ? "reactie" : "reacties"} te beoordelen`
@@ -484,17 +452,24 @@ class SportMatchAgendaProvider implements AgendaProvider {
               }));
             }
 
+            if (wholeConfirmationJobIds.has(job.id)) return [];
             return segments.flatMap((segment): AgendaEvent[] => {
               if (activeSegmentIds.has(segment.id)) {
                 return [];
               }
 
-              const segmentScoped = jobsWithSegmentScopedApplications.has(job.id);
-              const pendingCount = segmentScoped
-                ? pendingBySegment.get(segment.id) ?? 0
-                : pendingByJob.get(job.id) ?? 0;
-              const state: AgendaEventState =
-                pendingCount > 0 ? "action_required" : "searching";
+              const pendingCount =
+                (pendingBySegment.get(segment.id) ?? 0) +
+                pendingApplications.filter(
+                  (application) =>
+                    application.job_id === job.id &&
+                    !scopedApplicationIds.has(application.id),
+                ).length;
+              const state = deriveLessonState(
+                job.status,
+                undefined,
+                pendingCount,
+              );
               const instructorName =
                 pendingCount > 0
                   ? `${pendingCount} ${pendingCount === 1 ? "reactie" : "reacties"} te beoordelen`

@@ -1,3 +1,4 @@
+import { cn } from "@/lib/utils";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -19,7 +20,7 @@ import { InviteForm } from "@/components/jobs/invite-form";
 import { ConnectionButton } from "@/components/org/connection-button";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge, CountBadge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import {
   Page,
@@ -649,11 +650,12 @@ export default async function KandidatenPage({
   };
 
   const profileButton = (instructorId: string) => (
-    <Link href={candidateProfileHref(instructorId)}>
-      <Button size="sm" variant="outline">
-        <UserRound className="h-3.5 w-3.5" />
-        Profiel
-      </Button>
+    <Link
+      href={candidateProfileHref(instructorId)}
+      className={buttonVariants({ size: "sm", variant: "outline" })}
+    >
+      <UserRound className="h-3.5 w-3.5" />
+      Profiel
     </Link>
   );
 
@@ -715,10 +717,9 @@ export default async function KandidatenPage({
                   ? `/organisatie/kandidaten?location=${selectedLocationId}`
                   : "/organisatie/kandidaten"
               }
+              className={cn(buttonVariants({ variant: "outline" }), "w-full sm:w-auto")}
             >
-              <Button className="w-full sm:w-auto" variant="outline">
-                Alle kandidaten
-              </Button>
+              Alle kandidaten
             </Link>
           ) : null
         }
@@ -752,9 +753,10 @@ export default async function KandidatenPage({
         {applications.length === 0 ? (
           <EmptyState
             action={
-              <Link href="/organisatie/opdrachten/nieuw">
-                <Button size="sm" variant="outline">Nieuwe opdracht</Button>
-              </Link>
+              <Link
+                href="/organisatie/opdrachten/nieuw"
+                className={buttonVariants({ size: "sm", variant: "outline" })}
+              >Nieuwe opdracht</Link>
             }
             className="py-8"
             icon={Users}
@@ -771,11 +773,12 @@ export default async function KandidatenPage({
                 actions: (
                   <>
                     {profileButton(application.instructor_id)}
-                    <Link href={`/organisatie/opdrachten/${application.job?.id}`}>
-                      <Button size="sm">
-                        <Inbox className="h-3.5 w-3.5" />
-                        Reactie bekijken
-                      </Button>
+                    <Link
+                      href={`/organisatie/opdrachten/${application.job?.id}`}
+                      className={buttonVariants({ size: "sm" })}
+                    >
+                      <Inbox className="h-3.5 w-3.5" />
+                      Reactie bekijken
                     </Link>
                     <ConnectionButton
                       initialConnected={poolSet.has(application.instructor_id)}
@@ -848,9 +851,10 @@ export default async function KandidatenPage({
                   <>
                     {profileButton(instructorId)}
                     {returningMatch ? (
-                      <Link href={`/organisatie/opdrachten/${returningMatch.job.id}`}>
-                        <Button size="sm">Opnieuw uitnodigen</Button>
-                      </Link>
+                      <Link
+                        href={`/organisatie/opdrachten/${returningMatch.job.id}`}
+                        className={buttonVariants({ size: "sm" })}
+                      >Opnieuw uitnodigen</Link>
                     ) : null}
                     <ConnectionButton
                       initialConnected={poolSet.has(instructorId)}
@@ -883,9 +887,10 @@ export default async function KandidatenPage({
                 actions: (
                   <>
                     {profileButton(match.userId)}
-                    <Link href={`/organisatie/opdrachten/${match.job.id}`}>
-                      <Button size="sm">Uitnodigen</Button>
-                    </Link>
+                    <Link
+                      href={`/organisatie/opdrachten/${match.job.id}`}
+                      className={buttonVariants({ size: "sm" })}
+                    >Uitnodigen</Link>
                     <ConnectionButton
                       initialConnected={poolSet.has(match.userId)}
                       instructorId={match.userId}
@@ -917,9 +922,10 @@ export default async function KandidatenPage({
                 actions: (
                   <>
                     {profileButton(match.userId)}
-                    <Link href={`/organisatie/opdrachten/${match.job.id}`}>
-                      <Button size="sm">Uitnodigen</Button>
-                    </Link>
+                    <Link
+                      href={`/organisatie/opdrachten/${match.job.id}`}
+                      className={buttonVariants({ size: "sm" })}
+                    >Uitnodigen</Link>
                     <ConnectionButton
                       initialConnected={poolSet.has(match.userId)}
                       instructorId={match.userId}

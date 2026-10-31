@@ -1,7 +1,14 @@
+import { occurrenceDates } from "@/lib/jobs/schedule";
+import { dateInAmsterdam } from "@/lib/datetime/amsterdam";
 import { createClient } from "@/lib/supabase/server";
 import type { Job, OpenJobMatch } from "@/types/database";
 
 export interface JobWithRelations extends Job {
+  recurrence: {
+    interval_weeks: number;
+    ends_on: string | null;
+    occurrence_count: number | null;
+  } | null;
   sport: { id: string; name: string } | null;
   lesson_type: { id: string; name: string } | null;
   segments: Array<{
@@ -22,6 +29,7 @@ export interface JobWithRelations extends Job {
 
 export const JOB_RELATIONS_SELECT = `
   *,
+  recurrence:job_recurrence_rules (interval_weeks, ends_on, occurrence_count),
   sport:sports (id, name),
   lesson_type:lesson_types (id, name),
   segments:job_segments (
@@ -46,12 +54,13 @@ export async function fetchOpenJobsWithMatches(): Promise<{
     return { jobs: [], matches: new Map() };
   }
 
+  const today = dateInAmsterdam(new Date());
   const [jobsResult, matchesResult] = await Promise.all([
     supabase
       .from("jobs")
       .select(JOB_RELATIONS_SELECT)
       .eq("status", "open")
-      .gte("starts_on", new Date().toISOString().slice(0, 10))
+      .or(`starts_on.gte.${today},job_type.eq.recurring`)
       .order("starts_on"),
     supabase.rpc("open_job_matches"),
   ]);
@@ -64,7 +73,9 @@ export async function fetchOpenJobsWithMatches(): Promise<{
   );
 
   return {
-    jobs: (jobsResult.data as unknown as JobWithRelations[] | null) ?? [],
+    jobs: (
+      (jobsResult.data as unknown as JobWithRelations[] | null) ?? []
+    ).filter((job) => occurrenceDates(job).some((date) => date >= today)),
     matches,
   };
 }
@@ -113,5 +124,7 @@ export function describePay(job: Job): string {
     return "In overleg";
   }
 
-  return parts.join(" of ") + (job.pay_is_negotiable ? " (onderhandelbaar)" : "");
+  return (
+    parts.join(" of ") + (job.pay_is_negotiable ? " (onderhandelbaar)" : "")
+  );
 }

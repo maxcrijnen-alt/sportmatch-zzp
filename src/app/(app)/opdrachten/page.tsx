@@ -1,10 +1,11 @@
+import { cn } from "@/lib/utils";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ArrowRight, SearchX, SlidersHorizontal } from "lucide-react";
 import { AgendaView } from "@/components/agenda/agenda-view";
 import { JobCard } from "@/components/jobs/job-card";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
@@ -127,10 +128,11 @@ export default async function OpdrachtenPage({
     <Page>
       <PageHeader
         actions={
-          <Link href="/profiel">
-            <Button className="w-full sm:w-auto" variant="outline">
-              Profiel en tarief
-            </Button>
+          <Link
+            href="/profiel"
+            className={cn(buttonVariants({ variant: "outline" }), "w-full sm:w-auto")}
+          >
+            Profiel en tarief
           </Link>
         }
         title="Opdrachten"
@@ -272,21 +274,24 @@ export default async function OpdrachtenPage({
             <EmptyState
               action={
                 <>
-                  <Link href="/profiel">
-                    <Button className="w-full sm:w-auto" variant="outline">
-                      Profiel aanpassen
-                    </Button>
+                  <Link
+                    href="/profiel"
+                    className={cn(buttonVariants({ variant: "outline" }), "w-full sm:w-auto")}
+                  >
+                    Profiel aanpassen
                   </Link>
-                  <Link href="/opdrachten">
-                    <Button className="w-full sm:w-auto" variant="outline">
-                      Filters wissen
-                    </Button>
+                  <Link
+                    href="/opdrachten"
+                    className={cn(buttonVariants({ variant: "outline" }), "w-full sm:w-auto")}
+                  >
+                    Filters wissen
                   </Link>
-                  <Link href="/opdrachten?weergave=alles">
-                    <Button className="w-full sm:w-auto">
-                      Alle opdrachten bekijken
-                      <ArrowRight className="h-4 w-4" />
-                    </Button>
+                  <Link
+                    href="/opdrachten?weergave=alles"
+                    className={cn(buttonVariants(), "w-full sm:w-auto")}
+                  >
+                    Alle opdrachten bekijken
+                    <ArrowRight className="h-4 w-4" />
                   </Link>
                 </>
               }

@@ -1,3 +1,4 @@
+import { dateInAmsterdam } from "@/lib/datetime/amsterdam";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { Trash2 } from "lucide-react";
@@ -59,7 +60,7 @@ export default async function BeschikbaarheidPage() {
       .from("availability_exceptions")
       .select("id, on_date, note")
       .eq("user_id", profile.id)
-      .gte("on_date", new Date().toISOString().slice(0, 10))
+      .gte("on_date", dateInAmsterdam(new Date()))
       .order("on_date"),
   ]);
 
@@ -90,7 +91,9 @@ export default async function BeschikbaarheidPage() {
                   key={rule.id}
                 >
                   <span>
-                    <span className="font-medium">{WEEKDAYS[rule.weekday]}</span>{" "}
+                    <span className="font-medium">
+                      {WEEKDAYS[rule.weekday]}
+                    </span>{" "}
                     {formatTime(rule.start_time)}–{formatTime(rule.end_time)}
                   </span>
                   <form action={deleteAvailabilityRuleAction.bind(null, rule.id)}>

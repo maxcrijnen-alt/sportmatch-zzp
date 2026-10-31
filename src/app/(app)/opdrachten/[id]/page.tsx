@@ -1,3 +1,4 @@
+import { canNegotiateJob } from "@/lib/jobs/negotiation";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
@@ -24,7 +25,7 @@ import { ReplacementForm } from "@/components/jobs/replacement-form";
 import { ReviewForm } from "@/components/jobs/review-form";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -267,7 +268,9 @@ export default async function OpdrachtDetailPage({
             >
               {jobTypeLabels[job.job_type]}
             </Badge>
-            {job.sport ? <Badge variant="default">{job.sport.name}</Badge> : null}
+            {job.sport ? (
+              <Badge variant="default">{job.sport.name}</Badge>
+            ) : null}
             <Badge variant="outline">
               {job.custom_lesson_type ||
                 job.lesson_type?.name ||
@@ -325,7 +328,8 @@ export default async function OpdrachtDetailPage({
                 {formatTime(job.start_time)}–{formatTime(job.end_time)}
                 {job.expected_participants ? (
                   <span className="mt-0.5 flex items-center gap-1 text-xs font-normal text-muted-foreground">
-                    <Users className="h-3 w-3" />~{job.expected_participants} deelnemers
+                    <Users className="h-3 w-3" />~{job.expected_participants}{" "}
+                    deelnemers
                   </span>
                 ) : null}
               </>
@@ -400,7 +404,8 @@ export default async function OpdrachtDetailPage({
           <CardContent className="space-y-2 pt-0 text-sm">
             <p>{cancellation.reason}</p>
             <p className="font-medium">
-              Vergoeding: {formatEuro(cancellation.compensation_amount_cents ?? 0)}
+              Vergoeding:{" "}
+              {formatEuro(cancellation.compensation_amount_cents ?? 0)}
               {cancellation.force_majeure_status !== "approved"
                 ? " (150% van de afgesproken dienst)"
                 : ""}
@@ -482,8 +487,8 @@ export default async function OpdrachtDetailPage({
               <ul className="mt-2 space-y-1 text-muted-foreground">
                 <li>Opdracht: {job.title}</li>
                 <li>
-                  Datum: {formatDate(job.starts_on)}, {formatTime(job.start_time)}–
-                  {formatTime(job.end_time)}
+                  Datum: {formatDate(job.starts_on)},{" "}
+                  {formatTime(job.start_time)}–{formatTime(job.end_time)}
                 </li>
                 <li>
                   Locatie: {job.location?.name}, {job.location?.city?.name}
@@ -535,20 +540,24 @@ export default async function OpdrachtDetailPage({
             {contact ? (
               <div className="space-y-1 text-sm">
                 <p className="font-medium">{contact.full_name}</p>
-                <p className="inline-flex items-center gap-2 text-muted-foreground">
-                  <Mail className="h-3.5 w-3.5" /> {contact.email}
-                </p>
-                <br />
-                <p className="inline-flex items-center gap-2 text-muted-foreground">
-                  <Phone className="h-3.5 w-3.5" /> {contact.phone}
-                </p>
+                {contact.email?.trim() ? (
+                  <p className="flex items-center gap-2 text-muted-foreground">
+                    <Mail className="h-3.5 w-3.5" /> {contact.email}
+                  </p>
+                ) : null}
+                {contact.phone?.trim() ? (
+                  <p className="flex items-center gap-2 text-muted-foreground">
+                    <Phone className="h-3.5 w-3.5" /> {contact.phone}
+                  </p>
+                ) : null}
               </div>
             ) : null}
             {chat ? (
-              <Link href={`/berichten/${chat.id}`}>
-                <Button size="sm" variant="outline">
-                  <MessageSquare className="h-3.5 w-3.5" /> Naar de chat
-                </Button>
+              <Link
+                href={`/berichten/${chat.id}`}
+                className={buttonVariants({ size: "sm", variant: "outline" })}
+              >
+                <MessageSquare className="h-3.5 w-3.5" /> Naar de chat
               </Link>
             ) : null}
             {job.status === "confirmed" ||
@@ -595,7 +604,8 @@ export default async function OpdrachtDetailPage({
                 {"★".repeat(review.rating)}
                 {"☆".repeat(5 - review.rating)}{" "}
                 <span className="text-muted-foreground">
-                  door {review.side === "instructor" ? "instructeur" : "organisatie"}
+                  door{" "}
+                  {review.side === "instructor" ? "instructeur" : "organisatie"}
                 </span>
               </p>
             ))}
@@ -654,7 +664,8 @@ export default async function OpdrachtDetailPage({
                         {offer.pay_type === "hourly" ? "per uur" : "vast"}
                         <span className="ml-2 text-xs text-muted-foreground">
                           door{" "}
-                          {offer.side === "instructor" ? "jou" : "de organisatie"} ·{" "}
+                          {offer.side === "instructor" ? "jou" : "de organisatie"}{" "}
+                          ·{" "}
                           {offer.status === "pending"
                             ? "in afwachting"
                             : offer.status === "accepted"
@@ -666,7 +677,13 @@ export default async function OpdrachtDetailPage({
                         <p className="text-muted-foreground">{offer.message}</p>
                       ) : null}
                     </div>
-                    {offer.status === "pending" && offer.side === "organization" ? (
+                    {offer.status === "pending" && offer.side === "organization" &&
+                    canNegotiateJob(
+                      job,
+                      application,
+                      confirmation?.application_id === application.id ||
+                        activeSegmentConfirmations.length > 0,
+                    ) ? (
                       <div className="flex gap-2">
                         <form
                           action={respondCounterofferAction.bind(
@@ -699,9 +716,13 @@ export default async function OpdrachtDetailPage({
               </div>
             ) : null}
 
-            {job.status === "open" &&
-            application.status === "pending" &&
-            (job.pay_is_negotiable || true) ? (
+            {profile.role === "instructor" &&
+            canNegotiateJob(
+              job,
+              application,
+              confirmation?.application_id === application.id ||
+                activeSegmentConfirmations.length > 0,
+            ) ? (
               <div className="border-t border-border pt-3">
                 <p className="mb-2 text-sm font-medium">Tegenvoorstel doen</p>
                 <CounterofferForm applicationId={application.id} />

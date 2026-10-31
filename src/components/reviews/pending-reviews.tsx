@@ -1,6 +1,7 @@
+import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { Star } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { Panel, PanelHeader, PanelList } from "@/components/ui/page";
 
 /** Openstaande, verplichte beoordelingen met directe actie. */
@@ -28,9 +29,10 @@ function PendingReviews({
             key={item.id}
           >
             <span className="min-w-0 truncate text-sm font-medium">{item.title}</span>
-            <Link className="shrink-0" href={item.href}>
-              <Button size="sm">Nu beoordelen</Button>
-            </Link>
+            <Link
+              href={item.href}
+              className={cn(buttonVariants({ size: "sm" }), "shrink-0")}
+            >Nu beoordelen</Link>
           </div>
         ))}
       </PanelList>

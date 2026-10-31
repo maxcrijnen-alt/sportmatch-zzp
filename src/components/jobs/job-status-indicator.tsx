@@ -1,4 +1,4 @@
-import { Check, Clock3, Inbox, X } from "lucide-react";
+import { Check, Clock3, Inbox, Minus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { AgendaEventState } from "@/lib/agenda/types";
 
@@ -7,7 +7,9 @@ const labels: Record<AgendaEventState, string> = {
   action_required: "Reactie ontvangen",
   planned: "Wacht op bevestiging",
   confirmed: "Bevestigd",
+  partially_confirmed: "Gedeeltelijk bevestigd",
   completed: "Afgerond",
+  closed: "Gesloten",
   cancelled: "Geannuleerd",
 };
 
@@ -21,7 +23,9 @@ const toneClasses: Record<AgendaEventState, string> = {
   action_required: "border-status-pending bg-status-pending text-white",
   planned: "border-status-pending bg-status-pending text-white",
   confirmed: "border-status-confirmed bg-status-confirmed text-white",
+  partially_confirmed: "border-status-pending bg-status-pending text-white",
   completed: "border-status-confirmed/40 bg-success-soft text-status-confirmed",
+  closed: "border-border-strong bg-muted text-muted-foreground",
   cancelled: "border-border-strong bg-muted text-muted-foreground",
 };
 
@@ -30,7 +34,9 @@ const labelToneClasses: Record<AgendaEventState, string> = {
   action_required: "text-status-pending",
   planned: "text-status-pending",
   confirmed: "text-status-confirmed",
+  partially_confirmed: "text-status-pending",
   completed: "text-muted-foreground",
+  closed: "text-muted-foreground",
   cancelled: "text-muted-foreground",
 };
 
@@ -41,13 +47,14 @@ const sizeClasses = {
 };
 
 function StatusIcon({ state }: { state: AgendaEventState }) {
+  if (state === "closed") return <Minus strokeWidth={3} />;
   if (state === "searching" || state === "cancelled") {
     return <X strokeWidth={3} />;
   }
   if (state === "action_required") {
     return <Inbox strokeWidth={2.75} />;
   }
-  if (state === "planned") {
+  if (state === "planned" || state === "partially_confirmed") {
     return <Clock3 strokeWidth={2.75} />;
   }
   return <Check strokeWidth={3} />;

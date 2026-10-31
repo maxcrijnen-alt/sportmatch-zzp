@@ -1,3 +1,4 @@
+import { cn } from "@/lib/utils";
 import Link from "next/link";
 import {
   AlertTriangle,
@@ -8,7 +9,7 @@ import {
   Zap,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { DateBadge } from "@/components/ui/date-badge";
 import { formatDate, formatTime, jobTypeLabels } from "@/lib/labels";
@@ -128,10 +129,11 @@ export function JobCard({
         <div className="hidden shrink-0 flex-col items-end justify-between gap-3 text-right sm:flex">
           <p className="text-[15px] font-semibold text-foreground">{describePay(job)}</p>
           {actionHref && actionLabel ? (
-            <Link className="relative z-10" href={actionHref}>
-              <Button size="sm" variant={applied ? "outline" : "default"}>
-                {actionLabel}
-              </Button>
+            <Link
+              href={actionHref}
+              className={cn(buttonVariants({ size: "sm", variant: applied ? "outline" : "default" }), "relative z-10")}
+            >
+              {actionLabel}
             </Link>
           ) : null}
         </div>
@@ -139,10 +141,11 @@ export function JobCard({
       <div className="flex items-center justify-between gap-3 border-t border-border bg-subtle px-4 py-3 sm:hidden">
         <p className="text-sm font-semibold text-foreground">{describePay(job)}</p>
         {actionHref && actionLabel ? (
-          <Link className="relative z-10" href={actionHref}>
-            <Button size="sm" variant={applied ? "outline" : "default"}>
-              {actionLabel}
-            </Button>
+          <Link
+            href={actionHref}
+            className={cn(buttonVariants({ size: "sm", variant: applied ? "outline" : "default" }), "relative z-10")}
+          >
+            {actionLabel}
           </Link>
         ) : null}
       </div>

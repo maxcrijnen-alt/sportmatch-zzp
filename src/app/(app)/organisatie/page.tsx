@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { Building2 } from "lucide-react";
 import { ConversionFeeForm, OrganizationForm } from "@/components/org/org-forms";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -103,9 +103,10 @@ export default async function OrganisatiePage() {
               </p>
             </div>
           </div>
-          <Link href="/organisatie/vestigingen">
-            <Button size="sm" variant="outline">Beheren</Button>
-          </Link>
+          <Link
+            href="/organisatie/vestigingen"
+            className={buttonVariants({ size: "sm", variant: "outline" })}
+          >Beheren</Link>
         </CardContent>
       </Card>
 

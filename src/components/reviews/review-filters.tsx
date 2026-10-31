@@ -1,5 +1,6 @@
+import { cn } from "@/lib/utils";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import type { ReviewSort } from "@/lib/reviews/filter";
 
@@ -49,10 +50,11 @@ function ReviewFilters({
         Toepassen
       </Button>
 
-      <Link className="w-full sm:w-auto" href={resetHref}>
-        <Button className="w-full" size="sm" type="button" variant="ghost">
-          Reset
-        </Button>
+      <Link
+        href={resetHref}
+        className={cn(buttonVariants({ size: "sm", variant: "ghost" }), "w-full sm:w-auto", "w-full")}
+      >
+        Reset
       </Link>
     </form>
   );

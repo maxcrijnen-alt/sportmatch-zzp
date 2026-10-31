@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Menu } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 import { ActiveNavLink } from "@/components/public/active-nav-link";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { BRAND } from "@/lib/branding";
 
 const navItems = [
@@ -33,15 +33,18 @@ export default function PublicLayout({
           </nav>
 
           <div className="hidden items-center gap-2 lg:flex">
-            <Link href="/login">
-              <Button variant="ghost">Inloggen</Button>
-            </Link>
-            <Link href="/demo">
-              <Button variant="outline">Demo bekijken</Button>
-            </Link>
-            <Link href="/registreren">
-              <Button>Gratis starten</Button>
-            </Link>
+            <Link
+              href="/login"
+              className={buttonVariants({ variant: "ghost" })}
+            >Inloggen</Link>
+            <Link
+              href="/demo"
+              className={buttonVariants({ variant: "outline" })}
+            >Demo bekijken</Link>
+            <Link
+              href="/registreren"
+              className={buttonVariants()}
+            >Gratis starten</Link>
           </div>
 
           {/* Mobiel menu zonder JavaScript: details/summary */}

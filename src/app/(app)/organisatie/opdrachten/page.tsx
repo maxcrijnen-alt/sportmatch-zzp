@@ -6,13 +6,15 @@ import {
   CalendarDays,
   ChevronRight,
   MapPin,
-  Minus,
   Plus,
   Users,
 } from "lucide-react";
 import { AgendaView } from "@/components/agenda/agenda-view";
+import { deriveJobWorkflow } from "@/lib/jobs/workflow";
+import { fetchJobConfirmations } from "@/lib/jobs/workflow-query";
+import { jobStatusIndicatorLabels } from "@/components/jobs/job-status-indicator";
 import { JobStatusIndicator } from "@/components/jobs/job-status-indicator";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Page, PageHeader, SectionHeading } from "@/components/ui/page";
@@ -33,6 +35,7 @@ interface JobRow extends Job {
   sport: { name: string } | null;
   location: { name: string } | null;
   applications: { count: number }[];
+  segments: { id: string }[];
 }
 
 export default async function OrganisatieOpdrachtenPage({
@@ -63,7 +66,8 @@ export default async function OrganisatieOpdrachtenPage({
       `*,
       sport:sports (name),
       location:organization_locations (name),
-      applications:job_applications (count)`,
+      applications:job_applications (count),
+      segments:job_segments (id)`,
     )
     .eq("organization_id", orgContext.organization.id)
     .order("created_at", { ascending: false });
@@ -94,32 +98,28 @@ export default async function OrganisatieOpdrachtenPage({
 
   const baseJobs = (data as unknown as JobRow[] | null) ?? [];
   const jobIds = baseJobs.map((job) => job.id);
-  const pendingConfirmationJobIds = new Set<string>();
-
-  if (jobIds.length > 0) {
-    const { data: confirmationData, error: confirmationError } = await supabase
-      .from("job_confirmations")
-      .select("job_id, confirmed_at")
-      .in("job_id", jobIds);
-
-    if (confirmationError) {
-      console.error(
-        "Bevestigingsstatussen konden niet worden geladen",
-        confirmationError.message,
-      );
-    } else {
-      for (const confirmation of confirmationData ?? []) {
-        if (!confirmation.confirmed_at) {
-          pendingConfirmationJobIds.add(confirmation.job_id as string);
-        }
-      }
-    }
-  }
+  const { wholeByJob, segmentsByJob } = await fetchJobConfirmations(jobIds);
+  const workflowByJob = new Map(
+    baseJobs.map((job) => [
+      job.id,
+      deriveJobWorkflow({
+        status: job.status,
+        segments: job.segments ?? [],
+        confirmations: wholeByJob.get(job.id) ?? [],
+        segmentConfirmations: segmentsByJob.get(job.id) ?? [],
+        pendingApplicationCount: job.applications?.[0]?.count ?? 0,
+      }),
+    ]),
+  );
 
   const priority = (job: JobRow) => {
     const applicationCount = job.applications?.[0]?.count ?? 0;
 
-    if (job.status === "open" && pendingConfirmationJobIds.has(job.id)) return 0;
+    if (
+      job.status === "open" &&
+      workflowByJob.get(job.id)?.hasPendingConfirmation
+    )
+      return 0;
     if (job.status === "open" && applicationCount > 0) return 1;
     if (job.status === "open") return 2;
     if (job.status === "confirmed") return 3;
@@ -136,44 +136,15 @@ export default async function OrganisatieOpdrachtenPage({
     return priority(left) >= 4 ? -dateDifference : dateDifference;
   });
 
-  const workflowState = (job: JobRow) => {
-    const applicationCount = job.applications?.[0]?.count ?? 0;
-
-    if (job.status === "open" && pendingConfirmationJobIds.has(job.id)) {
-      return "planned" as const;
-    }
-    if (job.status === "open" && applicationCount > 0) {
-      return "action_required" as const;
-    }
-    if (job.status === "open") {
-      return "searching" as const;
-    }
-    if (job.status === "confirmed") {
-      return "confirmed" as const;
-    }
-    if (job.status === "completed") {
-      return "completed" as const;
-    }
-    if (job.status === "cancelled") {
-      return "cancelled" as const;
-    }
-
-    return null;
-  };
-
-  const stateLabels = {
-    searching: "Nog iemand zoeken",
-    action_required: "Reactie ontvangen",
-    planned: "Wacht op bevestiging",
-    confirmed: "Bevestigd",
-    completed: "Afgerond",
-    cancelled: "Geannuleerd",
-  } as const;
+  const workflowState = (job: JobRow) => workflowByJob.get(job.id)!.state;
+  const stateLabels = jobStatusIndicatorLabels;
   const stateTextClasses = {
     searching: "text-foreground",
     action_required: "text-foreground",
     planned: "text-foreground",
     confirmed: "text-foreground",
+    partially_confirmed: "text-foreground",
+    closed: "text-muted-foreground",
     completed: "text-muted-foreground",
     cancelled: "text-muted-foreground",
   } as const;
@@ -182,10 +153,11 @@ export default async function OrganisatieOpdrachtenPage({
     <Page>
       <PageHeader
         actions={
-          <Link href="/organisatie/opdrachten/nieuw">
-            <Button className="w-full sm:w-auto">
-              <Plus className="h-4 w-4" /> Nieuwe opdracht
-            </Button>
+          <Link
+            href="/organisatie/opdrachten/nieuw"
+            className={cn(buttonVariants({}), "w-full sm:w-auto")}
+          >
+            <Plus className="h-4 w-4" /> Nieuwe opdracht
           </Link>
         }
         title="Opdrachten"
@@ -208,8 +180,11 @@ export default async function OrganisatieOpdrachtenPage({
           <Card>
             <EmptyState
               action={
-                <Link href="/organisatie/opdrachten/nieuw">
-                  <Button>Eerste opdracht plaatsen</Button>
+                <Link
+                  href="/organisatie/opdrachten/nieuw"
+                  className={buttonVariants({})}
+                >
+                  Eerste opdracht plaatsen
                 </Link>
               }
               description="Begin met een concrete invaldienst, lessenreeks of vacature. Je kunt daarna reacties vergelijken vanuit dit overzicht."
@@ -239,17 +214,7 @@ export default async function OrganisatieOpdrachtenPage({
                     className="group relative flex items-start gap-3 px-4 py-3.5 transition-colors hover:bg-subtle sm:px-5 md:items-center"
                     key={job.id}
                   >
-                    {state ? (
-                      <JobStatusIndicator className="mt-0.5 md:mt-0" showLabel={false} state={state} />
-                    ) : (
-                      <span
-                        className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-border-strong bg-muted text-muted-foreground md:mt-0"
-                        title="Gesloten"
-                      >
-                        <Minus aria-hidden="true" className="h-3.5 w-3.5" strokeWidth={3} />
-                        <span className="sr-only">Gesloten</span>
-                      </span>
-                    )}
+                    <JobStatusIndicator showLabel={false} state={state} />
                     <div className="grid min-w-0 flex-1 gap-x-4 gap-y-1 md:grid-cols-[minmax(0,1fr)_10rem_10rem_8.5rem] md:items-center">
                       <div className="min-w-0">
                         <Link

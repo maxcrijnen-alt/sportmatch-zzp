@@ -1,3 +1,4 @@
+import { cn } from "@/lib/utils";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -17,7 +18,7 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { RoleIcon } from "@/components/brand/role-icon";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BRAND } from "@/lib/branding";
 import { getPublicSportschoolPartners } from "@/lib/public-partners";
@@ -145,21 +146,24 @@ export default function HomePage() {
               </p>
             </div>
             <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-              <Link href="/registreren?rol=organisatie">
-                <Button className="w-full sm:w-auto" size="lg">
-                  Start als sportschool
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
+              <Link
+                href="/registreren?rol=organisatie"
+                className={cn(buttonVariants({ size: "lg" }), "w-full sm:w-auto")}
+              >
+                Start als sportschool
+                <ArrowRight className="h-4 w-4" />
               </Link>
-              <Link href="/registreren?rol=instructeur">
-                <Button className="w-full border-white/20 bg-white/5 text-white shadow-none hover:border-white/40 hover:bg-white/10 sm:w-auto" size="lg" variant="outline">
-                  Start als instructeur
-                </Button>
+              <Link
+                href="/registreren?rol=instructeur"
+                className={cn(buttonVariants({ size: "lg", variant: "outline" }), "w-full border-white/20 bg-white/5 text-white shadow-none hover:border-white/40 hover:bg-white/10 sm:w-auto")}
+              >
+                Start als instructeur
               </Link>
-              <Link href="/demo">
-                <Button className="w-full text-white/80 hover:bg-white/10 hover:text-white sm:w-auto" size="lg" variant="ghost">
-                  Bekijk eerst demo
-                </Button>
+              <Link
+                href="/demo"
+                className={cn(buttonVariants({ size: "lg", variant: "ghost" }), "w-full text-white/80 hover:bg-white/10 hover:text-white sm:w-auto")}
+              >
+                Bekijk eerst demo
               </Link>
             </div>
             <div className="grid gap-3 text-sm text-secondary-foreground/75 sm:grid-cols-3">
@@ -276,10 +280,11 @@ export default function HomePage() {
                 Vul gaten in je rooster, vind vervanging bij ziekte en bouw een
                 flexibele poule van betrouwbare instructeurs op.
               </p>
-              <Link href="/voor-sportscholen">
-                <Button className="mt-2" variant="outline">
-                  Bekijk sportschool-route
-                </Button>
+              <Link
+                href="/voor-sportscholen"
+                className={cn(buttonVariants({ variant: "outline" }), "mt-2")}
+              >
+                Bekijk sportschool-route
               </Link>
             </CardContent>
           </Card>
@@ -293,10 +298,11 @@ export default function HomePage() {
                 Vind opdrachten die passen bij jouw sport, agenda, tarief en
                 reisafstand, zonder commissie over je opdrachtvergoeding.
               </p>
-              <Link href="/voor-instructeurs">
-                <Button className="mt-2" variant="outline">
-                  Bekijk instructeur-route
-                </Button>
+              <Link
+                href="/voor-instructeurs"
+                className={cn(buttonVariants({ variant: "outline" }), "mt-2")}
+              >
+                Bekijk instructeur-route
               </Link>
             </CardContent>
           </Card>
@@ -355,13 +361,15 @@ export default function HomePage() {
             ))}
           </div>
           <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-            <Link href="/registreren?rol=organisatie">
-              <Button className="w-full sm:w-auto">Start als sportschool</Button>
-            </Link>
-            <Link href="/voor-sportscholen">
-              <Button className="w-full sm:w-auto" variant="outline">
-                Meer voor sportscholen
-              </Button>
+            <Link
+              href="/registreren?rol=organisatie"
+              className={cn(buttonVariants(), "w-full sm:w-auto")}
+            >Start als sportschool</Link>
+            <Link
+              href="/voor-sportscholen"
+              className={cn(buttonVariants({ variant: "outline" }), "w-full sm:w-auto")}
+            >
+              Meer voor sportscholen
             </Link>
           </div>
         </div>
@@ -384,13 +392,15 @@ export default function HomePage() {
             ))}
           </div>
           <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-            <Link href="/registreren?rol=instructeur">
-              <Button className="w-full sm:w-auto">Start als instructeur</Button>
-            </Link>
-            <Link href="/voor-instructeurs">
-              <Button className="w-full sm:w-auto" variant="outline">
-                Meer voor instructeurs
-              </Button>
+            <Link
+              href="/registreren?rol=instructeur"
+              className={cn(buttonVariants(), "w-full sm:w-auto")}
+            >Start als instructeur</Link>
+            <Link
+              href="/voor-instructeurs"
+              className={cn(buttonVariants({ variant: "outline" }), "w-full sm:w-auto")}
+            >
+              Meer voor instructeurs
             </Link>
           </div>
         </div>
@@ -409,13 +419,11 @@ export default function HomePage() {
                 blijven verborgen tot beide partijen akkoord zijn.
               </p>
             </div>
-            <Link href="/hoe-het-werkt">
-              <Button
-                className="w-full border-secondary-foreground/30 bg-transparent text-secondary-foreground hover:bg-secondary-foreground/10 sm:w-auto"
-                variant="outline"
-              >
-                Bekijk alle stappen
-              </Button>
+            <Link
+              href="/hoe-het-werkt"
+              className={cn(buttonVariants({ variant: "outline" }), "w-full border-secondary-foreground/30 bg-transparent text-secondary-foreground hover:bg-secondary-foreground/10 sm:w-auto")}
+            >
+              Bekijk alle stappen
             </Link>
           </div>
           <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -495,15 +503,17 @@ export default function HomePage() {
             </p>
           </div>
           <div className="flex flex-col gap-3 sm:flex-row lg:shrink-0">
-            <Link href="/registreren">
-              <Button className="w-full sm:w-auto" size="lg">
-                Start gratis
-              </Button>
+            <Link
+              href="/registreren"
+              className={cn(buttonVariants({ size: "lg" }), "w-full sm:w-auto")}
+            >
+              Start gratis
             </Link>
-            <Link href="/tarieven">
-              <Button className="w-full sm:w-auto" size="lg" variant="outline">
-                Bekijk tarieven
-              </Button>
+            <Link
+              href="/tarieven"
+              className={cn(buttonVariants({ size: "lg", variant: "outline" }), "w-full sm:w-auto")}
+            >
+              Bekijk tarieven
             </Link>
           </div>
         </div>
@@ -548,20 +558,23 @@ export default function HomePage() {
             je profiel klaar is. Eerst rondkijken kan ook met de demo.
           </p>
           <div className="flex w-full flex-col justify-center gap-3 sm:w-auto sm:flex-row sm:flex-wrap">
-            <Link href="/registreren?rol=organisatie">
-              <Button className="w-full sm:w-auto" size="lg">
-                Ik zoek instructeurs
-              </Button>
+            <Link
+              href="/registreren?rol=organisatie"
+              className={cn(buttonVariants({ size: "lg" }), "w-full sm:w-auto")}
+            >
+              Ik zoek instructeurs
             </Link>
-            <Link href="/registreren?rol=instructeur">
-              <Button className="w-full border-white/20 bg-white/5 text-white shadow-none hover:border-white/40 hover:bg-white/10 sm:w-auto" size="lg" variant="outline">
-                Ik zoek opdrachten
-              </Button>
+            <Link
+              href="/registreren?rol=instructeur"
+              className={cn(buttonVariants({ size: "lg", variant: "outline" }), "w-full border-white/20 bg-white/5 text-white shadow-none hover:border-white/40 hover:bg-white/10 sm:w-auto")}
+            >
+              Ik zoek opdrachten
             </Link>
-            <Link href="/demo">
-              <Button className="w-full text-white/80 hover:bg-white/10 hover:text-white sm:w-auto" size="lg" variant="ghost">
-                Eerst demo bekijken
-              </Button>
+            <Link
+              href="/demo"
+              className={cn(buttonVariants({ size: "lg", variant: "ghost" }), "w-full text-white/80 hover:bg-white/10 hover:text-white sm:w-auto")}
+            >
+              Eerst demo bekijken
             </Link>
           </div>
         </div>

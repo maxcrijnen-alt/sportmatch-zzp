@@ -17,7 +17,7 @@ import { ReviewFilters } from "@/components/reviews/review-filters";
 import { ReviewItem } from "@/components/reviews/review-item";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
   Page,
@@ -247,9 +247,10 @@ export default async function CandidateProfilePage({
                 />
               ) : null}
               {!isOwnPreview && query.job ? (
-                <Link href={`/organisatie/opdrachten/${query.job}`}>
-                  <Button size="sm">Terug naar opdracht</Button>
-                </Link>
+                <Link
+                  href={`/organisatie/opdrachten/${query.job}`}
+                  className={buttonVariants({ size: "sm" })}
+                >Terug naar opdracht</Link>
               ) : null}
             </div>
           </div>

@@ -1,6 +1,7 @@
+import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { ArrowRight, Sparkles } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 
 /** De belangrijkste eerstvolgende actie, bovenaan het dashboard. */
 function FocusCard({
@@ -39,11 +40,12 @@ function FocusCard({
         </div>
         <div className="flex w-full shrink-0 flex-col gap-2 sm:w-auto sm:flex-row">
           {secondary}
-          <Link href={href}>
-            <Button className="w-full sm:w-auto">
-              {cta}
-              <ArrowRight className="h-4 w-4" />
-            </Button>
+          <Link
+            href={href}
+            className={cn(buttonVariants(), "w-full sm:w-auto")}
+          >
+            {cta}
+            <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
       </div>
