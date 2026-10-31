@@ -50,7 +50,10 @@ test("teamuitnodiging behoudt de rol en mislukte acceptatie voltooit onboarding 
     // Revoke after rendering, exercising the real server action's failure path.
     expect((await admin.from("organization_members").delete().eq("organization_id", organizationId).eq("invited_email", email)).error).toBeNull();
     await staff.getByRole("button", { name: "Uitnodiging accepteren", exact: true }).click();
-    await expect(staff.getByRole("alert")).toContainText("Uitnodiging accepteren is niet gelukt.");
+    const invitationForm = staff.locator("form").filter({
+      has: staff.getByRole("button", { name: "Uitnodiging accepteren", exact: true }),
+    });
+    await expect(invitationForm.getByRole("alert")).toContainText("Uitnodiging accepteren is niet gelukt.");
     expect((await admin.from("profiles").select("onboarding_completed").eq("id", userIds[1]).single()).data!.onboarding_completed).toBe(false);
     expect(new URL(staff.url()).pathname).toBe("/onboarding");
 
