@@ -11,6 +11,7 @@ Er wordt niets naar `main` gemerged en geen deployment of remote migration uitge
 | Ongewijzigde main-basis | `32abaf69397dfe8b1ab1bdb04e0be92e468585c3` |
 | PR #66: organisatieautorisatie en uitnodigingsacceptatie | `74e56ee89e88adfb211c021d0c20c62725b678d1` |
 | Testfix op de bestaande PR #66 | `4e765d23b8b2efa39ef5e319fb81d818117b920d` |
+| Vervolgfix PR #66: medewerkerslijst en bestaande maandgrenscorrectie | `0ee8ef68923ed2ea1be0741b9c2067b39c67900c` |
 | PR #67: goedgekeurde redesign | `a788d64781541694146404188b7e50e1a9643765` |
 | PR #68: volledig groene hardening | `4e691d41247f9a747741d840b04118cb6151afab` |
 | Lokale integratiemerge | `b670c09f2e47816b127aba5e6a3b9e25cf6176cc` |
@@ -31,7 +32,12 @@ en zoekt daarbinnen het alert. De fouttekst blijft dezelfde `toContainText`-asse
 Er is geen `.first()`, geen selectie op de verwachte fouttekst en geen verwijderde
 assertion. De databasecontrole dat mislukte acceptatie onboarding niet voltooit,
 de controle op de onboardingroute en alle succes-/rolcontroles blijven intact.
-De wijziging is als afzonderlijke testcommit op PR #66 gepusht.
+De wijziging is als afzonderlijke testcommit op PR #66 gepusht. Nadat deze stap
+slaagde, toonde de volgende assertion dezelfde naam in zowel header als
+medewerkerslijst. Ook die selector is nu tot de hoofdinhoud beperkt, met behoud
+van de zichtbaarheidseis. De reeds in PR #68 aanwezige maandgrenscorrectie is
+ongewijzigd naar de losse PR #66 overgenomen; de integratie houdt daardoor
+precies de bestaande agendatest uit PR #68.
 
 ## Conflict en mobiele dekking
 
