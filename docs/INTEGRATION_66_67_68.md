@@ -12,6 +12,7 @@ Er wordt niets naar `main` gemerged en geen deployment of remote migration uitge
 | PR #66: organisatieautorisatie en uitnodigingsacceptatie | `74e56ee89e88adfb211c021d0c20c62725b678d1` |
 | Testfix op de bestaande PR #66 | `4e765d23b8b2efa39ef5e319fb81d818117b920d` |
 | Vervolgfix PR #66: medewerkerslijst en bestaande maandgrenscorrectie | `0ee8ef68923ed2ea1be0741b9c2067b39c67900c` |
+| Laatste testfix PR #66: verzonden chatbericht controleren | `15bfe1c888bb9fa983e0c61d67bbb6d4fa050717` |
 | PR #67: goedgekeurde redesign | `a788d64781541694146404188b7e50e1a9643765` |
 | PR #68: volledig groene hardening | `4e691d41247f9a747741d840b04118cb6151afab` |
 | Lokale integratiemerge | `b670c09f2e47816b127aba5e6a3b9e25cf6176cc` |
@@ -38,6 +39,17 @@ medewerkerslijst. Ook die selector is nu tot de hoofdinhoud beperkt, met behoud
 van de zichtbaarheidseis. De reeds in PR #68 aanwezige maandgrenscorrectie is
 ongewijzigd naar de losse PR #66 overgenomen; de integratie houdt daardoor
 precies de bestaande agendatest uit PR #68.
+
+## Aanvullende aangetoonde testambiguïteit
+
+De eerste nieuwe PR #66-run bereikte ook een bestaande chatassertion die te vroeg
+slaagde. De Playwright-trace toont dat `getByText` het gecontroleerde `textarea`
+met de ingevoerde tekst selecteerde. De ontvanger opende het gesprek daardoor
+al tijdens de verzendrequest, voordat het echte bericht beschikbaar was.
+De test eist nu de exacte berichttekst in de verzonden berichtparagraaf (`p`).
+De ontvangerassertion blijft intact. Dit is een specifiekere, sterkere selector;
+er zijn geen sleeps, langere timeouts, retries of productiecode toegevoegd.
+Dezelfde testfix is opgenomen in de losse PR #66 en in de integratie.
 
 ## Conflict en mobiele dekking
 
@@ -92,7 +104,8 @@ remote database gekoppeld, geen backfill uitgevoerd en geen productiegegeven geb
 Ten opzichte van PR #68 wijzigt de productcode alleen de bedoelde membership-
 acceptatie: het bestaande onboardingformulier gebruikt `AcceptInviteForm` met de
 gecontroleerde RPC en zichtbare foutstatus. De overige onboardingkaarten en layout
-zijn behouden. Globale CSS, UI-componenten, branding, assets, dependencies,
+zijn behouden. De bestaande pilottest heeft uitsluitend de hierboven beschreven
+sterkere chatassertion gekregen. Globale CSS, UI-componenten, branding, assets, dependencies,
 opdrachten, dashboards, agenda, navigatie en tegenvoorstellen zijn ongewijzigd.
 
 De volledige regressie omvat opnieuw de bestaande auth-/mailflows,
