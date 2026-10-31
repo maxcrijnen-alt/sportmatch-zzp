@@ -183,23 +183,24 @@ export async function removeMemberAction(memberId: string): Promise<void> {
   revalidatePath("/organisatie/medewerkers");
 }
 
-export async function acceptOrgInviteAction(memberId: string): Promise<void> {
+export async function acceptOrgInviteAction(
+  memberId: string,
+  _previous: OrgActionState,
+  _formData: FormData,
+): Promise<OrgActionState> {
   const profile = await getSessionProfile();
   const supabase = await createClient();
 
   if (!profile || !supabase) {
-    return;
+    return fail("Je bent niet ingelogd.");
   }
 
-  await supabase
-    .from("organization_members")
-    .update({ user_id: profile.id, state: "active" })
-    .eq("id", memberId);
-
-  await supabase
-    .from("profiles")
-    .update({ onboarding_completed: true })
-    .eq("id", profile.id);
+  const { error } = await supabase.rpc("accept_organization_invitation", {
+    p_invitation: memberId,
+  });
+  if (error) {
+    return fail("Uitnodiging accepteren is niet gelukt. Controleer of je e-mailadres is bevestigd en de uitnodiging nog geldig is.");
+  }
 
   revalidatePath("/", "layout");
   redirect("/dashboard");
