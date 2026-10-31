@@ -125,7 +125,9 @@ test("nieuwe sportschool en zzp-instructeur doorlopen de volledige samenwerking"
     await school.goto(`/berichten/${chat.data!.id}`);
     await school.getByPlaceholder("Typ een bericht…").fill("Tot bij de pilottraining!");
     await school.getByRole("button", { name: "Versturen", exact: true }).click();
-    await expect(school.getByText("Tot bij de pilottraining!", { exact: true })).toBeVisible();
+    // A controlled textarea also matches getByText while the send is pending.
+    // Require the persisted message paragraph before opening the recipient chat.
+    await expect(school.locator("p").filter({ hasText: /^Tot bij de pilottraining!$/ })).toBeVisible();
     await instructor.goto(`/berichten/${chat.data!.id}`);
     await expect(instructor.getByText("Tot bij de pilottraining!", { exact: true })).toBeVisible();
     await instructor.getByPlaceholder("Typ een bericht…").fill("Afgesproken, tot dan!");
