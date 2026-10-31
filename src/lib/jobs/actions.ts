@@ -556,8 +556,18 @@ export async function withdrawApplicationAction(
     return;
   }
 
-  await supabase.rpc("withdraw_application", { p_application: applicationId });
+  const { error } = await supabase.rpc("withdraw_application", { p_application: applicationId });
+  if (error) return;
+  const { data: application } = await supabase.from("job_applications")
+    .select("job_id").eq("id", applicationId).maybeSingle();
   revalidatePath("/mijn-reacties");
+  revalidatePath("/dashboard");
+  revalidatePath("/agenda");
+  revalidatePath("/organisatie/opdrachten");
+  if (application) {
+    revalidatePath(`/opdrachten/${application.job_id}`);
+    revalidatePath(`/organisatie/opdrachten/${application.job_id}`);
+  }
 }
 
 export async function inviteInstructorAction(

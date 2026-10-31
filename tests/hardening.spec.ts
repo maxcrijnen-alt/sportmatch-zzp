@@ -349,6 +349,13 @@ test("status, urgentie, onderhandelen en contactvelden blijven consistent", asyn
           ).count,
       )
       .toBe(1);
+    await instructor.goto("/mijn-reacties");
+    const plannedResponse = instructor.getByRole("link", { name: "Planned", exact: true }).locator("..").locator("..");
+    await plannedResponse.getByRole("button", { name: "Intrekken", exact: true }).click();
+    await expect(plannedResponse.getByText("Ingetrokken", { exact: true })).toBeVisible();
+    await school.goto(`/organisatie/opdrachten/${jobs.get("Planned")}`);
+    await expect(school.getByText("Nog iemand zoeken", { exact: true })).toBeVisible();
+    await expect(school.getByText("Wacht op bevestiging", { exact: true })).toHaveCount(0);
     await instructor.screenshot({
       path: testInfo.outputPath("instructor-negotiation.png"),
       fullPage: true,

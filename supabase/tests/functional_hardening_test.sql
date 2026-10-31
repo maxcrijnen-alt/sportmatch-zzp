@@ -161,5 +161,34 @@ do $$ declare zone text; begin
       where user_id=pg_temp.hardening_id('instructor');
   end loop;
 end $$;
+-- Withdrawing an actual pending selection releases both kinds of assignment.
+select pg_temp.hardening_user('instructor');
+set local role authenticated;
+select public.withdraw_application(pg_temp.hardening_id('selected-app'));
+select public.withdraw_application(pg_temp.hardening_id('segment-app'));
+select pg_temp.hardening_refused(
+  format('select public.confirm_job(%L)',pg_temp.hardening_id('selected')),
+  'Er staat geen bevestiging voor jou klaar bij deze opdracht.');
+select pg_temp.hardening_refused(
+  format('select public.confirm_job_segments(%L)',pg_temp.hardening_id('segment')),
+  'Er staan geen lesonderdelen voor jou klaar.');
+reset role;
+do $$ begin
+  if exists(select 1 from public.job_confirmations where application_id=pg_temp.hardening_id('selected-app'))
+    or exists(select 1 from public.job_segment_confirmations where application_id=pg_temp.hardening_id('segment-app'))
+    or (select count(*) from public.job_applications where id in (pg_temp.hardening_id('selected-app'),pg_temp.hardening_id('segment-app')) and status='withdrawn') <> 2
+    or exists(select 1 from public.jobs where id in (pg_temp.hardening_id('selected'),pg_temp.hardening_id('segment')) and status<>'open') then
+    raise exception 'FAIL: withdrawal did not release pending selections';
+  end if;
+end $$;
+-- Confirmed commitments must use the cancellation workflow, never withdrawal.
+insert into public.job_confirmations(job_id,application_id,instructor_id,organization_agreed_at,confirmed_at)
+values(pg_temp.hardening_id('negotiable'),pg_temp.hardening_id('negotiable-app'),pg_temp.hardening_id('instructor'),now(),now());
+set local role authenticated;
+select pg_temp.hardening_refused(
+  format('select public.withdraw_application(%L)',pg_temp.hardening_id('negotiable-app')),
+  'Een bevestigde opdracht moet via annuleren worden afgemeld.');
+reset role;
+
 rollback;
 select 'FUNCTIONAL HARDENING TESTS GESLAAGD' as result;

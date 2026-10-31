@@ -24,6 +24,7 @@ begin
   end if;
 
   select * into v_job from public.jobs where id = v_app.job_id for update;
+  select * into v_app from public.job_applications where id = v_app.id;
 
   if v_app.instructor_id = auth.uid() then
     v_side := 'instructor';
@@ -119,6 +120,7 @@ begin
 
   select * into v_app from public.job_applications where id = v_offer.application_id;
   select * into v_job from public.jobs where id = v_app.job_id for update;
+  select * into v_app from public.job_applications where id = v_app.id;
 
   -- de tegenpartij beantwoordt het voorstel
   if v_offer.side = 'instructor' then
@@ -225,7 +227,8 @@ declare
 begin
   select * into v_app from public.job_applications where id = p_application;
   if v_app.id is null then raise exception 'Reactie niet gevonden.'; end if;
-  select * into v_job from public.jobs where id = v_app.job_id;
+  select * into v_job from public.jobs where id = v_app.job_id for update;
+  select * into v_app from public.job_applications where id = v_app.id;
   if not public.is_org_member(v_job.organization_id) then raise exception 'Geen toegang tot deze opdracht.'; end if;
   if v_app.status <> 'pending' then
     raise exception 'Deze reactie is niet meer beschikbaar voor selectie.';
@@ -289,7 +292,8 @@ declare
 begin
   select * into v_app from public.job_applications where id = p_application;
   if v_app.id is null then raise exception 'Reactie niet gevonden.'; end if;
-  select * into v_job from public.jobs where id = v_app.job_id;
+  select * into v_job from public.jobs where id = v_app.job_id for update;
+  select * into v_app from public.job_applications where id = v_app.id;
   if not public.is_org_member(v_job.organization_id) then raise exception 'Geen toegang tot deze opdracht.'; end if;
   if v_app.status <> 'pending' then
     raise exception 'Deze reactie is niet meer beschikbaar voor selectie.';
@@ -365,6 +369,175 @@ begin
     'Bevestiging gevraagd: ' || v_job.title,
     'De sportschool heeft je voor ' || v_count || ' aansluitende les(sen) gekozen.',
     '/opdrachten/' || v_job.id
+  );
+  return v_count;
+end;
+$function$;
+
+-- Withdrawing a pending response also releases its unconfirmed selections.
+create or replace function public.withdraw_application(p_application uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_app public.job_applications;
+begin
+  select * into v_app from public.job_applications where id = p_application;
+
+  if v_app.id is null or v_app.instructor_id <> auth.uid() then
+    raise exception 'Reactie niet gevonden.';
+  end if;
+
+  perform 1 from public.jobs where id = v_app.job_id for update;
+  select * into v_app from public.job_applications where id = p_application for update;
+  if v_app.status <> 'pending' then
+    raise exception 'Alleen openstaande reacties kunnen worden ingetrokken.';
+  end if;
+
+  if exists (select 1 from public.job_confirmations c
+      where c.application_id = p_application and c.confirmed_at is not null)
+    or exists (select 1 from public.job_segment_confirmations c
+      where c.application_id = p_application and c.confirmed_at is not null and c.cancelled_at is null) then
+    raise exception 'Een bevestigde opdracht moet via annuleren worden afgemeld.';
+  end if;
+  delete from public.job_confirmations
+    where application_id = p_application and confirmed_at is null;
+  delete from public.job_segment_confirmations
+    where application_id = p_application and confirmed_at is null;
+  update public.job_applications
+  set status = 'withdrawn'
+  where id = p_application;
+end;
+$$;
+
+-- Final confirmation and queued mutations share a job lock and revalidate response state.
+CREATE OR REPLACE FUNCTION public.confirm_job(p_job uuid)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare
+  v_conf public.job_confirmations;
+  v_job public.jobs;
+  v_chat uuid;
+begin
+  select * into v_job from public.jobs where id = p_job for update;
+  select * into v_conf from public.job_confirmations where job_id = p_job;
+  if v_conf.id is null or v_conf.instructor_id <> auth.uid() then
+    raise exception 'Er staat geen bevestiging voor jou klaar bij deze opdracht.';
+  end if;
+  if v_conf.organization_agreed_at is null then raise exception 'De organisatie moet eerst akkoord gaan.'; end if;
+  if v_conf.confirmed_at is not null then raise exception 'Deze opdracht is al bevestigd.'; end if;
+  if v_job.status is distinct from 'open'::public.job_status then
+    raise exception 'Deze opdracht staat niet meer open voor bevestiging.';
+  end if;
+  if not public.instructor_has_access(auth.uid()) then
+    raise exception 'Je abonnement of proefperiode is niet actief.';
+  end if;
+  if not private.has_valid_vog(auth.uid()) then
+    raise exception 'Een goedgekeurde, geldige VOG is vereist om definitief te bevestigen.';
+  end if;
+  if private.has_pending_review(auth.uid()) then
+    raise exception 'Je hebt nog een beoordeling openstaan. Rond die eerst af.';
+  end if;
+  if public.instructor_has_schedule_conflict(
+    auth.uid(), p_job, v_job.start_time, v_job.end_time
+  ) then
+    raise exception 'Deze opdracht overlapt met een andere bevestigde opdracht in je agenda.';
+  end if;
+  if v_conf.application_id is not null and not exists (
+    select 1 from public.job_applications a where a.id = v_conf.application_id and a.status = 'pending'
+  ) then
+    raise exception 'Deze reactie is niet meer beschikbaar voor bevestiging.';
+  end if;
+  update public.job_confirmations
+  set instructor_agreed_at = now(), confirmed_at = now()
+  where id = v_conf.id;
+  update public.jobs set status = 'confirmed' where id = p_job;
+  update public.job_applications set status = 'accepted' where id = v_conf.application_id;
+  update public.job_applications
+  set status = 'rejected'
+  where job_id = p_job and id <> v_conf.application_id and status = 'pending';
+  v_chat := public.internal_ensure_chat(p_job, auth.uid());
+  perform public.internal_system_message(v_chat, 'job_confirmed',
+    'De opdracht is definitief bevestigd. Contactgegevens zijn nu zichtbaar voor beide partijen.');
+  perform public.internal_notify_org(v_job.organization_id, 'job_confirmed',
+    'Opdracht bevestigd: ' || v_job.title, 'De instructeur heeft de opdracht bevestigd.',
+    '/agenda?job=' || p_job);
+end;
+$function$;
+
+CREATE OR REPLACE FUNCTION public.confirm_job_segments(p_job uuid)
+ RETURNS integer
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare
+  v_job public.jobs;
+  v_confirmation public.job_segment_confirmations;
+  v_count integer := 0;
+begin
+  select * into v_job from public.jobs where id = p_job for update;
+  if v_job.id is null then raise exception 'Opdracht niet gevonden.'; end if;
+  if v_job.status <> 'open' then
+    raise exception 'Dit lessenblok staat niet meer open voor bevestiging.';
+  end if;
+  if not public.instructor_has_access(auth.uid()) then
+    raise exception 'Je abonnement of proefperiode is niet actief.';
+  end if;
+  if not private.has_valid_vog(auth.uid()) then
+    raise exception 'Een goedgekeurde, geldige VOG is vereist om definitief te bevestigen.';
+  end if;
+  if private.has_pending_review(auth.uid()) then
+    raise exception 'Je hebt nog een beoordeling openstaan. Rond die eerst af.';
+  end if;
+  for v_confirmation in
+    select c.* from public.job_segment_confirmations c
+    join public.job_applications a on a.id = c.application_id and a.status = 'pending'
+    where c.job_id = p_job
+      and c.instructor_id = auth.uid()
+      and c.confirmed_at is null
+      and c.cancelled_at is null
+    order by c.created_at
+  loop
+    if exists (
+      select 1 from public.job_segments s
+      where s.id = v_confirmation.segment_id
+        and public.instructor_has_schedule_conflict(auth.uid(), p_job, s.start_time, s.end_time)
+    ) then
+      raise exception 'Een les overlapt inmiddels met een andere bevestigde opdracht.';
+    end if;
+    update public.job_segment_confirmations
+    set instructor_agreed_at = now(), confirmed_at = now()
+    where id = v_confirmation.id;
+    update public.job_applications set status = 'accepted'
+    where id = v_confirmation.application_id;
+    v_count := v_count + 1;
+  end loop;
+  if v_count = 0 then raise exception 'Er staan geen lesonderdelen voor jou klaar.'; end if;
+
+  if not exists (
+    select 1 from public.job_segments s
+    where s.job_id = p_job
+      and not exists (
+        select 1 from public.job_segment_confirmations c
+        where c.segment_id = s.id
+          and c.confirmed_at is not null
+          and c.cancelled_at is null
+      )
+  ) then
+    update public.jobs set status = 'confirmed' where id = p_job;
+  end if;
+
+  perform public.internal_notify_org(
+    v_job.organization_id, 'job_segments_confirmed',
+    'Lessen bevestigd: ' || v_job.title,
+    v_count || ' lesonderdeel/lesonderdelen zijn definitief bevestigd.',
+    '/organisatie/opdrachten/' || p_job
   );
   return v_count;
 end;

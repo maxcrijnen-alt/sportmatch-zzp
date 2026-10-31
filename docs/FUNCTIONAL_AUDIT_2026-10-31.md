@@ -26,6 +26,7 @@
 | Komende herhalingen ontbraken in urgentie | Filter op alleen `jobs.starts_on` | Gedeelde herhalingsdatums en eerstvolgende onvervulde les, één urgentievermelding per opdracht; bevestigde/cancelled/closed/completed opdrachten tellen niet als onvervuld |
 | Eerstvolgende instructeursopdracht miste lessenblokken en herhalingen | Alleen hele bevestigingen en toekomstige oorspronkelijke startdatums werden geselecteerd | Het dashboard gebruikt eigen bevestigde agenda-lesmomenten, inclusief segmenten en herhalingen; afgelopen lessen vallen af |
 | Tegenvoorstellen konden bij een vaste vergoeding | UI-bypass `pay_is_negotiable || true`; creatie-RPC controleerde onderhandelbaarheid en reactiestatus niet | Gedeelde UI-regel; creatie én beantwoording controleren onderhandelbaarheid, open opdracht, pending reactie en afwezigheid van een selectie; eigenaarschap en bestaande toegangsvoorwaarden behouden |
+| Intrekken liet een openstaande selectie achter | De intrek-RPC wijzigde alleen de reactiestatus | Onbevestigde toewijzingen komen vrij, definitieve verplichtingen blijven via annuleren lopen; selectie/bevestiging herlezen status onder dezelfde opdrachtlock; directe RPC- en browsertests |
 | Ingetrokken/afgewezen reacties konden rechtstreeks geselecteerd worden | Selectie-RPC's controleerden de reactiestatus niet | Beide selectie-RPC's eisen een pending reactie; directe SQL-regressies |
 | Kalenderdatum week rond Nederlandse middernacht af | UTC-datum op instructeursdashboard, beschikbaarheid, opdrachtenzoeken en demo-fixtures; VOG gebruikte database-sessiondatum | Bestaande Amsterdam-helper hergebruikt; VOG-datum expliciet Amsterdam; kalenderoptelling voor dagen, absolute timestamps blijven absoluut |
 | Agenda ‘vandaag’ volgde de browserzone | `new Date()`/`isToday` zonder zakelijke tijdzone | Amsterdamse kalenderdatum voor initiële dag, vandaagknop en dagmarkeringen |
@@ -74,8 +75,10 @@ Volledige browserflows zijn pas geverifieerd wanneer de volledige CI-suite groen
 ## Database en beveiliging
 
 De additieve migration `20261031003228_functional_workflow_hardening.sql` vervangt
-bestaande functies voor tegenvoorstellen, selectie en VOG-geldigheid. Zij voegt geen
-tabellen, kolommen, dependencies, nieuwe publieke RPC's of datamutaties/backfills toe.
+bestaande functies voor tegenvoorstellen, selectie, intrekken, bevestigen en VOG-geldigheid. Zij voegt geen
+tabellen, kolommen, dependencies of nieuwe publieke RPC's toe en voert bij toepassen
+geen backfill of andere datamutatie uit. Alleen een expliciete intrekactie geeft
+onbevestigde toewijzingen vrij; definitieve overeenkomsten vereisen annuleren.
 De bestaande functiehandtekeningen, grantgrenzen en lege `search_path` blijven behouden.
 De SQL-suite controleert ook de bestaande SECURITY DEFINER-allowlist, demo-isolatie,
 contactprivacy, toegang en business gates.
