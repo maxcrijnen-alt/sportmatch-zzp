@@ -1,3 +1,6 @@
+import { deriveJobWorkflow } from "@/lib/jobs/workflow";
+import { jobStatusIndicatorLabels } from "@/components/jobs/job-status-indicator";
+import { canNegotiateJob } from "@/lib/jobs/negotiation";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
@@ -25,7 +28,7 @@ import { StopSearchForm } from "@/components/jobs/stop-search-form";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -40,7 +43,6 @@ import {
   formatDate,
   formatEuro,
   formatTime,
-  jobStatusLabels,
   jobTypeLabels,
 } from "@/lib/labels";
 import {
@@ -161,7 +163,9 @@ export default async function OrganisatieOpdrachtDetailPage({
       .order("created_at", { ascending: false }),
     supabase
       .from("job_segment_confirmations")
-      .select("id, segment_id, application_id, instructor_id, confirmed_at, cancelled_at")
+      .select(
+        "id, segment_id, application_id, instructor_id, confirmed_at, organization_agreed_at, cancelled_at",
+      )
       .eq("job_id", job.id),
     job.status === "open"
       ? supabase
@@ -180,14 +184,17 @@ export default async function OrganisatieOpdrachtDetailPage({
     (suggestionsResult.data as { user_id: string }[] | null) ?? []
   ).map((row) => row.user_id);
   const segmentConfirmations =
-    (segmentConfirmationsResult.data as {
-      id: string;
-      segment_id: string;
-      application_id: string;
-      instructor_id: string;
-      confirmed_at: string | null;
-      cancelled_at: string | null;
-    }[] | null) ?? [];
+    (segmentConfirmationsResult.data as
+      | {
+          id: string;
+          segment_id: string;
+          application_id: string;
+          instructor_id: string;
+          confirmed_at: string | null;
+          organization_agreed_at: string;
+          cancelled_at: string | null;
+        }[]
+      | null) ?? [];
 
   // Profielen van kandidaten en suggesties in één query ophalen
   const profileIds = Array.from(
@@ -315,6 +322,16 @@ export default async function OrganisatieOpdrachtDetailPage({
       profile: profilesById.get(userId) ?? null,
     }));
 
+  const workflow = deriveJobWorkflow({
+    status: job.status,
+    segments: job.segments,
+    confirmations: confirmation ? [confirmation] : [],
+    segmentConfirmations,
+    pendingApplicationCount: applications.filter(
+      (item) => item.status === "pending",
+    ).length,
+  });
+
   const confirmedApplication = applications.find(
     (application) => application.id === confirmation?.application_id,
   );
@@ -332,13 +349,17 @@ export default async function OrganisatieOpdrachtDetailPage({
             >
               {jobTypeLabels[job.job_type]}
             </Badge>
-            {job.sport ? <Badge variant="default">{job.sport.name}</Badge> : null}
+            {job.sport ? (
+              <Badge variant="default">{job.sport.name}</Badge>
+            ) : null}
             <Badge variant="outline">
               {job.custom_lesson_type ||
                 job.lesson_type?.name ||
                 "Lesvorm niet opgegeven"}
             </Badge>
-            <Badge variant="muted">{jobStatusLabels[job.status]}</Badge>
+            <Badge variant="muted">
+              {jobStatusIndicatorLabels[workflow.state]}
+            </Badge>
           </>
         }
         title={job.title}
@@ -362,8 +383,11 @@ export default async function OrganisatieOpdrachtDetailPage({
         {job.status === "open" ? (
           <div className="flex flex-wrap gap-2">
             <StopSearchForm jobId={job.id} />
-            <Link href={`/organisatie/opdrachten/nieuw?duplicate=${job.id}`}>
-              <Button size="sm" variant="outline">Opdracht dupliceren</Button>
+            <Link
+              href={`/organisatie/opdrachten/nieuw?duplicate=${job.id}`}
+              className={buttonVariants({ size: "sm", variant: "outline" })}
+            >
+              Opdracht dupliceren
             </Link>
             <form action={saveJobAsTemplateAction.bind(null, job.id)}>
               <Button size="sm" type="submit" variant="outline">Opslaan als sjabloon</Button>
@@ -391,16 +415,19 @@ export default async function OrganisatieOpdrachtDetailPage({
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3 pt-0">
-                {contact ? (
+                {contact && (contact.full_name?.trim() || contact.email?.trim() || contact.phone?.trim()) ? (
                   <div className="space-y-1 text-sm">
-                    <p className="font-medium">{contact.full_name}</p>
-                    <p className="inline-flex items-center gap-2 text-muted-foreground">
-                      <Mail className="h-3.5 w-3.5" /> {contact.email}
-                    </p>
-                    <br />
-                    <p className="inline-flex items-center gap-2 text-muted-foreground">
-                      <Phone className="h-3.5 w-3.5" /> {contact.phone}
-                    </p>
+                    {contact.full_name?.trim() ? <p className="font-medium">{contact.full_name}</p> : null}
+                    {contact.email?.trim() ? (
+                      <p className="flex items-center gap-2 text-muted-foreground">
+                        <Mail className="h-3.5 w-3.5" /> {contact.email}
+                      </p>
+                    ) : null}
+                    {contact.phone?.trim() ? (
+                      <p className="flex items-center gap-2 text-muted-foreground">
+                        <Phone className="h-3.5 w-3.5" /> {contact.phone}
+                      </p>
+                    ) : null}
                   </div>
                 ) : null}
 
@@ -467,9 +494,13 @@ export default async function OrganisatieOpdrachtDetailPage({
                   <div className="grid gap-3 border-t border-border pt-3 sm:grid-cols-2">
                     {contacts.map((item) => (
                       <div className="text-sm" key={`${item.email}-${item.phone}`}>
-                        <p className="font-medium">{item.full_name}</p>
-                        <p className="text-muted-foreground">{item.email}</p>
-                        <p className="text-muted-foreground">{item.phone}</p>
+                        {item.full_name?.trim() ? <p className="font-medium">{item.full_name}</p> : null}
+                        {item.email?.trim() ? (
+                          <p className="text-muted-foreground">{item.email}</p>
+                        ) : null}
+                        {item.phone?.trim() ? (
+                          <p className="text-muted-foreground">{item.phone}</p>
+                        ) : null}
                       </div>
                     ))}
                   </div>
@@ -583,7 +614,8 @@ export default async function OrganisatieOpdrachtDetailPage({
                   <Card key={instructorId}>
                     <CardHeader>
                       <CardTitle>
-                        Beoordeel {profilesById.get(instructorId)?.full_name ?? "de instructeur"}
+                        Beoordeel{" "}
+                        {profilesById.get(instructorId)?.full_name ?? "de instructeur"}
                       </CardTitle>
                       <CardDescription>
                         Ieder bevestigd lid van het lessenblok krijgt een eigen,
@@ -609,7 +641,8 @@ export default async function OrganisatieOpdrachtDetailPage({
                     {"★".repeat(review.rating)}
                     {"☆".repeat(5 - review.rating)}{" "}
                     <span className="text-muted-foreground">
-                      door {review.side === "instructor" ? "instructeur" : "organisatie"}
+                      door{" "}
+                      {review.side === "instructor" ? "instructeur" : "organisatie"}
                     </span>
                   </p>
                 ))}
@@ -680,10 +713,16 @@ export default async function OrganisatieOpdrachtDetailPage({
                         </div>
                         <div className="flex flex-wrap gap-1.5 text-xs">
                           {stats?.avg_rating != null ? (
-                            <Badge variant="outline">
+                            <Link
+                              aria-label={`Reviews van ${application.instructor?.full_name ?? "instructeur"}`}
+                              className="rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+                              href={`/organisatie/kandidaten/${application.instructor_id}?job=${job.id}#reviews`}
+                            >
+                              <Badge variant="outline">
                               <Star className="h-3 w-3 fill-amber-400 text-amber-400" />{" "}
                               {stats.avg_rating}
                             </Badge>
+                            </Link>
                           ) : (
                             <Badge variant="muted">Eerste klus</Badge>
                           )}
@@ -727,7 +766,8 @@ export default async function OrganisatieOpdrachtDetailPage({
                             >
                               <span>
                                 Tegenvoorstel: {formatEuro(offer.amount_cents)}{" "}
-                                {offer.pay_type === "hourly" ? "per uur" : "vast"} (
+                                {offer.pay_type === "hourly" ? "per uur" : "vast"}{" "}
+                                (
                                 {offer.status === "pending"
                                   ? "in afwachting"
                                   : offer.status === "accepted"
@@ -736,7 +776,17 @@ export default async function OrganisatieOpdrachtDetailPage({
                                 )
                               </span>
                               {offer.status === "pending" &&
-                              offer.side === "instructor" ? (
+                              offer.side === "instructor" &&
+                              canNegotiateJob(
+                                job,
+                                application,
+                                confirmation?.application_id ===
+                                  application.id ||
+                                  activeSegmentConfirmations.some(
+                                    (item) =>
+                                      item.application_id === application.id,
+                                  ),
+                              ) ? (
                                 <span className="flex gap-2">
                                   <form
                                     action={respondCounterofferAction.bind(
@@ -781,7 +831,16 @@ export default async function OrganisatieOpdrachtDetailPage({
                             jobId={job.id}
                             segmentIds={selectableSegmentIds}
                           />
-                          <details>
+                          {canNegotiateJob(
+                            job,
+                            application,
+                            confirmation?.application_id === application.id ||
+                              activeSegmentConfirmations.some(
+                                (item) =>
+                                  item.application_id === application.id,
+                              ),
+                          ) ? (
+                            <details>
                             <summary className="cursor-pointer text-sm text-primary">
                               Tegenvoorstel doen
                             </summary>
@@ -789,6 +848,7 @@ export default async function OrganisatieOpdrachtDetailPage({
                               <CounterofferForm applicationId={application.id} />
                             </div>
                           </details>
+                          ) : null}
                         </div>
                       ) : null}
                     </div>
@@ -810,7 +870,9 @@ export default async function OrganisatieOpdrachtDetailPage({
                       specialisatie.
                     </CardDescription>
                   </div>
-                  {poolCount > 0 ? <PoolInviteForm count={poolCount} jobId={job.id} /> : null}
+                  {poolCount > 0 ? (
+                    <PoolInviteForm count={poolCount} jobId={job.id} />
+                  ) : null}
                 </div>
               </CardHeader>
               <CardContent className="pt-0">
@@ -842,8 +904,8 @@ export default async function OrganisatieOpdrachtDetailPage({
                               </p>
                               {stats?.review_count ? (
                                 <p className="text-xs text-muted-foreground">
-                                  ★ {stats.avg_rating} · {stats.review_count} reviews ·{" "}
-                                  {stats.completed_count} afgerond
+                                  ★ {stats.avg_rating} · {stats.review_count}{" "}
+                                  reviews · {stats.completed_count} afgerond
                                 </p>
                               ) : (
                                 <Badge className="mt-1" variant="muted">
@@ -914,7 +976,7 @@ export default async function OrganisatieOpdrachtDetailPage({
                   >
                     <p className="font-medium">
                       {item.instructor_id
-                        ? profilesById.get(item.instructor_id)?.full_name ?? "Instructeur"
+                        ? (profilesById.get(item.instructor_id)?.full_name ?? "Instructeur")
                         : "Opdracht"}
                       {item.segment_ids.length > 0
                         ? ` · ${item.segment_ids.length} lesonderdeel${item.segment_ids.length === 1 ? "" : "en"}`
@@ -925,7 +987,8 @@ export default async function OrganisatieOpdrachtDetailPage({
                   </div>
                 ))}
                 <p className="font-medium">
-                  Totale geregistreerde vergoeding: {formatEuro(totalCancellationAmount)}
+                  Totale geregistreerde vergoeding:{" "}
+                  {formatEuro(totalCancellationAmount)}
                   {cancellation.force_majeure_status !== "approved"
                     ? " (150% van de afgesproken dienst)"
                     : ""}

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Inbox } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -205,9 +205,10 @@ export default async function MijnReactiesPage() {
                   vergoeding en verwachtingen goed aansluiten.
                 </p>
               </div>
-              <Link href="/opdrachten">
-                <Button variant="outline">Opdrachten bekijken</Button>
-              </Link>
+              <Link
+                href="/opdrachten"
+                className={buttonVariants({ variant: "outline" })}
+              >Opdrachten bekijken</Link>
             </div>
           ) : (
             applications.map((application) => (

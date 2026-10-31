@@ -1,7 +1,7 @@
+import { cn } from "@/lib/utils";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { connection } from "next/server";
 import {
   AlertTriangle,
   ArrowRight,
@@ -20,7 +20,7 @@ import { FocusCard } from "@/components/dashboard/focus-card";
 import { JobStatusIndicator } from "@/components/jobs/job-status-indicator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { DateBadge } from "@/components/ui/date-badge";
 import {
   Page,
@@ -32,38 +32,24 @@ import {
 } from "@/components/ui/page";
 import { StatTile } from "@/components/ui/stat-tile";
 import { getSessionProfile } from "@/lib/auth/session";
+import {
+  amsterdamDateTimeToInstant,
+} from "@/lib/datetime/amsterdam";
+import { nextUrgentLesson } from "@/lib/jobs/schedule";
+import { deriveJobWorkflow } from "@/lib/jobs/workflow";
+import { fetchJobConfirmations } from "@/lib/jobs/workflow-query";
+import { sportMatchAgendaProvider } from "@/lib/agenda/sportmatch-provider";
+import { jobStatusIndicatorLabels } from "@/components/jobs/job-status-indicator";
 import { subscriptionGrantsAccess } from "@/lib/billing/access";
 import { getOrgContext } from "@/lib/org/context";
 import { resolveLocationFilter } from "@/lib/org/location-filter";
 import { formatDate, formatTime } from "@/lib/labels";
 import { createClient } from "@/lib/supabase/server";
-import type { Subscription } from "@/types/database";
+import type { JobStatus, Subscription } from "@/types/database";
 
 export const metadata: Metadata = {
   title: "Dashboard",
 };
-
-async function getUrgencyDateRange() {
-  await connection();
-  const now = Date.now();
-  const amsterdamDate = (offsetDays: number) => {
-    const date = new Date(now + offsetDays * 24 * 60 * 60 * 1000);
-    const parts = new Intl.DateTimeFormat("en-GB", {
-      timeZone: "Europe/Amsterdam",
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    }).formatToParts(date);
-    const values = Object.fromEntries(
-      parts
-        .filter((part) => part.type !== "literal")
-        .map((part) => [part.type, part.value]),
-    );
-    return `${values.year}-${values.month}-${values.day}`;
-  };
-
-  return { urgencyStart: amsterdamDate(0), urgencyEnd: amsterdamDate(7) };
-}
 
 export default async function DashboardPage({
   searchParams,
@@ -103,13 +89,18 @@ export default async function DashboardPage({
 
     let jobsQuery = supabase
       .from("jobs")
-      .select("id, status, title, starts_on, start_time")
+      .select(
+        `id, status, title, starts_on, start_time, end_time,
+        segments:job_segments(id, start_time, end_time),
+        recurrence:job_recurrence_rules(interval_weeks, ends_on, occurrence_count)`,
+      )
       .eq("organization_id", orgContext.organization.id)
-      .eq("status", "open");
+      .in("status", ["open", "confirmed"]);
     let applicationsQuery = supabase
       .from("job_applications")
       .select("id, job_id, job:jobs!inner(organization_id, location_id)")
       .eq("job.organization_id", orgContext.organization.id)
+      .eq("job.status", "open")
       .eq("status", "pending");
 
     if (selectedLocationId) {
@@ -135,66 +126,66 @@ export default async function DashboardPage({
       (subscription) => !subscriptionGrantsAccess(subscription),
     );
     const openJobs =
-      (jobsResult.data as { id: string; status: string }[] | null) ?? [];
+      (jobsResult.data as unknown as
+        | {
+            id: string;
+            status: JobStatus;
+            title: string;
+            starts_on: string;
+            start_time: string;
+            end_time: string;
+            segments: { id: string; start_time: string; end_time: string }[];
+            recurrence: {
+              interval_weeks: number;
+              ends_on: string | null;
+              occurrence_count: number | null;
+            } | null;
+          }[]
+        | null) ?? [];
     const openJobIds = openJobs.map((job) => job.id);
     const pendingApplications =
       (applicationsResult.data as { id: string; job_id: string }[] | null) ?? [];
-    const pendingApplicationJobIds = new Set(
-      pendingApplications.map((application) => application.job_id),
-    );
 
-    const pendingConfirmationJobIds = new Set<string>();
-
-    if (openJobIds.length > 0) {
-      const [wholeConfirmationsResult, segmentConfirmationsResult] =
-        await Promise.all([
-          supabase
-            .from("job_confirmations")
-            .select("job_id")
-            .in("job_id", openJobIds)
-            .is("confirmed_at", null),
-          supabase
-            .from("job_segment_confirmations")
-            .select("job_id")
-            .in("job_id", openJobIds)
-            .is("confirmed_at", null)
-            .is("cancelled_at", null),
-        ]);
-
-      for (const confirmation of wholeConfirmationsResult.data ?? []) {
-        pendingConfirmationJobIds.add(confirmation.job_id as string);
-      }
-      for (const confirmation of segmentConfirmationsResult.data ?? []) {
-        pendingConfirmationJobIds.add(confirmation.job_id as string);
-      }
+    const pendingByJob = new Map<string, number>();
+    for (const application of pendingApplications) {
+      pendingByJob.set(
+        application.job_id,
+        (pendingByJob.get(application.job_id) ?? 0) + 1,
+      );
     }
-
-    const openJobCount = openJobs.length;
-    const pendingApplicationCount = pendingApplications.length;
-    const pendingConfirmationCount = pendingConfirmationJobIds.size;
-    const hasPendingReview = pendingReviewResult.data === true;
-    const searchingJobCount = openJobIds.filter(
-      (jobId) =>
-        !pendingApplicationJobIds.has(jobId) &&
-        !pendingConfirmationJobIds.has(jobId),
+    const { wholeByJob, segmentsByJob } =
+      await fetchJobConfirmations(openJobIds);
+    const workflowInputs = openJobs.map((job) => ({
+      ...job,
+      segments: job.segments ?? [],
+      confirmations: wholeByJob.get(job.id) ?? [],
+      segmentConfirmations: segmentsByJob.get(job.id) ?? [],
+      pendingApplicationCount: pendingByJob.get(job.id) ?? 0,
+    }));
+    const workflowByJob = new Map(
+      workflowInputs.map((job) => [job.id, deriveJobWorkflow(job)]),
+    );
+    const openJobCount = workflowInputs.filter(
+      (job) => !workflowByJob.get(job.id)!.fullyCovered,
     ).length;
-
-    const { urgencyStart, urgencyEnd } = await getUrgencyDateRange();
-
-    type OrganizationDashboardJob = {
-      id: string;
-      status: string;
-      title: string;
-      starts_on: string;
-      start_time: string;
-    };
-
-    const urgentJobs = (openJobs as OrganizationDashboardJob[])
-      .filter(
-        (job) =>
-          job.starts_on >= urgencyStart &&
-          job.starts_on <= urgencyEnd,
-      )
+    const pendingApplicationCount = pendingApplications.length;
+    const pendingConfirmationCount = [...workflowByJob.values()].filter(
+      (item) => item.hasPendingConfirmation,
+    ).length;
+    const hasPendingReview = pendingReviewResult.data === true;
+    const searchingJobCount = [...workflowByJob.values()].filter(
+      (item) =>
+        item.state === "searching" ||
+        (item.state === "partially_confirmed" && !item.hasPendingConfirmation),
+    ).length;
+    const now = new Date();
+    const urgentJobs = workflowInputs
+      .flatMap((job) => {
+        const lesson = nextUrgentLesson(job, now);
+        return lesson
+          ? [{ ...job, starts_on: lesson.date, start_time: lesson.startTime }]
+          : [];
+      })
       .sort((left, right) =>
         `${left.starts_on}T${left.start_time}`.localeCompare(
           `${right.starts_on}T${right.start_time}`,
@@ -224,7 +215,7 @@ export default async function DashboardPage({
         ? [
             {
               title: "Open opdrachten opvolgen",
-              description: `${searchingJobCount} ${searchingJobCount === 1 ? "opdracht heeft" : "opdrachten hebben"} nog geen reactie of gekozen instructeur.`,
+              description: `${searchingJobCount} ${searchingJobCount === 1 ? "opdracht heeft" : "opdrachten hebben"} nog een les zonder gekozen of bevestigde instructeur.`,
               href: "/organisatie/opdrachten",
             },
           ]
@@ -264,7 +255,7 @@ export default async function DashboardPage({
                 title: "Nog iemand vinden",
                 text: `${searchingJobCount} ${
                   searchingJobCount === 1 ? "open opdracht heeft" : "open opdrachten hebben"
-                } nog geen reactie of gekozen instructeur.`,
+                } nog een les zonder gekozen of bevestigde instructeur.`,
                 href: "/organisatie/opdrachten",
                 cta: "Bekijk open opdrachten",
               }
@@ -282,11 +273,12 @@ export default async function DashboardPage({
       <Page>
         <PageHeader
           actions={
-            <Link href="/organisatie/opdrachten/nieuw">
-              <Button className="w-full sm:w-auto">
-                <Plus className="h-4 w-4" />
-                Nieuwe opdracht
-              </Button>
+            <Link
+              href="/organisatie/opdrachten/nieuw"
+              className={cn(buttonVariants({}), "w-full sm:w-auto")}
+            >
+              <Plus className="h-4 w-4" />
+              Nieuwe opdracht
             </Link>
           }
           title={orgContext.organization.name}
@@ -307,11 +299,11 @@ export default async function DashboardPage({
         ) : null}
 
         <FocusCard
-          cta={primaryAction.cta}
-          href={primaryAction.href}
-          text={primaryAction.text}
-          title={primaryAction.title}
-        />
+        cta={primaryAction.cta}
+        href={primaryAction.href}
+        text={primaryAction.text}
+        title={primaryAction.title}
+      />
 
         <div className="grid grid-cols-3 gap-2 sm:gap-3">
           <StatTile
@@ -350,16 +342,8 @@ export default async function DashboardPage({
             {urgentJobs.length > 0 ? (
               <PanelList>
                 {urgentJobs.slice(0, 5).map((job) => {
-                  const workflowState = pendingConfirmationJobIds.has(job.id)
-                    ? ("planned" as const)
-                    : pendingApplicationJobIds.has(job.id)
-                      ? ("action_required" as const)
-                      : ("searching" as const);
-                  const workflowLabel = pendingConfirmationJobIds.has(job.id)
-                    ? "Wacht op bevestiging"
-                    : pendingApplicationJobIds.has(job.id)
-                      ? "Reacties binnen"
-                      : "Nog zoeken";
+                  const workflowState = workflowByJob.get(job.id)!.state;
+                  const workflowLabel = jobStatusIndicatorLabels[workflowState];
 
                   return (
                     <Link
@@ -414,15 +398,15 @@ export default async function DashboardPage({
   }
 
   // Instructeur
-  const today = new Date().toISOString().slice(0, 10);
   const [
     subscriptionResult,
     applicationsResult,
     invitationsResult,
     pendingConfirmationsResult,
     pendingSegmentConfirmationsResult,
-    confirmedJobsResult,
+    confirmedEvents,
     vogResult,
+    validVogResult,
     instructorProfileResult,
     pendingReviewResult,
   ] = await Promise.all([
@@ -433,38 +417,37 @@ export default async function DashboardPage({
       .maybeSingle(),
     supabase
       .from("job_applications")
-      .select("id", { count: "exact", head: true })
+      .select("id, job:jobs!inner(status)", { count: "exact", head: true })
+      .eq("job.status", "open")
       .eq("instructor_id", profile.id)
       .eq("status", "pending"),
     supabase
       .from("job_invitations")
-      .select("id", { count: "exact", head: true })
+      .select("id, job:jobs!inner(status)", { count: "exact", head: true })
+      .eq("job.status", "open")
       .eq("instructor_id", profile.id)
       .eq("status", "pending"),
     supabase
       .from("job_confirmations")
-      .select("job_id")
+      .select("job_id, job:jobs!inner(status)")
+      .eq("job.status", "open")
       .eq("instructor_id", profile.id)
       .not("organization_agreed_at", "is", null)
       .is("instructor_agreed_at", null)
       .is("confirmed_at", null),
     supabase
       .from("job_segment_confirmations")
-      .select("job_id")
+      .select("job_id, job:jobs!inner(status)")
+      .eq("job.status", "open")
       .eq("instructor_id", profile.id)
       .not("organization_agreed_at", "is", null)
       .is("instructor_agreed_at", null)
       .is("confirmed_at", null)
       .is("cancelled_at", null),
-    supabase
-      .from("job_confirmations")
-      .select(
-        "job_id, job:jobs!inner(id, title, starts_on, start_time, status)",
-      )
-      .eq("instructor_id", profile.id)
-      .not("confirmed_at", "is", null)
-      .eq("job.status", "confirmed")
-      .gte("job.starts_on", today),
+    sportMatchAgendaProvider.listEvents({
+      role: "instructor",
+      userId: profile.id,
+    }),
     supabase
       .from("document_uploads")
       .select("status, expires_at, created_at")
@@ -473,6 +456,7 @@ export default async function DashboardPage({
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle(),
+    supabase.rpc("has_valid_vog", { target_user: profile.id }),
     supabase
       .from("instructor_profiles")
       .select(
@@ -499,33 +483,26 @@ export default async function DashboardPage({
   const firstPendingConfirmationJobId =
     Array.from(pendingConfirmationJobIds)[0] ?? null;
 
-  type ConfirmedDashboardJob = {
-    job_id: string;
-    job: {
-      id: string;
-      title: string;
-      starts_on: string;
-      start_time: string;
-      status: string;
-    } | null;
-  };
-
-  const upcomingConfirmedJobs =
-    (confirmedJobsResult.data as unknown as ConfirmedDashboardJob[] | null) ?? [];
-  const nextConfirmedJob = upcomingConfirmedJobs
-    .filter((row) => row.job)
-    .sort((left, right) =>
-      `${left.job!.starts_on}T${left.job!.start_time}`.localeCompare(
-        `${right.job!.starts_on}T${right.job!.start_time}`,
-      ),
-    )[0]?.job ?? null;
+  const now = new Date();
+  const nextEvent = confirmedEvents.find(
+    (event) =>
+      event.state === "confirmed" &&
+      (amsterdamDateTimeToInstant(event.date, event.endTime)?.getTime() ?? 0) >
+        now.getTime(),
+  );
+  const nextConfirmedJob = nextEvent
+    ? {
+        id: nextEvent.jobId,
+        title: nextEvent.title,
+        starts_on: nextEvent.date,
+        start_time: nextEvent.startTime,
+      }
+    : null;
 
   const latestVog = vogResult.data as
     | { status: string; expires_at: string | null; created_at: string }
     | null;
-  const vogValid =
-    latestVog?.status === "approved" &&
-    (!latestVog.expires_at || latestVog.expires_at >= today);
+  const vogValid = validVogResult.data === true;
 
   const instructorDetails = instructorProfileResult.data as
     | {

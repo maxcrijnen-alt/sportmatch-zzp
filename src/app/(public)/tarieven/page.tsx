@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Check } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -106,9 +106,10 @@ export default function TarievenPage() {
       </p>
 
       <div className="mt-10">
-        <Link href="/registreren">
-          <Button size="lg">Start je gratis proefperiode</Button>
-        </Link>
+        <Link
+          href="/registreren"
+          className={buttonVariants({ size: "lg" })}
+        >Start je gratis proefperiode</Link>
       </div>
     </div>
   );

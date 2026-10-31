@@ -123,6 +123,10 @@ values
    'Spoed: spinning les vanavond', 'Inval nodig voor de avondles.',
    current_date + 1, '19:00', '20:00', 'hourly', 5000);
 
+-- This fixture explicitly permits the counteroffer exercised below.
+update public.jobs set pay_is_negotiable = true
+where id = '30000000-0000-0000-0000-000000000001';
+
 -- ===== Instructeur ziet match en reageert =====
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000001', false);
 select set_config('request.jwt.claim.email', 'instructeur@test.nl', false);

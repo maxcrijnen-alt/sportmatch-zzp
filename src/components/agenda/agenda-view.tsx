@@ -11,7 +11,6 @@ import {
   format,
   isSameDay,
   isSameMonth,
-  isToday,
   isWeekend,
   parseISO,
   startOfMonth,
@@ -32,7 +31,8 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { JobStatusIndicator } from "@/components/jobs/job-status-indicator";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
+import { dateInAmsterdam } from "@/lib/datetime/amsterdam";
 import { cn } from "@/lib/utils";
 import type { AgendaEvent, AgendaEventState } from "@/lib/agenda/types";
 import type { UserRole } from "@/types/database";
@@ -53,6 +53,7 @@ const legend: { state: AgendaEventState; label: string }[] = [
   { state: "action_required", label: "Reacties" },
   { state: "planned", label: "Bevestiging loopt" },
   { state: "confirmed", label: "Bevestigd" },
+  { state: "closed", label: "Gesloten" },
 ];
 
 const time = (value: string) => value.slice(0, 5);
@@ -216,7 +217,9 @@ export function AgendaView({
   const [view, setView] = useState<AgendaViewMode>(defaultView);
   const [cursor, setCursor] = useState(() => {
     const highlighted = events.find((event) => event.jobId === highlightedJobId);
-    return highlighted ? parseISO(highlighted.date) : new Date();
+    return highlighted
+      ? parseISO(highlighted.date)
+      : parseISO(dateInAmsterdam(new Date()));
   });
 
   const sortedEvents = useMemo(
@@ -285,7 +288,7 @@ export function AgendaView({
               </button>
               <button
                 className="h-9 border-x border-border px-3 text-[13px] font-medium transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
-                onClick={() => setCursor(new Date())}
+                onClick={() => setCursor(parseISO(dateInAmsterdam(new Date())))}
                 type="button"
               >
                 Vandaag
@@ -330,10 +333,11 @@ export function AgendaView({
                 </button>
               ))}
             </div>
-            <a href={exportHref}>
-              <Button size="sm" variant="outline">
-                <Download className="h-4 w-4" /> Exporteer .ics
-              </Button>
+            <a
+              className={buttonVariants({ size: "sm", variant: "outline" })}
+              href={exportHref}
+            >
+              <Download className="h-4 w-4" /> Exporteer .ics
             </a>
           </div>
         </div>
@@ -365,7 +369,8 @@ export function AgendaView({
                     <p
                       className={cn(
                         "text-sm font-semibold capitalize",
-                        isToday(day) && "text-primary",
+                        format(day, "yyyy-MM-dd") ===
+                          dateInAmsterdam(new Date()) && "text-primary",
                       )}
                     >
                       {format(day, "EEEE", { locale: nl })}
@@ -389,8 +394,8 @@ export function AgendaView({
             })}
           </div>
         ) : (
-          <EmptyDay />
-        )
+            <EmptyDay />
+          )
       ) : null}
 
       {view === "month" ? (
@@ -423,7 +428,9 @@ export function AgendaView({
                     className={cn(
                       "mb-1 flex h-7 w-7 items-center justify-center rounded-md text-xs font-medium tabular-nums transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40",
                       !inMonth && "text-muted-foreground/70",
-                      isToday(day) && "bg-primary text-primary-foreground hover:bg-primary-hover",
+                      format(day, "yyyy-MM-dd") ===
+                        dateInAmsterdam(new Date()) &&
+                        "bg-primary text-primary-foreground hover:bg-primary-hover",
                     )}
                     onClick={() => openDay(day)}
                     type="button"
@@ -479,7 +486,8 @@ export function AgendaView({
         <div className="overflow-hidden rounded-xl border border-border bg-card shadow-card md:grid md:grid-cols-7">
           {weekDays.map((day) => {
             const dayEvents = eventsForDay(day);
-            const today = isToday(day);
+            const today =
+              format(day, "yyyy-MM-dd") === dateInAmsterdam(new Date());
             return (
               <div
                 className={cn(

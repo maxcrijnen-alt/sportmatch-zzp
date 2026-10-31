@@ -5,7 +5,7 @@ import {
   CreateJobForm,
   type JobFormDefaults,
 } from "@/components/jobs/create-job-form";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Card,
@@ -203,9 +203,11 @@ export default async function NieuweOpdrachtPage({
               </CardHeader>
               <CardContent className="flex flex-wrap gap-2 pt-0">
                 {templates.map((template) => (
-                  <Link href={`/organisatie/opdrachten/nieuw?template=${template.id}`} key={template.id}>
-                    <Button size="sm" variant="outline">{template.name}</Button>
-                  </Link>
+                  <Link
+                    href={`/organisatie/opdrachten/nieuw?template=${template.id}`}
+                    key={template.id}
+                    className={buttonVariants({ size: "sm", variant: "outline" })}
+                  >{template.name}</Link>
                 ))}
               </CardContent>
             </Card>

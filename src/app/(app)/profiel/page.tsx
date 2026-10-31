@@ -1,3 +1,4 @@
+import { cn } from "@/lib/utils";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -6,7 +7,7 @@ import { AvatarUpload } from "@/components/profile/avatar-upload";
 import { InstructorDetailsForm } from "@/components/profile/instructor-details-form";
 import { ProfileForm } from "@/components/profile/profile-form";
 import { Avatar } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -112,10 +113,11 @@ export default async function ProfielPage() {
       <PageHeader
         actions={
           profile.role === "instructor" ? (
-            <Link href="/opdrachten">
-              <Button className="w-full sm:w-auto" variant="outline">
-                Passende opdrachten
-              </Button>
+            <Link
+              href="/opdrachten"
+              className={cn(buttonVariants({ variant: "outline" }), "w-full sm:w-auto")}
+            >
+              Passende opdrachten
             </Link>
           ) : null
         }
@@ -136,11 +138,12 @@ export default async function ProfielPage() {
               <p className="truncate text-base font-semibold">{profile.full_name}</p>
             </div>
           </div>
-          <Link href={`/organisatie/kandidaten/${profile.id}`}>
-            <Button className="w-full sm:w-auto">
-              <Eye className="h-4 w-4" />
-              Bekijk zoals sportscholen
-            </Button>
+          <Link
+            href={`/organisatie/kandidaten/${profile.id}`}
+            className={cn(buttonVariants(), "w-full sm:w-auto")}
+          >
+            <Eye className="h-4 w-4" />
+            Bekijk zoals sportscholen
           </Link>
         </section>
       ) : null}
