@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { AgendaView } from "@/components/agenda/agenda-view";
+import { Page, PageHeader } from "@/components/ui/page";
 import { getSessionProfile } from "@/lib/auth/session";
 import { sportMatchAgendaProvider } from "@/lib/agenda/sportmatch-provider";
 import { getOrgContext } from "@/lib/org/context";
@@ -44,25 +45,13 @@ export default async function AgendaPage({ searchParams }: AgendaPageProps) {
     locationId,
     includeOpenPlanning: profile.role === "organization",
   });
-  const selectedLocation = orgContext?.locations.find(
-    (location) => location.id === locationId,
-  );
   const exportHref = locationId
     ? `/agenda/export?location=${encodeURIComponent(locationId)}`
     : "/agenda/export";
 
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-4 px-4 py-8">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Agenda</h1>
-        <p className="text-sm text-muted-foreground">
-          {profile.role === "organization"
-            ? selectedLocation
-              ? `Openstaande, te beoordelen en bevestigde lessen voor ${selectedLocation.name}.`
-              : "Openstaande, te beoordelen en bevestigde lessen voor alle vestigingen."
-            : "Al je voorlopige, bevestigde en afgeronde opdrachten in één overzicht."}
-        </p>
-      </div>
+    <Page width="wide">
+      <PageHeader title="Agenda" />
 
       <AgendaView
         events={events}
@@ -70,6 +59,6 @@ export default async function AgendaPage({ searchParams }: AgendaPageProps) {
         highlightedJobId={params.job}
         role={profile.role}
       />
-    </div>
+    </Page>
   );
 }

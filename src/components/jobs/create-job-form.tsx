@@ -325,7 +325,7 @@ export function CreateJobForm({
       </div>
 
       {jobType === "recurring" ? (
-        <div className="grid gap-3 rounded-lg border border-border p-3 sm:grid-cols-3">
+        <div className="grid gap-3 rounded-xl border border-border bg-subtle p-4 sm:grid-cols-3">
           <div className="space-y-2 sm:col-span-3">
             <Label htmlFor="recurrenceNote">Omschrijving herhaling</Label>
             <Input defaultValue={defaults.recurrenceNote} id="recurrenceNote" name="recurrenceNote" placeholder="Bijv. iedere dinsdagavond" required />
@@ -345,7 +345,7 @@ export function CreateJobForm({
         </div>
       ) : null}
 
-      <div className="space-y-3 rounded-lg border border-border p-3">
+      <div className="space-y-3 rounded-xl border border-border bg-subtle p-4">
         <div className="grid gap-3 sm:grid-cols-3">
           <div className="space-y-1.5">
             <Label htmlFor="payType">Vergoeding</Label>
@@ -417,7 +417,7 @@ export function CreateJobForm({
         </div>
       </div>
 
-      <div className="space-y-3 rounded-lg border border-border p-3">
+      <div className="space-y-3 rounded-xl border border-border bg-subtle p-4">
         <label className="flex items-center gap-2 font-medium">
           <input checked={isBlock} onChange={(event) => setIsBlock(event.target.checked)} type="checkbox" />
           Meerdere aansluitende lessen plaatsen
@@ -502,7 +502,7 @@ export function CreateJobForm({
         ) : null}
       </div>
 
-      <div className="rounded-lg border border-border p-3">
+      <div className="rounded-xl border border-border bg-subtle p-4">
         <label className="flex items-center gap-2 text-sm font-medium">
           <input name="saveAsTemplate" type="checkbox" />
           Deze keuzes ook als sjabloon opslaan

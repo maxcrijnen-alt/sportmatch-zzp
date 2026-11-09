@@ -33,7 +33,7 @@ export function NoShowForm({ jobId }: { jobId: string }) {
   }
 
   return (
-    <form action={formAction} className="space-y-3 rounded-lg border border-border p-4">
+    <form action={formAction} className="w-full space-y-3 rounded-xl border border-border bg-card p-4 shadow-card">
       {state.error ? (
         <Alert variant="destructive">
           <AlertDescription>{state.error}</AlertDescription>

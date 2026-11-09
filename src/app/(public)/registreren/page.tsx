@@ -53,25 +53,23 @@ export default async function RegistrerenPage({
   const defaultRole = rol === "organisatie" ? "organization" : "instructor";
 
   return (
-    <div className="mx-auto grid w-full max-w-5xl gap-8 px-4 py-12 lg:grid-cols-[0.95fr_1.05fr] lg:items-start lg:py-16">
+    <div className="mx-auto grid w-full max-w-6xl gap-10 px-4 py-12 sm:px-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] lg:items-start lg:py-20">
       <section className="space-y-6">
         <div className="space-y-3">
-          <p className="text-sm font-medium text-primary">30 dagen gratis starten</p>
-          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-primary">
+            30 dagen gratis starten
+          </p>
+          <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
             Kies hoe je SportMatch wilt gebruiken.
           </h1>
-          <p className="text-muted-foreground">
-            Je kunt eerst met een demo-account rondkijken. Wil je daarna verder,
-            dan maak je een kort account aan en rond je gericht je profiel af.
-          </p>
         </div>
 
         <Link
-          className="group block rounded-lg border border-primary/30 bg-primary/5 p-4 transition-colors hover:bg-primary/10"
+          className="group block rounded-xl border border-primary/20 bg-primary-soft p-4 transition-colors hover:border-primary/40"
           href="/demo"
         >
           <div className="flex items-start gap-3">
-            <div className="rounded-md bg-primary/10 p-2 text-primary">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-card text-primary shadow-xs">
               <PlayCircle className="h-5 w-5" />
             </div>
             <div className="min-w-0 flex-1">
@@ -91,7 +89,7 @@ export default async function RegistrerenPage({
           {roleCards.map((card) => {
             return (
               <Link
-                className="group rounded-lg border border-border bg-card p-4 transition-colors hover:border-primary hover:bg-primary/5"
+                className="group rounded-xl border border-border bg-card p-4 shadow-card transition-[border-color,box-shadow] hover:border-border-strong hover:shadow-raised"
                 href={card.href}
                 key={card.title}
               >
@@ -112,7 +110,7 @@ export default async function RegistrerenPage({
           })}
         </div>
 
-        <div className="rounded-lg border border-border bg-muted/40 p-4">
+        <div className="rounded-xl border border-border bg-card p-4">
           <p className="font-medium">Wat gebeurt er als je echt start?</p>
           <div className="mt-3 space-y-2">
             {onboardingSteps.map((step) => (
@@ -125,14 +123,14 @@ export default async function RegistrerenPage({
         </div>
       </section>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-xl">Gratis account aanmaken</CardTitle>
+      <Card className="shadow-raised lg:sticky lg:top-24">
+        <CardHeader className="border-b border-border">
+          <CardTitle className="text-lg">Gratis account aanmaken</CardTitle>
           <CardDescription>
             Kies je rol, vul je basisgegevens in en rond daarna je profiel af.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-5">
           <RegisterForm defaultRole={defaultRole} />
           <p className="mt-4 text-sm text-muted-foreground">
             Eerst kijken?{" "}

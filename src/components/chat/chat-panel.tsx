@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { SendHorizonal } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { fieldClassName } from "@/components/ui/input";
 import { sendChatMessageAction } from "@/lib/chat/actions";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
@@ -84,8 +85,8 @@ export function ChatPanel({
   };
 
   return (
-    <div className="flex h-[calc(100vh-16rem)] flex-col rounded-lg border border-border bg-card lg:h-[calc(100vh-14rem)]">
-      <div className="flex-1 space-y-2.5 overflow-y-auto p-3">
+    <div className="flex h-[calc(100vh-16rem)] flex-col overflow-hidden rounded-xl border border-border bg-card shadow-card lg:h-[calc(100vh-14rem)]">
+      <div className="flex-1 space-y-2.5 overflow-y-auto bg-subtle/60 p-4">
         {messages.length === 0 ? (
           <p className="py-8 text-center text-sm text-muted-foreground">
             Nog geen berichten.
@@ -113,7 +114,7 @@ export function ChatPanel({
                   "max-w-[78%] rounded-2xl px-3 py-2 text-sm",
                   message.sender_id === currentUserId
                     ? "rounded-br-sm bg-primary text-primary-foreground"
-                    : "rounded-bl-sm bg-muted",
+                    : "rounded-bl-sm border border-border bg-card",
                 )}
               >
                 <p className="whitespace-pre-line break-words">{message.body}</p>
@@ -137,7 +138,7 @@ export function ChatPanel({
         <div ref={bottomRef} />
       </div>
 
-      <div className="border-t border-border p-2.5">
+      <div className="border-t border-border bg-card p-3">
         {error ? (
           <Alert className="mb-2" variant="destructive">
             <AlertDescription>{error}</AlertDescription>
@@ -150,7 +151,7 @@ export function ChatPanel({
         ) : (
           <div className="flex items-end gap-2">
             <textarea
-              className="max-h-32 min-h-[2.25rem] flex-1 resize-none rounded-md border border-input bg-background px-3 py-1.5 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className={cn(fieldClassName, "max-h-32 min-h-10 flex-1 resize-none py-2")}
               onChange={(event) => setBody(event.target.value)}
               onKeyDown={(event) => {
                 if (event.key === "Enter" && !event.shiftKey) {
@@ -166,7 +167,7 @@ export function ChatPanel({
               aria-label="Versturen"
               disabled={isPending || body.trim().length === 0}
               onClick={send}
-              className="h-9 w-9"
+              className="h-10 w-10"
               size="icon"
               type="button"
             >

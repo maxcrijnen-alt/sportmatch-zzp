@@ -60,7 +60,7 @@ export function ApplyForm({
               : "Dit blok moet volledig door één instructeur worden overgenomen."}
           </p>
           {segments.map((segment) => (
-            <label className="flex items-center gap-3 rounded-md border border-border p-3 text-sm" key={segment.id}>
+            <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-border bg-card p-3 text-sm transition-colors hover:border-border-strong has-[:checked]:border-primary/40 has-[:checked]:bg-primary-soft" key={segment.id}>
               <input
                 checked={selectedSegments.includes(segment.id)}
                 disabled={!partialAllowed}

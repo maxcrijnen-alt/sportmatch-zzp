@@ -1,11 +1,13 @@
+import { cn } from "@/lib/utils";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Eye } from "lucide-react";
+import { Dumbbell, Eye, UserRound } from "lucide-react";
 import { AvatarUpload } from "@/components/profile/avatar-upload";
 import { InstructorDetailsForm } from "@/components/profile/instructor-details-form";
 import { ProfileForm } from "@/components/profile/profile-form";
-import { Button } from "@/components/ui/button";
+import { Avatar } from "@/components/ui/avatar";
+import { buttonVariants } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -13,6 +15,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Page, PageHeader } from "@/components/ui/page";
 import { getSessionProfile } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 import type {
@@ -77,82 +80,116 @@ export default async function ProfielPage() {
 
     if (details) {
       instructorSection = (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Instructeursgegevens</CardTitle>
-            <CardDescription>
-              Tarief, reisafstand, statussen en specialisaties.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <InstructorDetailsForm
-              details={details}
-              lessonTypes={(lessonTypesResult.data as LessonType[]) ?? []}
-              selectedLessonTypeIds={
-                instructorLessonTypesResult.data?.map(
-                  (row) => row.lesson_type_id as string,
-                ) ?? []
-              }
-              selectedSportIds={
-                instructorSportsResult.data?.map((row) => row.sport_id as string) ??
-                []
-              }
-              selectedStatuses={
-                (statusesResult.data?.map((row) => row.status) ??
-                  []) as InstructorStatus[]
-              }
-              sports={(sportsResult.data as Sport[]) ?? []}
-            />
-          </CardContent>
-        </Card>
+        <ProfileSection
+          description="Tarief, reisafstand, statussen en specialisaties."
+          icon={Dumbbell}
+          title="Instructeursgegevens"
+        >
+          <InstructorDetailsForm
+            details={details}
+            lessonTypes={(lessonTypesResult.data as LessonType[]) ?? []}
+            selectedLessonTypeIds={
+              instructorLessonTypesResult.data?.map(
+                (row) => row.lesson_type_id as string,
+              ) ?? []
+            }
+            selectedSportIds={
+              instructorSportsResult.data?.map((row) => row.sport_id as string) ??
+              []
+            }
+            selectedStatuses={
+              (statusesResult.data?.map((row) => row.status) ??
+                []) as InstructorStatus[]
+            }
+            sports={(sportsResult.data as Sport[]) ?? []}
+          />
+        </ProfileSection>
       );
     }
   }
 
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-4 px-4 py-8">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Profiel</h1>
-          <p className="text-sm text-muted-foreground">
-            Beheer je gegevens en verbeter wat anderen van je profiel zien.
-          </p>
-        </div>
-        {profile.role === "instructor" ? (
-          <div className="flex flex-wrap gap-2">
-            <Link href={`/organisatie/kandidaten/${profile.id}`}>
-              <Button size="sm">
-                <Eye className="h-4 w-4" />
-                Bekijk zoals sportscholen
-              </Button>
+    <Page width="medium">
+      <PageHeader
+        actions={
+          profile.role === "instructor" ? (
+            <Link
+              href="/opdrachten"
+              className={cn(buttonVariants({ variant: "outline" }), "w-full sm:w-auto")}
+            >
+              Passende opdrachten
             </Link>
-            <Link href="/opdrachten">
-              <Button size="sm" variant="outline">
-                Passende opdrachten
-              </Button>
-            </Link>
-          </div>
-        ) : null}
-      </div>
+          ) : null
+        }
+        title="Profiel"
+      />
 
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">Persoonlijke gegevens</CardTitle>
-          <CardDescription>
-            Contactgegevens worden pas gedeeld na een bevestigde opdracht.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4 pt-0">
-          <AvatarUpload
-            avatarUrl={profile.avatar_url}
-            name={profile.full_name}
-            userId={profile.id}
-          />
-          <ProfileForm cities={(cities as City[]) ?? []} profile={profile} />
-        </CardContent>
-      </Card>
+      {profile.role === "instructor" ? (
+        <section
+          aria-label="Publieke profielweergave"
+          className="flex flex-col gap-4 rounded-xl border border-primary/20 bg-card p-4 shadow-card sm:flex-row sm:items-center sm:justify-between sm:p-5"
+        >
+          <div className="flex min-w-0 items-center gap-3">
+            <Avatar name={profile.full_name} size="lg" src={profile.avatar_url} />
+            <div className="min-w-0">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-primary">
+                Publieke profielweergave
+              </p>
+              <p className="truncate text-base font-semibold">{profile.full_name}</p>
+            </div>
+          </div>
+          <Link
+            href={`/organisatie/kandidaten/${profile.id}`}
+            className={cn(buttonVariants(), "w-full sm:w-auto")}
+          >
+            <Eye className="h-4 w-4" />
+            Bekijk zoals sportscholen
+          </Link>
+        </section>
+      ) : null}
+
+      <ProfileSection
+        description="Contactgegevens worden pas gedeeld na een bevestigde opdracht."
+        icon={UserRound}
+        title="Persoonlijke gegevens"
+      >
+        <AvatarUpload
+          avatarUrl={profile.avatar_url}
+          name={profile.full_name}
+          userId={profile.id}
+        />
+        <div className="h-px bg-border" />
+        <ProfileForm cities={(cities as City[]) ?? []} profile={profile} />
+      </ProfileSection>
 
       {instructorSection}
-    </div>
+    </Page>
+  );
+}
+
+function ProfileSection({
+  title,
+  description,
+  icon: Icon,
+  children,
+}: {
+  title: string;
+  description?: string;
+  icon: typeof UserRound;
+  children: React.ReactNode;
+}) {
+  return (
+    <Card>
+      <CardHeader className="flex-row items-start gap-3 border-b border-border">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+          <Icon className="h-4 w-4" />
+        </span>
+        <div className="min-w-0 space-y-0.5">
+          <CardTitle>{title}</CardTitle>
+          {description ? <CardDescription>{description}</CardDescription> : null}
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-5 pt-5">{children}</CardContent>
+    </Card>
   );
 }

@@ -1,15 +1,17 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { ArrowLeft, Star } from "lucide-react";
+import { Star } from "lucide-react";
 import { ReviewFilters } from "@/components/reviews/review-filters";
+import { ReviewItem } from "@/components/reviews/review-item";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+  Page,
+  PageHeader,
+  Panel,
+  PanelEmpty,
+  PanelHeader,
+  PanelList,
+} from "@/components/ui/page";
+import { StatTile } from "@/components/ui/stat-tile";
 import { getSessionProfile } from "@/lib/auth/session";
 import { formatDate } from "@/lib/labels";
 import { filterAndSortReviews, parseReviewFilters } from "@/lib/reviews/filter";
@@ -72,83 +74,55 @@ export default async function OrganizationReviewsPage({
       : null;
 
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-6 px-4 py-8">
-      <Link
-        className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground"
-        href="/opdrachten"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Terug naar opdrachten
-      </Link>
+    <Page width="narrow">
+      <PageHeader
+        back={{ href: "/opdrachten", label: "Terug naar opdrachten" }}
+        title={`Reviews van ${organization.name as string}`}
+      />
 
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">
-          Reviews van {organization.name as string}
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Vrijgegeven beoordelingen van instructeurs na afgeronde opdrachten.
-        </p>
+      <div className="grid grid-cols-2 gap-3">
+        <StatTile
+          icon={Star}
+          label="Gemiddelde score"
+          tone="warning"
+          value={average ?? "—"}
+        />
+        <StatTile label="Ontvangen beoordelingen" value={reviews.length} />
       </div>
 
-      <div className="grid gap-2 sm:grid-cols-2">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Gemiddelde score</CardDescription>
-            <CardTitle className="flex items-center gap-1 text-2xl">
-              <Star className="h-5 w-5 fill-warning text-warning" />
-              {average ?? "—"}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Ontvangen beoordelingen</CardDescription>
-            <CardTitle className="text-2xl">{reviews.length}</CardTitle>
-          </CardHeader>
-        </Card>
-      </div>
-
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">Ontvangen reviews</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3 pt-0">
+      <Panel>
+        <PanelHeader
+          count={reviews.length}
+          description="Vrijgegeven beoordelingen van instructeurs na afgeronde opdrachten."
+          title="Ontvangen reviews"
+        />
+        <div className="border-b border-border bg-subtle px-4 py-3 sm:px-5">
           <ReviewFilters
             resetHref={`/organisaties/${id}/reviews`}
             sort={reviewSort}
             stars={reviewStars}
           />
-          {visibleReviews.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              {reviews.length === 0
-                ? "Deze sportschool heeft nog geen vrijgegeven reviews."
-                : "Geen reviews gevonden met deze filters."}
-            </p>
-          ) : (
-            visibleReviews.map((review) => (
-              <div
-                className="rounded-lg border border-border p-3"
+        </div>
+        {visibleReviews.length === 0 ? (
+          <PanelEmpty>
+            {reviews.length === 0
+              ? "Deze sportschool heeft nog geen vrijgegeven reviews."
+              : "Geen reviews gevonden met deze filters."}
+          </PanelEmpty>
+        ) : (
+          <PanelList>
+            {visibleReviews.map((review) => (
+              <ReviewItem
+                comment={review.comment}
+                date={formatDate(review.created_at)}
                 key={review.id}
-              >
-                <div className="min-w-0">
-                  <span className="text-warning">
-                    {"★".repeat(review.rating)}
-                    <span className="text-muted-foreground/40">
-                      {"★".repeat(5 - review.rating)}
-                    </span>
-                  </span>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {review.job?.title} · {formatDate(review.created_at)}
-                  </p>
-                  {review.comment ? (
-                    <p className="mt-2 text-sm leading-6">“{review.comment}”</p>
-                  ) : null}
-                </div>
-              </div>
-            ))
-          )}
-        </CardContent>
-      </Card>
-    </div>
+                rating={review.rating}
+                subtitle={review.job?.title}
+              />
+            ))}
+          </PanelList>
+        )}
+      </Panel>
+    </Page>
   );
 }

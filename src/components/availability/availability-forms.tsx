@@ -22,7 +22,7 @@ export function AddRuleForm() {
   );
 
   return (
-    <form action={formAction} className="space-y-3">
+    <form action={formAction} className="space-y-3 border-t border-border pt-4">
       {state.error ? (
         <Alert variant="destructive">
           <AlertDescription>{state.error}</AlertDescription>
@@ -64,7 +64,7 @@ export function AddExceptionForm() {
   );
 
   return (
-    <form action={formAction} className="space-y-3">
+    <form action={formAction} className="space-y-3 border-t border-border pt-4">
       {state.error ? (
         <Alert variant="destructive">
           <AlertDescription>{state.error}</AlertDescription>

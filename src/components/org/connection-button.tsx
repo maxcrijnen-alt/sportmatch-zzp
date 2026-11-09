@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { UserCheck, UserPlus } from "lucide-react";
+import { BookmarkCheck, BookmarkPlus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -36,16 +36,21 @@ export function ConnectionButton({
         type="hidden"
         value={connected ? "false" : "true"}
       />
-      {expanded && connected ? <Badge variant="muted">In poule</Badge> : null}
+      {expanded && connected ? <Badge variant="default">In poule</Badge> : null}
       <Button
         aria-label={connected ? "Verwijderen uit poule" : "Toevoegen aan poule"}
+        className={connected ? "border border-primary/20" : undefined}
         disabled={isPending}
         size="sm"
         title={connected ? "Verwijderen uit poule" : "Toevoegen aan poule"}
         type="submit"
-        variant={connected ? "secondary" : "outline"}
+        variant={connected ? "soft" : "outline"}
       >
-        {connected ? <UserCheck className="h-3.5 w-3.5" /> : <UserPlus className="h-3.5 w-3.5" />}
+        {connected ? (
+          <BookmarkCheck className="h-3.5 w-3.5" />
+        ) : (
+          <BookmarkPlus className="h-3.5 w-3.5" />
+        )}
         {isPending
           ? "Opslaan…"
           : expanded

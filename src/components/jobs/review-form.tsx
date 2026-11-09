@@ -50,6 +50,7 @@ export function ReviewForm({
         {[1, 2, 3, 4, 5].map((value) => (
           <button
             aria-label={`${value} sterren`}
+            className="rounded-md p-0.5 transition-transform hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
             key={value}
             onClick={() => setRating(value)}
             type="button"
@@ -58,8 +59,8 @@ export function ReviewForm({
               className={cn(
                 "h-8 w-8 transition-colors",
                 value <= rating
-                  ? "fill-warning text-warning"
-                  : "text-muted-foreground/40 hover:text-warning",
+                  ? "fill-amber-400 text-amber-400"
+                  : "fill-muted text-border-strong hover:text-amber-400",
               )}
             />
           </button>
@@ -83,7 +84,7 @@ export function ReviewForm({
       </div>
 
       {rating > 0 && rating <= 2 ? (
-        <div className="space-y-3 rounded-lg border border-warning/40 bg-warning/10 p-3">
+        <div className="space-y-3 rounded-xl border border-warning/30 bg-warning-soft p-3">
           <label className="flex items-center gap-2 text-sm font-medium">
             <input name="alsoReport" type="checkbox" />
             Ik wil dit ook melden bij SportMatch

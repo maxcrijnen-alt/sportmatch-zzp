@@ -3,7 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -11,6 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Page, PageHeader } from "@/components/ui/page";
 import { getSessionProfile } from "@/lib/auth/session";
 import { BRAND } from "@/lib/branding";
 
@@ -26,13 +27,8 @@ export default async function InstellingenPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-4 px-4 py-8">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Instellingen</h1>
-        <p className="text-sm text-muted-foreground">
-          Account- en notificatie-instellingen.
-        </p>
-      </div>
+    <Page width="narrow">
+      <PageHeader title="Instellingen" />
 
       <Card>
         <CardHeader className="pb-3">
@@ -46,9 +42,10 @@ export default async function InstellingenPage() {
                 Updates over reacties, uitnodigingen, bevestigingen en berichten.
               </p>
             </div>
-            <Link href="/meldingen">
-              <Button size="sm" variant="outline">Open meldingen</Button>
-            </Link>
+            <Link
+              href="/meldingen"
+              className={buttonVariants({ size: "sm", variant: "outline" })}
+            >Open meldingen</Link>
           </div>
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border py-3">
             <div>
@@ -57,9 +54,10 @@ export default async function InstellingenPage() {
                 Bekijk of wijzig je abonnement en proefperiode.
               </p>
             </div>
-            <Link href="/abonnement">
-              <Button size="sm" variant="outline">Open abonnement</Button>
-            </Link>
+            <Link
+              href="/abonnement"
+              className={buttonVariants({ size: "sm", variant: "outline" })}
+            >Open abonnement</Link>
           </div>
         </CardContent>
       </Card>
@@ -79,7 +77,10 @@ export default async function InstellingenPage() {
             </div>
             <div className="flex items-center gap-2">
               <Badge variant="success">Actief</Badge>
-              <Link href="/agenda"><Button size="sm" variant="outline">Openen</Button></Link>
+              <Link
+                href="/agenda"
+                className={buttonVariants({ size: "sm", variant: "outline" })}
+              >Openen</Link>
             </div>
           </div>
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border py-3 first:border-t-0 first:pt-0">
@@ -89,7 +90,7 @@ export default async function InstellingenPage() {
             </div>
             <div className="flex items-center gap-2">
               <Badge variant="accent">Beschikbaar</Badge>
-              <a href="/agenda/export"><Button size="sm" variant="outline">ICS downloaden</Button></a>
+              <a className={buttonVariants({ size: "sm", variant: "outline" })} href="/agenda/export">ICS downloaden</a>
             </div>
           </div>
           {[
@@ -112,6 +113,6 @@ export default async function InstellingenPage() {
           naleving van wet- en regelgeving.
         </AlertDescription>
       </Alert>
-    </div>
+    </Page>
   );
 }

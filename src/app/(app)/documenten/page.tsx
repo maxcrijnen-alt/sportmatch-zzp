@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { BadgeCheck, FileText } from "lucide-react";
 import { DocumentStatusBadge } from "@/components/documents/document-status-badge";
 import { DocumentUploadForm } from "@/components/documents/document-upload-form";
+import { Page, PageHeader, Panel, PanelEmpty, PanelHeader } from "@/components/ui/page";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -52,14 +53,8 @@ export default async function DocumentenPage() {
   );
 
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-4 px-4 py-8">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Documenten</h1>
-        <p className="text-sm text-muted-foreground">
-          Upload je diploma&apos;s en certificaten. Na handmatige controle krijg
-          je badges die organisaties zien.
-        </p>
-      </div>
+    <Page width="narrow">
+      <PageHeader title="Documenten" />
 
       {approvedTypes.size > 0 ? (
         <div className="flex flex-wrap gap-1.5">
@@ -99,26 +94,21 @@ export default async function DocumentenPage() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader className="flex-row items-center justify-between space-y-0 pb-3">
-          <CardTitle className="text-base">Mijn documenten</CardTitle>
-          <span className="rounded-full border border-border px-2.5 py-1 text-xs font-semibold text-muted-foreground">
-            {documents.length}
-          </span>
-        </CardHeader>
-        <CardContent className="space-y-0 pt-0">
+      <Panel>
+        <PanelHeader count={documents.length} icon={FileText} title="Mijn documenten" />
+        <div>
           {documents.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              Nog geen documenten geüpload.
-            </p>
+            <PanelEmpty>Nog geen documenten geüpload.</PanelEmpty>
           ) : (
             documents.map((document) => (
               <div
-                className="flex flex-wrap items-center justify-between gap-3 border-t border-border py-3 first:border-t-0 first:pt-0"
+                className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-4 py-3 first:border-t-0 sm:px-5"
                 key={document.id}
               >
                 <div className="flex min-w-0 items-center gap-3">
-                  <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+                    <FileText className="h-4 w-4" />
+                  </span>
                   <div className="min-w-0">
                     <p className="text-sm font-medium">
                       {documentTypeLabels[document.doc_type]}
@@ -140,8 +130,8 @@ export default async function DocumentenPage() {
               </div>
             ))
           )}
-        </CardContent>
-      </Card>
-    </div>
+        </div>
+      </Panel>
+    </Page>
   );
 }

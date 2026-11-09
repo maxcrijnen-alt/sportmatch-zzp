@@ -2,23 +2,30 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import {
+  ArrowLeft,
   Award,
   BriefcaseBusiness,
+  Cake,
+  Dumbbell,
   MapPin,
   ShieldCheck,
   Star,
+  UserRound,
 } from "lucide-react";
 import { ConnectionButton } from "@/components/org/connection-button";
+import { ReviewFilters } from "@/components/reviews/review-filters";
+import { ReviewItem } from "@/components/reviews/review-item";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { ReviewFilters } from "@/components/reviews/review-filters";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+  Page,
+  Panel,
+  PanelEmpty,
+  PanelHeader,
+  PanelList,
+} from "@/components/ui/page";
 import { getSessionProfile } from "@/lib/auth/session";
 import { formatDate } from "@/lib/labels";
 import { filterAndSortReviews, parseReviewFilters } from "@/lib/reviews/filter";
@@ -203,122 +210,137 @@ export default async function CandidateProfilePage({
     : `/organisatie/kandidaten${backQuery ? `?${backQuery}` : ""}`;
   const reviewResetHref = `/organisatie/kandidaten/${instructorId}${backQuery ? `?${backQuery}` : ""}#reviews`;
 
-  return (
-    <div className="mx-auto w-full max-w-4xl space-y-6 px-4 py-8">
-      <div>
-        <Link
-          className="text-sm font-medium text-primary hover:underline"
-          href={backHref}
-        >
-          {isOwnPreview ? "← Terug naar mijn profiel" : "← Terug naar kandidaten"}
-        </Link>
-      </div>
+  const sportNames = sportNamesResult.data ?? [];
+  const lessonNames = lessonNamesResult.data ?? [];
+  const qualificationNames = qualificationNamesResult.data ?? [];
 
-      <Card>
-        <CardContent className="p-5">
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
+  return (
+    <Page width="medium">
+      <Link
+        className="inline-flex items-center gap-1.5 rounded-md text-[13px] font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+        href={backHref}
+      >
+        <ArrowLeft className="h-3.5 w-3.5" />
+        {isOwnPreview ? "Terug naar mijn profiel" : "Terug naar kandidaten"}
+      </Link>
+
+      <Card className="overflow-hidden">
+        <div
+          aria-hidden="true"
+          className="h-24 bg-[radial-gradient(120%_140%_at_0%_0%,rgb(5_150_105/0.16),transparent_60%),linear-gradient(135deg,var(--primary-soft),var(--subtle))] sm:h-28"
+        />
+        <div className="px-5 pb-5 sm:px-6 sm:pb-6">
+          <div className="-mt-12 flex flex-col gap-4 sm:-mt-14 sm:flex-row sm:items-end sm:justify-between">
             <Avatar
-              className="h-20 w-20 text-xl"
+              className="h-24 w-24 text-2xl ring-4 ring-card sm:h-28 sm:w-28"
               name={candidate.full_name}
+              size="xl"
               src={candidate.avatar_url}
             />
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <h1 className="text-2xl font-bold tracking-tight">
-                    {candidate.full_name}
-                  </h1>
-                  <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
-                    {age != null ? <span>{age} jaar</span> : null}
-                    {cityName ? (
-                      <span className="inline-flex items-center gap-1.5">
-                        <MapPin className="h-4 w-4" />
-                        {cityName}
-                      </span>
-                    ) : null}
-                    <span className="inline-flex items-center gap-1.5">
-                      <BriefcaseBusiness className="h-4 w-4" />
-                      {details.years_experience ?? 0} jaar ervaring
-                    </span>
-                  </div>
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  {!isOwnPreview && orgContext && sessionProfile.role === "organization" ? (
-                    <ConnectionButton
-                      expanded
-                      initialConnected={isConnected}
-                      instructorId={instructorId}
-                      key={`${instructorId}-${isConnected}`}
-                    />
-                  ) : null}
-                  <Badge variant={hasValidVog ? "success" : "warning"}>
-                    <ShieldCheck className="mr-1 h-3.5 w-3.5" />
-                    {hasValidVog ? "VOG goedgekeurd" : "VOG niet goedgekeurd"}
-                  </Badge>
-                </div>
-              </div>
-
-              <div className="mt-4 grid gap-2 sm:grid-cols-3">
+            <div className="flex flex-wrap items-center gap-2 sm:pb-1">
+              {!isOwnPreview && orgContext && sessionProfile.role === "organization" ? (
+                <ConnectionButton
+                  expanded
+                  initialConnected={isConnected}
+                  instructorId={instructorId}
+                  key={`${instructorId}-${isConnected}`}
+                />
+              ) : null}
+              {!isOwnPreview && query.job ? (
                 <Link
-                  className="rounded-lg border border-border p-3 transition-colors hover:border-warning/60 hover:bg-warning/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                  href="#reviews"
-                >
-                  <p className="text-xs text-muted-foreground">Beoordeling</p>
-                  <p className="mt-1 flex items-center gap-1 text-base font-semibold">
-                    <Star className="h-4 w-4 fill-warning text-warning" />
-                    {stats?.avg_rating ?? "—"}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {stats?.review_count ?? 0} reviews bekijken
-                  </p>
-                </Link>
-                <div className="rounded-lg border border-border p-3">
-                  <p className="text-xs text-muted-foreground">Betrouwbaarheid</p>
-                  <p className="mt-1 text-base font-semibold">
-                    {stats?.reliability_score != null
-                      ? `${stats.reliability_score}%`
-                      : "Nieuw"}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {stats?.completed_count ?? 0} afgerond
-                  </p>
-                </div>
-                <div className="rounded-lg border border-border p-3">
-                  <p className="text-xs text-muted-foreground">Reisafstand</p>
-                  <p className="mt-1 text-base font-semibold">
-                    {details.travel_distance_km != null
-                      ? `${details.travel_distance_km} km`
-                      : "—"}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Vanaf woonplaats
-                  </p>
-                </div>
-              </div>
+                  href={`/organisatie/opdrachten/${query.job}`}
+                  className={buttonVariants({ size: "sm" })}
+                >Terug naar opdracht</Link>
+              ) : null}
             </div>
           </div>
-        </CardContent>
+
+          <div className="mt-4 space-y-2">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+              <h1 className="text-2xl font-semibold tracking-tight sm:text-[1.75rem]">
+                {candidate.full_name}
+              </h1>
+              <Badge variant={hasValidVog ? "success" : "warning"}>
+                <ShieldCheck className="h-3.5 w-3.5" />
+                {hasValidVog ? "VOG goedgekeurd" : "VOG niet goedgekeurd"}
+              </Badge>
+            </div>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-muted-foreground">
+              {age != null ? (
+                <span className="inline-flex items-center gap-1.5">
+                  <Cake className="h-4 w-4" />
+                  {age} jaar
+                </span>
+              ) : null}
+              {cityName ? (
+                <span className="inline-flex items-center gap-1.5">
+                  <MapPin className="h-4 w-4" />
+                  {cityName}
+                </span>
+              ) : null}
+              <span className="inline-flex items-center gap-1.5">
+                <BriefcaseBusiness className="h-4 w-4" />
+                {details.years_experience ?? 0} jaar ervaring
+              </span>
+            </div>
+          </div>
+
+          <div className="mt-5 grid grid-cols-3 divide-x divide-border overflow-hidden rounded-xl border border-border bg-subtle">
+            <Link
+              className="group p-3 transition-colors hover:bg-card focus-visible:bg-card focus-visible:outline-none sm:p-4"
+              href="#reviews"
+            >
+              <p className="text-xs text-muted-foreground">Beoordeling</p>
+              <p className="mt-1 flex items-center gap-1.5 text-lg font-semibold tabular-nums">
+                <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+                {stats?.avg_rating ?? "—"}
+              </p>
+              <p className="text-xs text-muted-foreground group-hover:text-primary">
+                {stats?.review_count ?? 0} reviews bekijken
+              </p>
+            </Link>
+            <div className="p-3 sm:p-4">
+              <p className="text-xs text-muted-foreground">Betrouwbaarheid</p>
+              <p className="mt-1 text-lg font-semibold tabular-nums">
+                {stats?.reliability_score != null
+                  ? `${stats.reliability_score}%`
+                  : "Nieuw"}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {stats?.completed_count ?? 0} afgerond
+              </p>
+            </div>
+            <div className="p-3 sm:p-4">
+              <p className="text-xs text-muted-foreground">Reisafstand</p>
+              <p className="mt-1 text-lg font-semibold tabular-nums">
+                {details.travel_distance_km != null
+                  ? `${details.travel_distance_km} km`
+                  : "—"}
+              </p>
+              <p className="text-xs text-muted-foreground">Vanaf woonplaats</p>
+            </div>
+          </div>
+        </div>
       </Card>
 
-      <div className="grid gap-6 md:grid-cols-[1.35fr_1fr]">
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
         <div className="space-y-6">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">Over mij</CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <p className="whitespace-pre-line text-sm leading-6 text-muted-foreground">
-                {details.work_experience?.trim() ||
-                  "Deze instructeur heeft nog geen omschrijving toegevoegd."}
-              </p>
-            </CardContent>
-          </Card>
+          <Panel>
+            <PanelHeader icon={UserRound} title="Over mij" />
+            <p className="whitespace-pre-line px-4 py-4 text-sm leading-7 text-foreground/85 sm:px-5">
+              {details.work_experience?.trim() ||
+                "Deze instructeur heeft nog geen omschrijving toegevoegd."}
+            </p>
+          </Panel>
 
-          <Card className="scroll-mt-24" id="reviews">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">Ontvangen reviews</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3 pt-0">
+          <Panel className="scroll-mt-24" id="reviews">
+            <PanelHeader
+              count={reviews.length}
+              icon={Star}
+              iconClassName="bg-amber-50 text-amber-500"
+              title="Ontvangen reviews"
+            />
+            <div className="border-b border-border bg-subtle px-4 py-3 sm:px-5">
               <ReviewFilters
                 hiddenParams={
                   isOwnPreview
@@ -329,58 +351,41 @@ export default async function CandidateProfilePage({
                 sort={reviewSort}
                 stars={reviewStars}
               />
-              {visibleReviews.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  {reviews.length === 0
-                    ? "Nog geen ontvangen reviews."
-                    : "Geen reviews gevonden met deze filters."}
-                </p>
-              ) : (
-                visibleReviews.map((review) => (
-                  <div
-                    className="rounded-lg border border-border p-3"
+            </div>
+            {visibleReviews.length === 0 ? (
+              <PanelEmpty>
+                {reviews.length === 0
+                  ? "Nog geen ontvangen reviews."
+                  : "Geen reviews gevonden met deze filters."}
+              </PanelEmpty>
+            ) : (
+              <PanelList>
+                {visibleReviews.map((review) => (
+                  <ReviewItem
+                    comment={review.comment}
+                    date={formatDate(review.created_at)}
                     key={review.id}
-                  >
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <span className="text-warning">
-                        {"★".repeat(review.rating)}
-                        <span className="text-muted-foreground/40">
-                          {"★".repeat(5 - review.rating)}
-                        </span>
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {formatDate(review.created_at)}
-                      </span>
-                    </div>
-                    {review.job?.title ? (
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {review.job.title}
-                      </p>
-                    ) : null}
-                    {review.comment ? (
-                      <p className="mt-2 text-sm leading-6">“{review.comment}”</p>
-                    ) : null}
-                  </div>
-                ))
-              )}
-            </CardContent>
-          </Card>
+                    rating={review.rating}
+                    subtitle={review.job?.title}
+                  />
+                ))}
+              </PanelList>
+            )}
+          </Panel>
         </div>
 
         <div className="space-y-6">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">Sporten & lesvormen</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4 pt-0">
+          <Panel>
+            <PanelHeader as="h3" icon={Dumbbell} title="Sporten & lesvormen" />
+            <div className="space-y-4 px-4 py-4 sm:px-5">
               <div>
-                <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                   Sporten
                 </p>
-                <div className="flex flex-wrap gap-2">
-                  {(sportNamesResult.data ?? []).length > 0 ? (
-                    (sportNamesResult.data ?? []).map((sport) => (
-                      <Badge key={sport.id} variant="outline">
+                <div className="flex flex-wrap gap-1.5">
+                  {sportNames.length > 0 ? (
+                    sportNames.map((sport) => (
+                      <Badge key={sport.id} variant="default">
                         {sport.name}
                       </Badge>
                     ))
@@ -392,13 +397,13 @@ export default async function CandidateProfilePage({
                 </div>
               </div>
               <div>
-                <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                   Lesvormen
                 </p>
-                <div className="flex flex-wrap gap-2">
-                  {(lessonNamesResult.data ?? []).length > 0 ? (
-                    (lessonNamesResult.data ?? []).map((lessonType) => (
-                      <Badge key={lessonType.id} variant="muted">
+                <div className="flex flex-wrap gap-1.5">
+                  {lessonNames.length > 0 ? (
+                    lessonNames.map((lessonType) => (
+                      <Badge key={lessonType.id} variant="outline">
                         {lessonType.name}
                       </Badge>
                     ))
@@ -409,48 +414,56 @@ export default async function CandidateProfilePage({
                   )}
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </Panel>
 
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">Diploma’s</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3 pt-0">
-              {(qualificationNamesResult.data ?? []).length > 0 ? (
-                (qualificationNamesResult.data ?? []).map((qualification) => (
-                  <div
-                    className="flex items-start gap-2 border-b border-border py-3 last:border-b-0 first:pt-0"
-                    key={qualification.id}
-                  >
-                    <Award className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                    <div>
+          <Panel>
+            <PanelHeader
+              as="h3"
+              count={qualificationNames.length}
+              icon={Award}
+              title="Diploma’s"
+            />
+            {qualificationNames.length > 0 ? (
+              <PanelList>
+                {qualificationNames.map((qualification) => (
+                  <div className="flex items-start gap-3 px-4 py-3 sm:px-5" key={qualification.id}>
+                    <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-primary-soft text-primary">
+                      <Award className="h-3.5 w-3.5" />
+                    </span>
+                    <div className="min-w-0">
                       <p className="text-sm font-medium">{qualification.name}</p>
                       {qualification.description ? (
-                        <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                        <p className="mt-0.5 text-xs leading-5 text-muted-foreground">
                           {qualification.description}
                         </p>
                       ) : null}
                     </div>
                   </div>
-                ))
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  Nog geen diploma’s toegevoegd.
-                </p>
-              )}
-            </CardContent>
-          </Card>
+                ))}
+              </PanelList>
+            ) : (
+              <PanelEmpty>Nog geen diploma’s toegevoegd.</PanelEmpty>
+            )}
+          </Panel>
+
+          <Panel>
+            <PanelHeader as="h3" icon={BriefcaseBusiness} title="Werkervaring" />
+            <dl className="divide-y divide-border text-sm">
+              <div className="flex items-center justify-between gap-3 px-4 py-3 sm:px-5">
+                <dt className="text-muted-foreground">Ervaring</dt>
+                <dd className="font-medium tabular-nums">
+                  {details.years_experience ?? 0} jaar
+                </dd>
+              </div>
+              <div className="flex items-center justify-between gap-3 px-4 py-3 sm:px-5">
+                <dt className="text-muted-foreground">Afgerond via SportMatch</dt>
+                <dd className="font-medium tabular-nums">{stats?.completed_count ?? 0}</dd>
+              </div>
+            </dl>
+          </Panel>
         </div>
       </div>
-
-      {!isOwnPreview && query.job ? (
-        <div className="flex justify-end">
-          <Link href={`/organisatie/opdrachten/${query.job}`}>
-            <Button>Terug naar opdracht</Button>
-          </Link>
-        </div>
-      ) : null}
-    </div>
+    </Page>
   );
 }

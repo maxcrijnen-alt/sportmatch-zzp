@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { CalendarCheck2, CircleCheckBig, MessageSquareReply, Search } from "lucide-react";
-import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Page, PageHeader } from "@/components/ui/page";
+import { StatTile } from "@/components/ui/stat-tile";
 import { getSessionProfile } from "@/lib/auth/session";
 import { getOrgContext } from "@/lib/org/context";
 import { resolveLocationFilter } from "@/lib/org/location-filter";
@@ -35,9 +36,6 @@ export default async function OrganizationStatisticsPage({
   const locationId = await resolveLocationFilter(
     orgContext.locations,
     params.location,
-  );
-  const selectedLocation = orgContext.locations.find(
-    (location) => location.id === locationId,
   );
 
   let jobsQuery = supabase
@@ -89,27 +87,18 @@ export default async function OrganizationStatisticsPage({
   ];
 
   return (
-    <div className="mx-auto w-full max-w-5xl space-y-4 px-4 py-8">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Statistieken</h1>
-        <p className="text-sm text-muted-foreground">
-          {selectedLocation
-            ? `Actuele aantallen voor ${selectedLocation.name}.`
-            : "Actuele aantallen voor alle vestigingen."}
-        </p>
-      </div>
+    <Page>
+      <PageHeader title="Statistieken" />
 
-      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {cards.map((card) => (
-          <Card key={card.label}>
-            <CardHeader className="gap-1 p-3">
-              <div className="flex items-center justify-between gap-3">
-                <CardDescription className="text-xs">{card.label}</CardDescription>
-                <card.icon className="h-4 w-4 text-primary" />
-              </div>
-              <CardTitle className="text-2xl">{card.value}</CardTitle>
-            </CardHeader>
-          </Card>
+          <StatTile
+            icon={card.icon}
+            key={card.label}
+            label={card.label}
+            tone="primary"
+            value={card.value}
+          />
         ))}
       </div>
 
@@ -117,6 +106,6 @@ export default async function OrganizationStatisticsPage({
         Alleen gegevens die in SportMatch zijn vastgelegd tellen mee. Externe
         planning- of omzetgegevens worden niet geschat.
       </p>
-    </div>
+    </Page>
   );
 }

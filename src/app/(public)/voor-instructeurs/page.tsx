@@ -1,3 +1,4 @@
+import { cn } from "@/lib/utils";
 import type { Metadata } from "next";
 import Link from "next/link";
 import {
@@ -16,7 +17,7 @@ import {
 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BRAND } from "@/lib/branding";
 
@@ -110,7 +111,7 @@ export default function VoorInstructeursPage() {
           <Badge className="w-fit" variant="accent">
             Voor zzp-instructeurs en sportprofessionals
           </Badge>
-          <h1 className="max-w-3xl text-3xl font-bold tracking-tight sm:text-5xl">
+          <h1 className="max-w-3xl text-3xl font-semibold tracking-tight sm:text-5xl">
             Vind opdrachten die passen bij je sport, agenda en reisafstand.
           </h1>
           <p className="max-w-2xl text-lg leading-8 text-muted-foreground">
@@ -120,16 +121,18 @@ export default function VoorInstructeursPage() {
             en locatie kloppen.
           </p>
           <div className="flex flex-col gap-3 sm:flex-row">
-            <Link href="/registreren?rol=instructeur">
-              <Button className="w-full sm:w-auto" size="lg">
-                Maak je gratis profiel
-                <ArrowRight className="h-4 w-4" />
-              </Button>
+            <Link
+              href="/registreren?rol=instructeur"
+              className={cn(buttonVariants({ size: "lg" }), "w-full sm:w-auto")}
+            >
+              Maak je gratis profiel
+              <ArrowRight className="h-4 w-4" />
             </Link>
-            <Link href="/demo">
-              <Button className="w-full sm:w-auto" size="lg">
-                Bekijk demo als instructeur
-              </Button>
+            <Link
+              href="/demo"
+              className={cn(buttonVariants({ size: "lg" }), "w-full sm:w-auto")}
+            >
+              Bekijk demo als instructeur
             </Link>
           </div>
           <p className="text-sm text-muted-foreground">
@@ -138,7 +141,7 @@ export default function VoorInstructeursPage() {
           </p>
         </div>
 
-        <div className="rounded-lg border border-primary/30 bg-primary/5 p-5">
+        <div className="rounded-xl border border-primary/20 bg-primary-soft p-5">
           <p className="text-sm font-semibold text-primary">
             Wat zie je in de demo?
           </p>
@@ -160,7 +163,7 @@ export default function VoorInstructeursPage() {
       <section className="mt-14">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h2 className="text-2xl font-bold tracking-tight">
+            <h2 className="text-2xl font-semibold tracking-tight">
               Voorbeelden van opdrachten
             </h2>
             <p className="mt-2 max-w-2xl text-muted-foreground">
@@ -168,10 +171,11 @@ export default function VoorInstructeursPage() {
               waarop je reageert.
             </p>
           </div>
-          <Link href="/demo">
-            <Button className="w-full sm:w-auto">
-              Bekijk demo als instructeur
-            </Button>
+          <Link
+            href="/demo"
+            className={cn(buttonVariants(), "w-full sm:w-auto")}
+          >
+            Bekijk demo als instructeur
           </Link>
         </div>
         <div className="mt-6 grid gap-4 md:grid-cols-3">
@@ -206,7 +210,7 @@ export default function VoorInstructeursPage() {
 
       <section className="mt-14 grid gap-8 lg:grid-cols-[0.8fr_1.2fr] lg:items-start">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">
+          <h2 className="text-2xl font-semibold tracking-tight">
             Je profiel moet meteen vertrouwen geven
           </h2>
           <p className="mt-3 text-muted-foreground">
@@ -227,7 +231,7 @@ export default function VoorInstructeursPage() {
 
       <section className="mt-14 grid gap-8 lg:grid-cols-[0.8fr_1.2fr] lg:items-start">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">
+          <h2 className="text-2xl font-semibold tracking-tight">
             Minder zoeken, betere keuzes
           </h2>
           <p className="mt-3 text-muted-foreground">
@@ -270,13 +274,15 @@ export default function VoorInstructeursPage() {
           </p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">
-          <Link href="/demo">
-            <Button className="w-full sm:w-auto">Bekijk demo als instructeur</Button>
-          </Link>
-          <Link href="/registreren?rol=instructeur">
-            <Button className="w-full sm:w-auto">
-              Start 30 dagen gratis
-            </Button>
+          <Link
+            href="/demo"
+            className={cn(buttonVariants(), "w-full sm:w-auto")}
+          >Bekijk demo als instructeur</Link>
+          <Link
+            href="/registreren?rol=instructeur"
+            className={cn(buttonVariants(), "w-full sm:w-auto")}
+          >
+            Start 30 dagen gratis
           </Link>
         </div>
       </section>

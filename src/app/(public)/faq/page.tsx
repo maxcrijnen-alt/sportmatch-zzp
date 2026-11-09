@@ -55,7 +55,7 @@ const faqs = [
 export default function FaqPage() {
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-12">
-      <h1 className="text-3xl font-bold tracking-tight">
+      <h1 className="text-3xl font-semibold tracking-tight">
         Veelgestelde vragen
       </h1>
       <div className="mt-8 space-y-3">

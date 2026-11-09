@@ -28,14 +28,20 @@ export function CancelForm({ jobId }: { jobId: string }) {
 
   if (!open) {
     return (
-      <Button onClick={() => setOpen(true)} type="button" variant="destructive">
+      <Button
+        className="text-destructive hover:border-destructive/30 hover:text-destructive"
+        onClick={() => setOpen(true)}
+        size="sm"
+        type="button"
+        variant="outline"
+      >
         Opdracht annuleren
       </Button>
     );
   }
 
   return (
-    <form action={formAction} className="space-y-3 rounded-lg border border-destructive/40 bg-destructive/5 p-4">
+    <form action={formAction} className="w-full space-y-3 rounded-xl border border-destructive/20 bg-destructive-soft p-4">
       {state.error ? (
         <Alert variant="destructive">
           <AlertDescription>{state.error}</AlertDescription>
