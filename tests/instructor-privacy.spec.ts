@@ -166,7 +166,7 @@ test("private administratie blijft afgeschermd terwijl profiel en kandidaten wer
     await expect(page.getByText("Instructeursgegevens opgeslagen.", { exact: true })).toBeVisible();
     await page.reload();
     await expect(page.getByLabel("KvK-nummer", { exact: true })).toHaveValue("87654321");
-    const pixel = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aV1sAAAAASUVORK5CYII=", "base64");
+    const pixel = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVR4nGNknZbJwMDAxMDAwMDAAAAL9gEIXJzehwAAAABJRU5ErkJggg==", "base64");
     await page.locator('input[type="file"]').setInputFiles({ name: "synthetic-avatar.png", mimeType: "image/png", buffer: pixel });
     await expect.poll(async () => {
       const result = await clients.a.rpc("get_my_profile").returns<Profile[]>().single();
