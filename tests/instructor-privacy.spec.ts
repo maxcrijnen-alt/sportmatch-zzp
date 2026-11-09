@@ -177,7 +177,11 @@ test("private administratie blijft afgeschermd terwijl profiel en kandidaten wer
 
     await login("school");
     await page.goto(`/organisatie/kandidaten?job=${job.data!.id}`);
-    await page.getByRole("link", { name: "CI Privacy a", exact: true }).click();
+    // The uploaded avatar has the same accessible name as the text link.
+    const candidateName = page.getByRole("link", { name: "CI Privacy a", exact: true })
+      .filter({ hasText: /^CI Privacy a$/ });
+    await expect(candidateName).toHaveCount(1);
+    await candidateName.click();
     await expect(page.getByRole("heading", { name: "CI Privacy a", exact: true })).toBeVisible();
     await expect(page.getByText(`${expectedAge} jaar`, { exact: true })).toBeVisible();
     await expect(page.getByText("VOG goedgekeurd", { exact: true })).toBeVisible();
