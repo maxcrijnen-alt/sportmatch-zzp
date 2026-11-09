@@ -24,7 +24,7 @@ export async function fetchAdminStats(): Promise<AdminStats | null> {
   const count = async (table: string, statusEquals?: string) => {
     let query = client
       .from(table)
-      .select("*", { count: "exact", head: true });
+      .select(table === "instructor_profiles" ? "user_id" : "*", { count: "exact", head: true });
     if (statusEquals) {
       query = query.eq("status", statusEquals);
     }
