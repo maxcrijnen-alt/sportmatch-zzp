@@ -73,11 +73,17 @@ grant execute on function pg_temp.expect_refused(text,text) to authenticated;
 -- Existing least-privilege and pool semantics must survive CREATE OR REPLACE.
 do $$ begin
   if (select count(*) from pg_proc p join pg_namespace n on n.oid=p.pronamespace
-      where n.nspname='public' and p.prosecdef and has_function_privilege('authenticated',p.oid,'EXECUTE')) <> 35 then
+      where n.nspname='public' and p.prosecdef and has_function_privilege('authenticated',p.oid,'EXECUTE')) <> 37 then
     raise exception 'FAIL: unexpected public SECURITY DEFINER API surface';
   end if;
   if not (select prosecdef from pg_proc where oid='public.accept_organization_invitation(uuid)'::regprocedure) then
     raise exception 'FAIL: reviewed invitation acceptance API is missing';
+  end if;
+  if (select count(*) from pg_proc where oid in (
+      'public.get_instructor_private_profile(uuid)'::regprocedure,
+      'public.get_instructor_candidate_profile(uuid)'::regprocedure
+    ) and prosecdef) <> 2 then
+    raise exception 'FAIL: reviewed instructor privacy APIs are missing';
   end if;
   if exists(select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace
       where n.nspname='public' and p.prosecdef and

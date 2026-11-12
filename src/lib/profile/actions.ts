@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getSessionProfile } from "@/lib/auth/session";
+import { saveInstructorProfile } from "@/lib/profile/save-instructor-profile";
 import {
   CUSTOM_CITY_MAX_LENGTH,
   CUSTOM_CITY_OPTION_VALUE,
@@ -155,7 +156,7 @@ export async function updateInstructorDetailsAction(
     };
   }
 
-  const { error } = await supabase.from("instructor_profiles").upsert({
+  const { error } = await saveInstructorProfile(supabase, {
     user_id: profile.id,
     years_experience: input.yearsExperience,
     work_experience: input.workExperience,

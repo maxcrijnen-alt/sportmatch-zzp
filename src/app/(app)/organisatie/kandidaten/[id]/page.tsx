@@ -32,36 +32,11 @@ import { formatDate } from "@/lib/labels";
 import { filterAndSortReviews, parseReviewFilters } from "@/lib/reviews/filter";
 import { getOrgContext } from "@/lib/org/context";
 import { createClient } from "@/lib/supabase/server";
-import type { InstructorPublicStats, Review } from "@/types/database";
+import type { InstructorCandidateProfile, InstructorPublicStats, Review } from "@/types/database";
 
 export const metadata: Metadata = {
   title: "Instructeursprofiel",
 };
-
-function calculateAge(birthDate: string | null) {
-  if (!birthDate) return null;
-
-  const [year, month, day] = birthDate.split("-").map(Number);
-  if (!year || !month || !day) return null;
-
-  const nowParts = new Intl.DateTimeFormat("en-GB", {
-    timeZone: "Europe/Amsterdam",
-    year: "numeric",
-    month: "numeric",
-    day: "numeric",
-  }).formatToParts(new Date());
-  const now = Object.fromEntries(
-    nowParts
-      .filter((part) => part.type !== "literal")
-      .map((part) => [part.type, Number(part.value)]),
-  );
-
-  let age = now.year - year;
-  if (now.month < month || (now.month === month && now.day < day)) {
-    age -= 1;
-  }
-  return age >= 0 ? age : null;
-}
 
 export default async function CandidateProfilePage({
   params,
@@ -103,11 +78,8 @@ export default async function CandidateProfilePage({
       .eq("id", instructorId)
       .maybeSingle(),
     supabase
-      .from("instructor_profiles")
-      .select(
-        "user_id, birth_date, work_experience, years_experience, hourly_rate_cents, travel_distance_km",
-      )
-      .eq("user_id", instructorId)
+      .rpc("get_instructor_candidate_profile", { p_instructor: instructorId })
+      .returns<InstructorCandidateProfile[]>()
       .maybeSingle(),
     supabase
       .from("instructor_sports")
@@ -197,7 +169,7 @@ export default async function CandidateProfilePage({
     })[] | null) ?? [];
   const { stars: reviewStars, sort: reviewSort } = parseReviewFilters(query);
   const visibleReviews = filterAndSortReviews(reviews, reviewStars, reviewSort);
-  const age = calculateAge(details.birth_date as string | null);
+  const age = details.age;
   const cityName =
     candidate.custom_city || (cityResult.data?.name as string | undefined) || null;
   const hasValidVog = vogResult.data === true;

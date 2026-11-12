@@ -52,9 +52,7 @@ export default async function ProfielPage() {
       instructorLessonTypesResult,
     ] = await Promise.all([
         supabase
-          .from("instructor_profiles")
-          .select("*")
-          .eq("user_id", profile.id)
+          .rpc("get_instructor_private_profile", { p_instructor: profile.id })
           .maybeSingle(),
         supabase.from("sports").select("*").eq("is_active", true).order("name"),
         supabase
