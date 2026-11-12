@@ -41,7 +41,7 @@ function toIcs(events: AgendaEvent[]): string {
       `DTEND;TZID=Europe/Amsterdam:${icsDate(event.date, event.endTime)}`,
       `SUMMARY:${escapeIcs(event.title)}`,
       `LOCATION:${escapeIcs(event.locationName)}`,
-      `DESCRIPTION:${escapeIcs([event.sportName, event.organizationName, event.instructorName, event.sourceLabel, event.payLabel].filter(Boolean).join(" · "))}`,
+      `DESCRIPTION:${escapeIcs([event.sportName, event.organizationName, event.instructorName, event.rosterInstructorName ? `Rooster: ${event.rosterInstructorName}` : "", event.sourceLabel, event.payLabel, event.scheduleChanged ? "Rooster gewijzigd; controleer de gekoppelde invalopdracht" : ""].filter(Boolean).join(" · "))}`,
       `STATUS:${calendarStatusForState(event.state)}`,
       "END:VEVENT",
     );

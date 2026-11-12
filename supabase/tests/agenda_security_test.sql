@@ -118,6 +118,19 @@ select pg_temp.agenda_refused(format('select public.create_lesson_replacement(%L
   current_setting('agenda.manual_id'),pg_temp.agenda_terms()),'42501');
 reset role;
 update public.subscriptions set status='trial',trial_ends_at=now()+interval '30 days' where location_id=pg_temp.agenda_id('location');
+insert into public.instructor_profiles(user_id) values(pg_temp.agenda_id('instructor'));
+insert into public.jobs(id,organization_id,location_id,created_by,job_type,sport_id,title,starts_on,start_time,end_time,status)
+values(pg_temp.agenda_id('review-job'),pg_temp.agenda_id('org'),pg_temp.agenda_id('location'),pg_temp.agenda_id('owner'),
+  'one_time',(select id from public.sports where slug='fitness'),'Pending review',current_date-2,'09:00','10:00','completed');
+insert into public.job_applications(id,job_id,instructor_id,status)
+values(pg_temp.agenda_id('review-app'),pg_temp.agenda_id('review-job'),pg_temp.agenda_id('instructor'),'accepted');
+insert into public.job_confirmations(job_id,application_id,instructor_id,organization_agreed_at,confirmed_at)
+values(pg_temp.agenda_id('review-job'),pg_temp.agenda_id('review-app'),pg_temp.agenda_id('instructor'),now()-interval '2 days',now()-interval '2 days');
+set local role authenticated;
+select pg_temp.agenda_check(public.has_pending_review(auth.uid()),'pending review positive control');
+select pg_temp.agenda_refused(format('select public.create_lesson_replacement(%L,2,%L)',current_setting('agenda.manual_id'),pg_temp.agenda_terms()),'42501');
+reset role;
+delete from public.jobs where id=pg_temp.agenda_id('review-job');
 set local role authenticated;
 select pg_temp.agenda_refused(format('select public.create_lesson_replacement(%L,1,%L)',
   (select id from public.scheduled_lessons where external_id='manual'),pg_temp.agenda_terms()),'P0001');
@@ -154,7 +167,10 @@ reset role;
 -- Even direct writes of an owned job cannot attach another organization's location.
 select pg_temp.agenda_user('owner');
 set local role authenticated;
-select pg_temp.agenda_refused(format('update public.jobs set location_id=%L where organization_id=%L',pg_temp.agenda_id('foreign-location'),pg_temp.agenda_id('org')),'23503');
+select pg_temp.agenda_refused(format('update public.jobs set location_id=%L where organization_id=%L',pg_temp.agenda_id('location-2'),pg_temp.agenda_id('org')),'23514');
+select pg_temp.agenda_refused(format('insert into public.jobs(organization_id,location_id,created_by,job_type,sport_id,title,starts_on,start_time,end_time) values(%L,%L,%L,''one_time'',%L,''Foreign location'',current_date,''09:00'',''10:00'')',
+  pg_temp.agenda_id('org'),pg_temp.agenda_id('foreign-location'),pg_temp.agenda_id('owner'),
+  (select id from public.sports where slug='fitness')),'23503');
 reset role;
 
 -- A valid demo can use its own roster; another demo with a forged membership cannot.

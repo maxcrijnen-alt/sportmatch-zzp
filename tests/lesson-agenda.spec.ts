@@ -121,11 +121,8 @@ test("volledig rooster, invalopdracht, wijzigingen en idempotente voorbeeldsync"
     await page.waitForURL(/\/agenda\/lessen\/[0-9a-f-]+$/);
     const detailUrl = page.url();
     const lessonId = new URL(detailUrl).pathname.split("/").at(-1)!;
-    await page.getByRole("link", { name: "Agenda", exact: true }).click();
-    const lessonLink = page
-      .getByRole("link")
-      .filter({ hasText: "Pilot Circuittraining" })
-      .first();
+    await page.getByRole("main").getByRole("link", { name: "Agenda", exact: true }).click();
+    const lessonLink = page.locator(`main a[href="/agenda/lessen/${lessonId}"]`);
     await expect(lessonLink).toContainText("Ingeplande les");
     await expect(lessonLink).toContainText("Trainer A");
     await page.goto(detailUrl);
@@ -134,7 +131,7 @@ test("volledig rooster, invalopdracht, wijzigingen en idempotente voorbeeldsync"
       .getByRole("button", { name: "Les opslaan", exact: true })
       .click();
     await expect(page.locator('input[name="revision"]')).toHaveValue("2");
-    await page.getByRole("link", { name: "Agenda", exact: true }).click();
+    await page.getByRole("main").getByRole("link", { name: "Agenda", exact: true }).click();
     await expect(
       page
         .getByRole("link")
@@ -217,10 +214,7 @@ test("volledig rooster, invalopdracht, wijzigingen en idempotente voorbeeldsync"
     expect(published.error).toBeNull();
     expect(published.data!.start_time).toBe("09:00:00");
     await page.goto(`/agenda?lesson=${lessonId}`);
-    const updatedLink = page
-      .getByRole("link")
-      .filter({ hasText: "Pilot Circuittraining" })
-      .first();
+    const updatedLink = page.locator(`main a[href="/agenda/lessen/${lessonId}"]`);
     await expect(updatedLink).toContainText("09:15");
     await expect(updatedLink).toContainText("Rooster gewijzigd");
     const exported = await page.request.get("/agenda/export");

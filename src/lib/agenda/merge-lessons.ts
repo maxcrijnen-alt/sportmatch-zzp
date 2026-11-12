@@ -16,6 +16,7 @@ export function mergeLessonEvents(jobs: AgendaEvent[], lessons: AgendaEvent[]) {
         state:
           lesson.state === "cancelled" ? ("cancelled" as const) : job.state,
         instructorName: job.instructorName || lesson.instructorName,
+        rosterInstructorName: lesson.instructorName,
         payLabel: job.payLabel,
       };
     }),

@@ -30,6 +30,7 @@ export interface AgendaEvent {
   locationName: string;
   organizationName: string;
   instructorName: string;
+  rosterInstructorName?: string;
   detailHref: string;
 }
 

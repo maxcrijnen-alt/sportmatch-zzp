@@ -141,6 +141,7 @@ function EventCard({
               : event.organizationName}
           </span>
           <span>{event.sportName}</span>
+          {event.rosterInstructorName ? <span>Rooster: {event.rosterInstructorName}</span> : null}
           <span className="font-medium text-foreground">{event.payLabel}</span>
           {event.sourceLabel ? <span>{event.sourceLabel}</span> : null}
           {event.scheduleChanged ? (

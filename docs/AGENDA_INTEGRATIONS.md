@@ -19,6 +19,8 @@ live koppeling aangezet en geen externe configuratie gewijzigd.
   plus unieke les/opdrachtkoppeling voorkomt dubbele plaatsing bij herhalen of
   gelijktijdige verzoeken. Ook een gesloten/geannuleerde zoekopdracht blijft
   gekoppeld; er ontstaat niet stilzwijgend een tweede opdracht.
+  Een gekoppelde opdracht kan niet naar een andere organisatie/vestiging worden
+  verplaatst. De instructeur uit het rooster blijft naast de invalstatus zichtbaar.
 - Bronwijzigingen overschrijven geen gepubliceerde voorwaarden. Lesrevisie en
   oorspronkelijke publicatierevisie signaleren wijzigingen in agenda en detail.
   Annuleren van een les annuleert de opdracht niet automatisch: de school krijgt
@@ -71,6 +73,8 @@ aangeroepen, hebben een lege search_path en expliciete EXECUTE-grants. De privat
 RLS-helper controleert lidmaatschap/scope; de publieke Definer-allowlist blijft
 ongewijzigd. Publicatie herhaalt vestigingstoegang, openstaande reviews, lesrevisie,
 geldige vergoeding, actieve diploma-eisen en geannuleerd/verlopen lesmoment.
+Een private trigger met ingetrokken EXECUTE-grants bewaakt de scope van een
+gekoppelde opdracht bij latere writes.
 
 Import vergrendelt de bron en gebruikt een bronversie tegen verouderde snapshots.
 Ongewijzigde data behoudt les-ID en revisie. Een ongeldige synthetische snapshot

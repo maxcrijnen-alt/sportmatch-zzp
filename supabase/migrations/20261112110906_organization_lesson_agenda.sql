@@ -59,6 +59,23 @@ create table public.lesson_replacement_jobs (
   created_at timestamptz not null default now()
 );
 
+-- A normal job may be moved between owned locations, but a published lesson
+-- replacement must keep its source scope. Otherwise a still-visible private
+-- lesson could point at an inaccessible or unrelated organization's job.
+create function private.preserve_lesson_job_scope() returns trigger
+language plpgsql security definer set search_path = '' as $$
+begin
+  if (new.organization_id,new.location_id) is distinct from (old.organization_id,old.location_id)
+    and exists(select 1 from public.lesson_replacement_jobs where job_id=old.id) then
+    raise exception using errcode='23514', message='Een gekoppelde invalopdracht blijft bij de vestiging van de les.';
+  end if;
+  return new;
+end;
+$$;
+revoke all on function private.preserve_lesson_job_scope() from public, anon, authenticated;
+create trigger preserve_lesson_job_scope before update of organization_id,location_id on public.jobs
+  for each row execute function private.preserve_lesson_job_scope();
+
 create function private.can_manage_agenda(p_organization uuid) returns boolean
 language sql stable security definer set search_path = '' as $$
   select exists (
@@ -95,7 +112,7 @@ create function private.save_agenda_lessons(
 ) returns jsonb language plpgsql security definer set search_path = '' as $$
 declare
   v_org uuid; v_source public.agenda_sources; v_lesson public.scheduled_lessons;
-  v_item jsonb; v_id uuid; v_date date; v_start time; v_end time; v_count integer := 0;
+  v_item jsonb; v_id uuid; v_date date; v_start time; v_end time; v_count integer := 0; v_cancelled integer;
 begin
   select organization_id into v_org from public.organization_locations where id=p_location;
   if not coalesce(private.can_manage_agenda(v_org),false) then
@@ -168,8 +185,11 @@ begin
       update public.scheduled_lessons l set cancelled=true,revision=revision+1,updated_at=now()
       where l.source_id=v_source.id and not l.cancelled
         and not exists(select 1 from jsonb_array_elements(p_lessons) e where e->>'externalId'=l.external_id);
+      get diagnostics v_cancelled = row_count;
+      v_count := v_count+v_cancelled;
     end if;
-    update public.agenda_sources set enabled=p_enabled,version=version+1,last_synced_at=now(),
+    update public.agenda_sources set enabled=p_enabled,version=version+1,
+      last_synced_at=case when p_enabled then now() else last_synced_at end,
       sync_status='success',last_error=null,lesson_count=(select count(*) from public.scheduled_lessons where source_id=v_source.id and not cancelled)
       where id=v_source.id;
   exception when others then
