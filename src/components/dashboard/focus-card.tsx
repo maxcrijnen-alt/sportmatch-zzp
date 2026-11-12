@@ -23,8 +23,8 @@ function FocusCard({
       className="relative overflow-hidden rounded-xl border border-primary/20 bg-card shadow-card"
     >
       <span aria-hidden="true" className="absolute inset-y-0 left-0 w-1 bg-primary" />
-      <div className="flex flex-col gap-4 p-5 pl-6 sm:flex-row sm:items-center sm:justify-between sm:p-6 sm:pl-7">
-        <div className="flex min-w-0 gap-4">
+      <div className="flex flex-col gap-3 p-4 pl-5 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:p-5 sm:pl-6">
+        <div className="flex min-w-0 items-center gap-4">
           <span className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary-soft text-primary sm:flex">
             <Sparkles className="h-5 w-5" />
           </span>
@@ -32,8 +32,8 @@ function FocusCard({
             <p className="text-[11px] font-semibold uppercase tracking-wider text-primary">
               Wat vraagt aandacht?
             </p>
-            <h2 className="mt-1 text-lg font-semibold tracking-tight">{title}</h2>
-            <p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">
+            <h2 className="mt-0.5 text-base font-semibold tracking-tight sm:text-lg">{title}</h2>
+            <p className="mt-0.5 line-clamp-2 max-w-2xl text-[13px] leading-5 text-muted-foreground sm:text-sm">
               {text}
             </p>
           </div>

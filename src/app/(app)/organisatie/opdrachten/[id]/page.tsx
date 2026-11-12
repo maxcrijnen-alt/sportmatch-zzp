@@ -1,5 +1,5 @@
 import { deriveJobWorkflow } from "@/lib/jobs/workflow";
-import { jobStatusIndicatorLabels } from "@/components/jobs/job-status-indicator";
+import { JobStatusIndicator } from "@/components/jobs/job-status-indicator";
 import { canNegotiateJob } from "@/lib/jobs/negotiation";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -349,17 +349,23 @@ export default async function OrganisatieOpdrachtDetailPage({
             >
               {jobTypeLabels[job.job_type]}
             </Badge>
-            {job.sport ? (
-              <Badge variant="default">{job.sport.name}</Badge>
-            ) : null}
-            <Badge variant="outline">
-              {job.custom_lesson_type ||
+            {(() => {
+              const lessonLabel =
+                job.custom_lesson_type ||
                 job.lesson_type?.name ||
-                "Lesvorm niet opgegeven"}
-            </Badge>
-            <Badge variant="muted">
-              {jobStatusIndicatorLabels[workflow.state]}
-            </Badge>
+                "Lesvorm niet opgegeven";
+              return job.sport ? (
+                <Badge variant="default">
+                  {job.sport.name}
+                  {lessonLabel.toLowerCase() !== job.sport.name.toLowerCase()
+                    ? ` · ${lessonLabel}`
+                    : ""}
+                </Badge>
+              ) : (
+                <Badge variant="outline">{lessonLabel}</Badge>
+              );
+            })()}
+            <JobStatusIndicator size="sm" state={workflow.state} />
           </>
         }
         title={job.title}

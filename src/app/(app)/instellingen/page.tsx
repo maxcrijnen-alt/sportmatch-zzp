@@ -94,6 +94,7 @@ export default async function InstellingenPage() {
             </div>
           </div>
           {[
+            ["LogiFit", "Nog niet gekoppeld"],
             ["Gymly", "Nog niet gekoppeld"],
             ["SportBit", "Nog niet gekoppeld"],
           ].map(([provider, status]) => (
@@ -102,6 +103,7 @@ export default async function InstellingenPage() {
               <Badge variant="muted">{status}</Badge>
             </div>
           ))}
+          {profile.role === "organization" ? <Link className={buttonVariants({ size: "sm", variant: "outline" })} href="/agenda/koppelingen">Roosterbronnen beheren</Link> : null}
         </CardContent>
       </Card>
 

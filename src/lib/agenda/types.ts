@@ -1,6 +1,8 @@
 import type { JobStatus, UserRole } from "@/types/database";
 
 export type AgendaEventState =
+  | "scheduled"
+  | "replacement_needed"
   | "searching"
   | "action_required"
   | "planned"
@@ -12,19 +14,23 @@ export type AgendaEventState =
 
 export interface AgendaEvent {
   id: string;
-  jobId: string;
+  jobId: string | null;
+  lessonId?: string;
+  sourceLabel?: string;
+  scheduleChanged?: boolean;
   title: string;
   date: string;
   startTime: string;
   endTime: string;
   state: AgendaEventState;
-  jobStatus: JobStatus;
+  jobStatus: JobStatus | null;
   sportName: string;
   payLabel: string;
   locationId: string;
   locationName: string;
   organizationName: string;
   instructorName: string;
+  rosterInstructorName?: string;
   detailHref: string;
 }
 
@@ -46,4 +52,4 @@ export interface AgendaProvider {
  * geen endpoints of adapters gekoppeld totdat de officiële API-contracten en
  * autorisatiegegevens voor Gymly of SportBit beschikbaar zijn.
  */
-export type FutureAgendaProviderId = "gymly" | "sportbit";
+export type FutureAgendaProviderId = "logifit" | "gymly" | "sportbit";

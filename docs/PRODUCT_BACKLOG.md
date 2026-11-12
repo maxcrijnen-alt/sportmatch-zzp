@@ -1,5 +1,12 @@
 # Productbacklog na de functionele audit
 
+Update 12 november 2026: de nieuwe roosterbranch ondersteunt eigen lesmomenten,
+een invalopdracht per les en een afgebakend synthetisch providerprototype.
+Zie [AGENDA_INTEGRATIONS.md](AGENDA_INTEGRATIONS.md). Live leveranciercontracten,
+roosteruitzonderingen uit externe bronnen en automatische sync blijven open.
+Het bestaande model voor terugkerende SportMatch-opdrachten blijft ongewijzigd;
+de nieuwe roosterlessen zijn afzonderlijke momenten met een eigen opdrachtkoppeling.
+
 Deze uitbreidingen zijn **niet geïmplementeerd** in de hardening-PR. De prioriteiten
 zijn aanbevelingen voor afzonderlijke productbesluiten; P2 betekent een volgende
 productronde en P3 een latere verbetering.

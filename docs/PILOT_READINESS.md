@@ -1,5 +1,29 @@
 # Gecontroleerde externe pilot — draaiboek
 
+## Technische hercontrole — 12 november 2026
+
+**Nog niet vrijgegeven voor een externe pilot.** Main bevat de geïntegreerde
+redesign en workflowfixes (`5775ecc`). Registratiebevestiging, herstel van
+wachtwoorden, uitnodigingen/reacties en dubbele/wederzijdse bevestiging hebben
+bestaande lokale Auth-/Mailpit-/API-regressiedekking. De nieuwe roosterbranch
+voegt organisatie-/vestigingsisolatie en gelijktijdige lespublicatie toe; zie
+[de implementatie en integratiegrenzen](AGENDA_INTEGRATIONS.md).
+
+De instructeursprivacyfix staat nog afzonderlijk open in
+[PR #70](https://github.com/maxcrijnen-alt/sportmatch-zzp/pull/70), gecontroleerde
+head `bd0a42b`. Die implementatie wordt hier niet gedupliceerd en blijft een
+voorwaarde vóór een pilot met persoonsgegevens. Er is geen merge of uitrol gedaan.
+
+De onderstaande live SMTP-, e-mailbevestigings-, plan- en data-inventarisaties
+dateren van 16 oktober. In deze opdracht zijn geen productie-instellingen of
+echte mailboxontvangst opnieuw geverifieerd. SMTP-/afzender-/DNS-toegang,
+bevestigingsinstellingen, redirect-allowlist en echte externe ontvangst blijven
+acceptatiepunten volgens [AUTH_EMAIL_SETUP.md](AUTH_EMAIL_SETUP.md). Een groene
+lokale Mailpit-suite bewijst geen externe bezorging. Er zijn geen configuraties,
+abonnementen of productiegegevens gewijzigd.
+
+## Eerder draaiboek — 16 oktober 2026
+
 Bijgewerkt 16 oktober 2026. **NOT YET PILOT READY**. De externe pilot vereist
 apart expliciet startakkoord; er zijn geen deelnemers benaderd.
 

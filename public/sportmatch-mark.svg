@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="SportMatch">
   <g fill="none" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M45 108A88 88 0 0 1 116 37" stroke="#0B8F2E" stroke-width="15"/>
-    <path d="M140 37A88 88 0 0 1 211 105" stroke="#F0001A" stroke-width="15"/>
+    <path d="M45 108A88 88 0 0 1 128 40" stroke="#0B8F2E" stroke-width="15"/>
+    <path d="M128 40A88 88 0 0 1 211 105" stroke="#F0001A" stroke-width="15"/>
     <path d="M45 149A88 88 0 0 0 116 220" stroke="#0B8F2E" stroke-width="15"/>
     <path d="M140 220A88 88 0 0 0 211 151" stroke="#F0001A" stroke-width="15"/>
   </g>

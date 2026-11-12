@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { getSessionProfile } from "@/lib/auth/session";
+import { saveInstructorProfile } from "@/lib/profile/save-instructor-profile";
 import {
   CUSTOM_CITY_MAX_LENGTH,
   CUSTOM_CITY_OPTION_VALUE,
@@ -122,18 +123,16 @@ export async function completeInstructorOnboarding(
     return { error: "Profiel opslaan is niet gelukt." };
   }
 
-  const { error: instructorError } = await supabase
-    .from("instructor_profiles")
-    .upsert({
-      user_id: profile.id,
-      birth_date: input.birthDate,
-      years_experience: input.yearsExperience,
-      work_experience: input.workExperience,
-      hourly_rate_cents: Math.round(input.hourlyRateEuro * 100),
-      travel_distance_km: input.travelDistanceKm,
-      kvk_number: input.kvkNumber.trim(),
-      btw_number: input.btwNumber.trim(),
-    });
+  const { error: instructorError } = await saveInstructorProfile(supabase, {
+    user_id: profile.id,
+    birth_date: input.birthDate,
+    years_experience: input.yearsExperience,
+    work_experience: input.workExperience,
+    hourly_rate_cents: Math.round(input.hourlyRateEuro * 100),
+    travel_distance_km: input.travelDistanceKm,
+    kvk_number: input.kvkNumber.trim(),
+    btw_number: input.btwNumber.trim(),
+  });
 
   if (instructorError) {
     return { error: "Instructeursprofiel opslaan is niet gelukt." };

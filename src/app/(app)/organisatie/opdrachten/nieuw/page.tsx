@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
+import { z } from "zod";
 import {
   CreateJobForm,
   type JobFormDefaults,
@@ -16,6 +17,7 @@ import {
 } from "@/components/ui/card";
 import { Page, PageHeader } from "@/components/ui/page";
 import { getSessionProfile } from "@/lib/auth/session";
+import { getScheduledLesson } from "@/lib/agenda/lessons";
 import { subscriptionGrantsAccess } from "@/lib/billing/access";
 import { getOrgContext } from "@/lib/org/context";
 import { createClient } from "@/lib/supabase/server";
@@ -35,7 +37,11 @@ export const metadata: Metadata = {
 export default async function NieuweOpdrachtPage({
   searchParams,
 }: {
-  searchParams: Promise<{ duplicate?: string; template?: string }>;
+  searchParams: Promise<{
+    duplicate?: string;
+    template?: string;
+    lesson?: string;
+  }>;
 }) {
   const profile = await getSessionProfile();
   const orgContext = await getOrgContext();
@@ -52,47 +58,78 @@ export default async function NieuweOpdrachtPage({
   const locationIds = orgContext.locations.map((location) => location.id);
 
   const params = await searchParams;
+  if (params.lesson && !z.uuid().safeParse(params.lesson).success) notFound();
+  const lesson = params.lesson
+    ? await getScheduledLesson(orgContext.organization.id, params.lesson)
+    : null;
+  if (params.lesson && !lesson) notFound();
+  if (lesson?.replacement)
+    redirect(`/organisatie/opdrachten/${lesson.replacement.job_id}`);
+  if (
+    lesson &&
+    (lesson.source.provider !== "manual" ||
+      lesson.cancelled ||
+      !lesson.source.enabled)
+  )
+    redirect(`/agenda/lessen/${lesson.id}`);
   const [
     sportsResult,
     lessonTypesResult,
     qualificationsResult,
     subscriptionsResult,
     templatesResult,
-  ] =
-    await Promise.all([
-      supabase.from("sports").select("*").eq("is_active", true).order("name"),
-      supabase
-        .from("lesson_types")
-        .select("*")
-        .eq("is_active", true)
-        .order("sort_order"),
-      supabase
-        .from("qualifications")
-        .select("*")
-        .eq("is_active", true)
-        .order("name"),
-      locationIds.length > 0
-        ? supabase.from("subscriptions").select("*").in("location_id", locationIds)
-        : Promise.resolve({ data: [] }),
-      supabase
-        .from("job_templates")
-        .select("*")
-        .eq("organization_id", orgContext.organization.id)
-        .order("updated_at", { ascending: false }),
-    ]);
+  ] = await Promise.all([
+    supabase.from("sports").select("*").eq("is_active", true).order("name"),
+    supabase
+      .from("lesson_types")
+      .select("*")
+      .eq("is_active", true)
+      .order("sort_order"),
+    supabase
+      .from("qualifications")
+      .select("*")
+      .eq("is_active", true)
+      .order("name"),
+    locationIds.length > 0
+      ? supabase
+          .from("subscriptions")
+          .select("*")
+          .in("location_id", locationIds)
+      : Promise.resolve({ data: [] }),
+    supabase
+      .from("job_templates")
+      .select("*")
+      .eq("organization_id", orgContext.organization.id)
+      .order("updated_at", { ascending: false }),
+  ]);
 
   const subscriptions =
     (subscriptionsResult.data as Subscription[] | null) ?? [];
   const activeLocations = orgContext.locations.filter((location) =>
     subscriptionGrantsAccess(
-      subscriptions.find((subscription) => subscription.location_id === location.id),
+      subscriptions.find(
+        (subscription) => subscription.location_id === location.id,
+      ),
     ),
   );
 
   const templates = (templatesResult.data as JobTemplate[] | null) ?? [];
   let defaults: JobFormDefaults = {};
 
-  if (params.template) {
+  if (lesson) {
+    defaults = {
+      jobType: "urgent_substitute",
+      sportId: lesson.sport_id,
+      lessonTypeId: "custom",
+      customLessonType: lesson.lesson_type,
+      locationId: lesson.location_id,
+      title: `${lesson.title} · inval`,
+      description: `Invalinstructeur gezocht voor ${lesson.title}.`,
+      startsOn: lesson.starts_on,
+      startTime: lesson.start_time.slice(0, 5),
+      endTime: lesson.end_time.slice(0, 5),
+    };
+  } else if (params.template) {
     const template = templates.find((item) => item.id === params.template);
     if (template) {
       defaults = template.template_data as JobFormDefaults;
@@ -116,7 +153,9 @@ export default async function NieuweOpdrachtPage({
         .eq("job_id", params.duplicate),
       supabase
         .from("job_segments")
-        .select("start_time, end_time, lesson_type_id, custom_lesson_type, level")
+        .select(
+          "start_time, end_time, lesson_type_id, custom_lesson_type, level",
+        )
         .eq("job_id", params.duplicate)
         .order("position"),
       supabase
@@ -193,12 +232,15 @@ export default async function NieuweOpdrachtPage({
         </Alert>
       ) : (
         <div className="space-y-3">
-          {templates.length > 0 ? (
+          {!lesson && templates.length > 0 ? (
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-base">Start vanuit een sjabloon</CardTitle>
+                <CardTitle className="text-base">
+                  Start vanuit een sjabloon
+                </CardTitle>
                 <CardDescription>
-                  De datum blijft leeg; les- en bloktijden uit het sjabloon kun je aanpassen.
+                  De datum blijft leeg; les- en bloktijden uit het sjabloon kun
+                  je aanpassen.
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex flex-wrap gap-2 pt-0">
@@ -206,8 +248,13 @@ export default async function NieuweOpdrachtPage({
                   <Link
                     href={`/organisatie/opdrachten/nieuw?template=${template.id}`}
                     key={template.id}
-                    className={buttonVariants({ size: "sm", variant: "outline" })}
-                  >{template.name}</Link>
+                    className={buttonVariants({
+                      size: "sm",
+                      variant: "outline",
+                    })}
+                  >
+                    {template.name}
+                  </Link>
                 ))}
               </CardContent>
             </Card>
@@ -226,6 +273,11 @@ export default async function NieuweOpdrachtPage({
                 }
                 sports={(sportsResult.data as Sport[]) ?? []}
                 defaults={defaults}
+                lesson={
+                  lesson
+                    ? { id: lesson.id, revision: lesson.revision }
+                    : undefined
+                }
               />
             </CardContent>
           </Card>

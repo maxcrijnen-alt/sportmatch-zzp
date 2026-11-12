@@ -121,6 +121,11 @@ export interface InstructorProfile {
   btw_number: string;
 }
 
+export type InstructorCandidateProfile = Omit<
+  InstructorProfile,
+  "birth_date" | "kvk_number" | "btw_number"
+> & { age: number | null };
+
 export interface Organization {
   id: string;
   name: string;

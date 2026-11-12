@@ -1,5 +1,5 @@
 import { getSessionProfile } from "@/lib/auth/session";
-import { sportMatchAgendaProvider } from "@/lib/agenda/sportmatch-provider";
+import { agendaProvider } from "@/lib/agenda/provider";
 import { calendarStatusForState } from "@/lib/agenda/status";
 import type { AgendaEvent } from "@/lib/agenda/types";
 import { getOrgContext } from "@/lib/org/context";
@@ -41,7 +41,7 @@ function toIcs(events: AgendaEvent[]): string {
       `DTEND;TZID=Europe/Amsterdam:${icsDate(event.date, event.endTime)}`,
       `SUMMARY:${escapeIcs(event.title)}`,
       `LOCATION:${escapeIcs(event.locationName)}`,
-      `DESCRIPTION:${escapeIcs(`${event.sportName} · ${event.organizationName} · ${event.payLabel}`)}`,
+      `DESCRIPTION:${escapeIcs([event.sportName, event.organizationName, event.instructorName, event.rosterInstructorName ? `Rooster: ${event.rosterInstructorName}` : "", event.sourceLabel, event.payLabel, event.scheduleChanged ? "Rooster gewijzigd; controleer de gekoppelde invalopdracht" : ""].filter(Boolean).join(" · "))}`,
       `STATUS:${calendarStatusForState(event.state)}`,
       "END:VEVENT",
     );
@@ -74,11 +74,12 @@ export async function GET(request: Request) {
         requestedLocation ?? undefined,
       )
     : null;
-  const events = await sportMatchAgendaProvider.listEvents({
+  const events = await agendaProvider.listEvents({
     role: profile.role,
     userId: profile.id,
     organizationId: orgContext?.organization.id,
     locationId,
+    includeOpenPlanning: profile.role === "organization",
   });
 
   return new Response(toIcs(events), {
