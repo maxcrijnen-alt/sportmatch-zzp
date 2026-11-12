@@ -27,6 +27,11 @@ nooit een service-role key, wachtwoord of ander geheim in Git.
 
 ## Databasewijzigingen
 
+De uitbreiding voor het volledige lesrooster, het synthetische providerprototype
+en de nog benodigde officiële API-contracten staan in
+[`docs/AGENDA_INTEGRATIONS.md`](docs/AGENDA_INTEGRATIONS.md). Gewone lessen en
+invalopdrachten gebruiken dezelfde bestaande agendaweergaven en ICS-export.
+
 Alle schemawijzigingen worden als nieuwe bestanden onder
 `supabase/migrations/` vastgelegd. Het bestaande live project is ouder dan de
 migration-historyregistratie; pas daarom eerst de niet-destructieve

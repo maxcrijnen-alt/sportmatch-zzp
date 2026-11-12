@@ -33,6 +33,7 @@ import { useMemo, useState } from "react";
 import { JobStatusIndicator } from "@/components/jobs/job-status-indicator";
 import { buttonVariants } from "@/components/ui/button";
 import { dateInAmsterdam } from "@/lib/datetime/amsterdam";
+import { groupAgendaEvents } from "@/lib/agenda/merge-lessons";
 import { cn } from "@/lib/utils";
 import type { AgendaEvent, AgendaEventState } from "@/lib/agenda/types";
 import type { UserRole } from "@/types/database";
@@ -49,6 +50,8 @@ const viewLabels: Record<AgendaViewMode, string> = {
 const viewOrder: AgendaViewMode[] = ["day", "week", "month", "list"];
 
 const legend: { state: AgendaEventState; label: string }[] = [
+  { state: "scheduled", label: "Ingeplande les" },
+  { state: "replacement_needed", label: "Inval nodig, nog geen opdracht" },
   { state: "searching", label: "Nog niemand" },
   { state: "action_required", label: "Reacties" },
   { state: "planned", label: "Bevestiging loopt" },
@@ -108,7 +111,11 @@ function EventCard({
       )}
       href={event.detailHref}
     >
-      <JobStatusIndicator className="mt-0.5" showLabel={false} state={event.state} />
+      <JobStatusIndicator
+        className="mt-0.5"
+        showLabel={false}
+        state={event.state}
+      />
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
           <p
@@ -135,6 +142,12 @@ function EventCard({
           </span>
           <span>{event.sportName}</span>
           <span className="font-medium text-foreground">{event.payLabel}</span>
+          {event.sourceLabel ? <span>{event.sourceLabel}</span> : null}
+          {event.scheduleChanged ? (
+            <span className="font-medium text-status-pending">
+              Rooster gewijzigd · controleer opdracht
+            </span>
+          ) : null}
         </div>
       </div>
     </Link>
@@ -143,16 +156,7 @@ function EventCard({
 
 /** Groepeert opeenvolgende lessen van dezelfde opdracht op één dag. */
 function groupByJob(events: AgendaEvent[]) {
-  const groups: AgendaEvent[][] = [];
-  for (const event of events) {
-    const current = groups[groups.length - 1];
-    if (current && current[0].jobId === event.jobId) {
-      current.push(event);
-    } else {
-      groups.push([event]);
-    }
-  }
-  return groups;
+  return groupAgendaEvents(events);
 }
 
 function EventGroup({
@@ -206,17 +210,23 @@ export function AgendaView({
   role,
   exportHref,
   highlightedJobId,
+  highlightedLessonId,
   defaultView = "list",
 }: {
   events: AgendaEvent[];
   role: Extract<UserRole, "instructor" | "organization">;
   exportHref: string;
   highlightedJobId?: string;
+  highlightedLessonId?: string;
   defaultView?: AgendaViewMode;
 }) {
   const [view, setView] = useState<AgendaViewMode>(defaultView);
   const [cursor, setCursor] = useState(() => {
-    const highlighted = events.find((event) => event.jobId === highlightedJobId);
+    const highlighted = events.find(
+      (event) =>
+        (highlightedJobId && event.jobId === highlightedJobId) ||
+        (highlightedLessonId && event.lessonId === highlightedLessonId),
+    );
     return highlighted
       ? parseISO(highlighted.date)
       : parseISO(dateInAmsterdam(new Date()));
@@ -347,7 +357,11 @@ export function AgendaView({
               className="inline-flex items-center gap-1.5 text-xs text-muted-foreground"
               key={item.state}
             >
-              <JobStatusIndicator showLabel={false} size="xs" state={item.state} />
+              <JobStatusIndicator
+                showLabel={false}
+                size="xs"
+                state={item.state}
+              />
               <span aria-hidden="true">{item.label}</span>
             </span>
           ))}
@@ -359,7 +373,9 @@ export function AgendaView({
           <div className="overflow-hidden rounded-xl border border-border bg-card shadow-card">
             {listDays.map((date) => {
               const day = parseISO(date);
-              const dayEvents = listEvents.filter((event) => event.date === date);
+              const dayEvents = listEvents.filter(
+                (event) => event.date === date,
+              );
               return (
                 <div
                   className="grid gap-3 border-b border-border p-3 last:border-b-0 sm:grid-cols-[7.5rem_1fr] sm:p-4"
@@ -394,8 +410,8 @@ export function AgendaView({
             })}
           </div>
         ) : (
-            <EmptyDay />
-          )
+          <EmptyDay />
+        )
       ) : null}
 
       {view === "month" ? (
@@ -533,7 +549,10 @@ export function AgendaView({
                       />
                     ))
                   ) : (
-                    <span aria-hidden="true" className="block text-xs text-muted-foreground/60 md:hidden">
+                    <span
+                      aria-hidden="true"
+                      className="block text-xs text-muted-foreground/60 md:hidden"
+                    >
                       —
                     </span>
                   )}
@@ -549,7 +568,10 @@ export function AgendaView({
           {eventsForDay(cursor).length > 0 ? (
             <div className="space-y-2">
               {groupByJob(eventsForDay(cursor)).map((group) => (
-                <div className="grid gap-2 sm:grid-cols-[4.5rem_1fr]" key={group[0].id}>
+                <div
+                  className="grid gap-2 sm:grid-cols-[4.5rem_1fr]"
+                  key={group[0].id}
+                >
                   <p className="pt-3 text-[13px] font-semibold tabular-nums text-muted-foreground">
                     {time(group[0].startTime)}
                   </p>

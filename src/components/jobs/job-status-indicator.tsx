@@ -3,6 +3,8 @@ import { cn } from "@/lib/utils";
 import type { AgendaEventState } from "@/lib/agenda/types";
 
 const labels: Record<AgendaEventState, string> = {
+  scheduled: "Ingeplande les",
+  replacement_needed: "Inval nodig · nog geen opdracht",
   searching: "Nog iemand zoeken",
   action_required: "Reactie ontvangen",
   planned: "Wacht op bevestiging",
@@ -19,6 +21,8 @@ const labels: Record<AgendaEventState, string> = {
  * blijven herkenbaar maar rustiger, omdat ze geen actie meer vragen.
  */
 const toneClasses: Record<AgendaEventState, string> = {
+  scheduled: "border-border-strong bg-subtle text-muted-foreground",
+  replacement_needed: "border-status-pending bg-status-pending text-white",
   searching: "border-status-searching bg-status-searching text-white",
   action_required: "border-status-pending bg-status-pending text-white",
   planned: "border-status-pending bg-status-pending text-white",
@@ -30,6 +34,8 @@ const toneClasses: Record<AgendaEventState, string> = {
 };
 
 const labelToneClasses: Record<AgendaEventState, string> = {
+  scheduled: "text-muted-foreground",
+  replacement_needed: "text-status-pending",
   searching: "text-status-searching",
   action_required: "text-status-pending",
   planned: "text-status-pending",
@@ -47,6 +53,8 @@ const sizeClasses = {
 };
 
 function StatusIcon({ state }: { state: AgendaEventState }) {
+  if (state === "scheduled") return <Minus strokeWidth={3} />;
+  if (state === "replacement_needed") return <Clock3 strokeWidth={2.75} />;
   if (state === "closed") return <Minus strokeWidth={3} />;
   if (state === "searching" || state === "cancelled") {
     return <X strokeWidth={3} />;

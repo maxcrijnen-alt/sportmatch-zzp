@@ -52,6 +52,7 @@ export default defineConfig({
       name: "mobile",
       use: { ...devices["Pixel 7"] },
       testMatch: [
+        /lesson-agenda\.spec\.ts/,
         /(public|pilot|auth|auth-confirm|registration|membership)\.spec\.ts/,
         /(hardening|link-semantics)\.spec\.ts/,
       ],

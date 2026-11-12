@@ -7,6 +7,7 @@ import { z } from "zod";
 import { getSessionProfile } from "@/lib/auth/session";
 import { getOrgContext } from "@/lib/org/context";
 import { createClient } from "@/lib/supabase/server";
+import { getScheduledLesson } from "@/lib/agenda/lessons";
 
 export interface JobActionState {
   error: string | null;
@@ -249,6 +250,34 @@ export async function createJobAction(
     (segmentLessonTypesResult.data?.length ?? 0) !== segmentLessonTypeIds.length
   ) {
     return initialError("Een lesvorm in het lessenblok hoort niet bij deze sport.");
+  }
+
+  const scheduledLessonId = formData.get("scheduledLessonId");
+  if (scheduledLessonId) {
+    const id = z.uuid().safeParse(scheduledLessonId);
+    const revision = z.coerce.number().int().positive().safeParse(formData.get("scheduledLessonRevision"));
+    if (!id.success || !revision.success || input.jobType !== "urgent_substitute" || segments.length || input.saveAsTemplate) {
+      return initialError("Deze invalopdracht moet één bestaande les volgen. Vernieuw de pagina.");
+    }
+    const lesson = await getScheduledLesson(orgContext.organization.id, id.data);
+    if (!lesson || lesson.location_id !== input.locationId || lesson.sport_id !== input.sportId ||
+      lesson.starts_on !== input.startsOn || lesson.start_time.slice(0, 5) !== input.startTime ||
+      lesson.end_time.slice(0, 5) !== input.endTime || lesson.lesson_type !== input.customLessonType || input.lessonTypeId) {
+      return initialError("Het lesrooster is gewijzigd. Open de les opnieuw voordat je de opdracht plaatst.");
+    }
+    const { data: jobId, error } = await supabase.rpc("create_lesson_replacement", {
+      p_lesson: id.data, p_revision: revision.data, p_terms: {
+        title: input.title, description: input.description, contactName: input.contactName,
+        payType: input.payType, payAmountCents: input.payAmountEuro ? Math.round(input.payAmountEuro * 100) : null,
+        payHourlyRateCents: input.payHourlyRateEuro ? Math.round(input.payHourlyRateEuro * 100) : null,
+        payIsNegotiable: input.payIsNegotiable, requiredLevel: input.requiredLevel,
+        expectedParticipants: input.expectedParticipants ?? null, qualificationIds: input.qualificationIds,
+      },
+    });
+    if (error || !jobId) return initialError(rpcErrorMessage(error));
+    revalidatePath("/agenda", "layout");
+    revalidatePath("/organisatie/opdrachten");
+    redirect(`/organisatie/opdrachten/${jobId}`);
   }
 
   const { data: job, error } = await supabase

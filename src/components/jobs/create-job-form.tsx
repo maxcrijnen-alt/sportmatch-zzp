@@ -82,6 +82,7 @@ export function CreateJobForm({
   qualifications,
   defaultContactName,
   defaults = {},
+  lesson,
 }: {
   locations: OrganizationLocation[];
   sports: Sport[];
@@ -89,6 +90,7 @@ export function CreateJobForm({
   qualifications: Qualification[];
   defaultContactName: string;
   defaults?: JobFormDefaults;
+  lesson?: { id: string; revision: number };
 }) {
   const [state, formAction, isPending] = useActionState(
     createJobAction,
@@ -174,6 +176,7 @@ export function CreateJobForm({
   );
 
   const rememberChoices = () => {
+    if (lesson) return;
     window.localStorage.setItem(
       PREVIOUS_JOB_KEY,
       JSON.stringify({
@@ -200,13 +203,33 @@ export function CreateJobForm({
 
   return (
     <form action={formAction} className="space-y-4" onSubmit={rememberChoices}>
+      {lesson ? <>
+        <input type="hidden" name="scheduledLessonId" value={lesson.id} />
+        <input type="hidden" name="scheduledLessonRevision" value={lesson.revision} />
+        {Object.entries({
+          jobType: "urgent_substitute", locationId: defaults.locationId,
+          sportId: defaults.sportId, lessonTypeId: "custom",
+          customLessonType: defaults.customLessonType, startsOn: defaults.startsOn,
+          startTime: defaults.startTime, endTime: defaults.endTime,
+        }).map(([name, value]) => (
+          <input key={name} type="hidden" name={name} value={value ?? ""} />
+        ))}
+        <Alert><AlertDescription>
+          Inval voor {defaults.customLessonType} op {defaults.startsOn}, {defaults.startTime}–{defaults.endTime}.
+          De vestiging, sport en tijden komen uit het lesrooster. Wijzig die zo nodig eerst bij de les.
+        </AlertDescription></Alert>
+        <div className="space-y-1.5">
+          <Label htmlFor="lessonContactName">Contactpersoon</Label>
+          <Input id="lessonContactName" name="contactName" defaultValue={defaultContactName} required />
+        </div>
+      </> : null}
       {state.error ? (
         <Alert variant="destructive">
           <AlertDescription>{state.error}</AlertDescription>
         </Alert>
       ) : null}
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      {!lesson ? <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-1.5">
           <Label htmlFor="jobType">Soort plaatsing</Label>
           <Select
@@ -298,7 +321,7 @@ export function CreateJobForm({
           <Label htmlFor="contactName">Contactpersoon</Label>
           <Input defaultValue={defaultContactName} id="contactName" name="contactName" required />
         </div>
-      </div>
+      </div> : null}
 
       <div className="space-y-1.5">
         <Label htmlFor="title">Titel</Label>
@@ -309,7 +332,7 @@ export function CreateJobForm({
         <Textarea defaultValue={defaults.description} id="description" name="description" required rows={4} />
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      {!lesson ? <div className="grid gap-3 sm:grid-cols-3">
         <div className="space-y-1.5">
           <Label htmlFor="startsOn">{jobType === "recurring" ? "Eerste datum" : "Datum"}</Label>
           <Input defaultValue={defaults.startsOn} id="startsOn" name="startsOn" required type="date" />
@@ -322,7 +345,7 @@ export function CreateJobForm({
           <Label htmlFor="endTime">Eindtijd</Label>
           <Input defaultValue={defaults.endTime} id="endTime" name="endTime" required type="time" />
         </div>
-      </div>
+      </div> : null}
 
       {jobType === "recurring" ? (
         <div className="grid gap-3 rounded-xl border border-border bg-subtle p-4 sm:grid-cols-3">
@@ -417,7 +440,7 @@ export function CreateJobForm({
         </div>
       </div>
 
-      <div className="space-y-3 rounded-xl border border-border bg-subtle p-4">
+      {!lesson ? <div className="space-y-3 rounded-xl border border-border bg-subtle p-4">
         <label className="flex items-center gap-2 font-medium">
           <input checked={isBlock} onChange={(event) => setIsBlock(event.target.checked)} type="checkbox" />
           Meerdere aansluitende lessen plaatsen
@@ -500,15 +523,15 @@ export function CreateJobForm({
             </Button>
           </>
         ) : null}
-      </div>
+      </div> : null}
 
-      <div className="rounded-xl border border-border bg-subtle p-4">
+      {!lesson ? <div className="rounded-xl border border-border bg-subtle p-4">
         <label className="flex items-center gap-2 text-sm font-medium">
           <input name="saveAsTemplate" type="checkbox" />
           Deze keuzes ook als sjabloon opslaan
         </label>
         <Input className="mt-3" name="templateName" placeholder="Naam van het sjabloon (optioneel)" />
-      </div>
+      </div> : null}
 
       {jobType === "permanent" ? (
         <Alert>

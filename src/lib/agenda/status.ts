@@ -1,6 +1,11 @@
 import type { AgendaEventState } from "./types";
 
-const calendarStatuses: Record<AgendaEventState, "CONFIRMED" | "TENTATIVE" | "CANCELLED"> = {
+const calendarStatuses: Record<
+  AgendaEventState,
+  "CONFIRMED" | "TENTATIVE" | "CANCELLED"
+> = {
+  scheduled: "CONFIRMED",
+  replacement_needed: "TENTATIVE",
   searching: "TENTATIVE",
   action_required: "TENTATIVE",
   planned: "TENTATIVE",
