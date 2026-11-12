@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { ConnectionButton } from "@/components/org/connection-button";
 import { ReviewFilters } from "@/components/reviews/review-filters";
+import { ChipList } from "@/components/ui/chip-list";
 import { ReviewItem } from "@/components/reviews/review-item";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -214,6 +215,9 @@ export default async function CandidateProfilePage({
   const lessonNames = lessonNamesResult.data ?? [];
   const qualificationNames = qualificationNamesResult.data ?? [];
 
+  const showReviewFilters =
+    reviews.length > 1 || reviewStars != null || reviewSort !== "recent";
+
   return (
     <Page width="medium">
       <Link
@@ -224,110 +228,107 @@ export default async function CandidateProfilePage({
         {isOwnPreview ? "Terug naar mijn profiel" : "Terug naar kandidaten"}
       </Link>
 
-      <Card className="overflow-hidden">
-        <div
-          aria-hidden="true"
-          className="h-24 bg-[radial-gradient(120%_140%_at_0%_0%,rgb(5_150_105/0.16),transparent_60%),linear-gradient(135deg,var(--primary-soft),var(--subtle))] sm:h-28"
-        />
-        <div className="px-5 pb-5 sm:px-6 sm:pb-6">
-          <div className="-mt-12 flex flex-col gap-4 sm:-mt-14 sm:flex-row sm:items-end sm:justify-between">
+      <Card className="p-4 sm:p-5">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex min-w-0 items-center gap-4">
             <Avatar
-              className="h-24 w-24 text-2xl ring-4 ring-card sm:h-28 sm:w-28"
+              className="h-16 w-16 text-xl ring-4 ring-primary-soft sm:h-20 sm:w-20"
               name={candidate.full_name}
               size="xl"
               src={candidate.avatar_url}
             />
-            <div className="flex flex-wrap items-center gap-2 sm:pb-1">
-              {!isOwnPreview && orgContext && sessionProfile.role === "organization" ? (
-                <ConnectionButton
-                  expanded
-                  initialConnected={isConnected}
-                  instructorId={instructorId}
-                  key={`${instructorId}-${isConnected}`}
-                />
-              ) : null}
-              {!isOwnPreview && query.job ? (
-                <Link
-                  href={`/organisatie/opdrachten/${query.job}`}
-                  className={buttonVariants({ size: "sm" })}
-                >Terug naar opdracht</Link>
-              ) : null}
+            <div className="min-w-0 space-y-1.5">
+              <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
+                <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
+                  {candidate.full_name}
+                </h1>
+                <Badge variant={hasValidVog ? "success" : "warning"}>
+                  <ShieldCheck className="h-3.5 w-3.5" />
+                  {hasValidVog ? "VOG goedgekeurd" : "VOG niet goedgekeurd"}
+                </Badge>
+              </div>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-muted-foreground">
+                {age != null ? (
+                  <span className="inline-flex items-center gap-1.5">
+                    <Cake className="h-3.5 w-3.5" />
+                    {age} jaar
+                  </span>
+                ) : null}
+                {cityName ? (
+                  <span className="inline-flex items-center gap-1.5">
+                    <MapPin className="h-3.5 w-3.5" />
+                    {cityName}
+                  </span>
+                ) : null}
+                <span className="inline-flex items-center gap-1.5">
+                  <BriefcaseBusiness className="h-3.5 w-3.5" />
+                  {details.years_experience ?? 0} jaar ervaring
+                </span>
+              </div>
             </div>
           </div>
+          <div className="flex flex-wrap items-center gap-2 [&>*]:max-sm:flex-1">
+            {!isOwnPreview && query.job ? (
+              <Link
+                href={`/organisatie/opdrachten/${query.job}`}
+                className={buttonVariants({ size: "sm" })}
+              >Terug naar opdracht</Link>
+            ) : null}
+            {!isOwnPreview && orgContext && sessionProfile.role === "organization" ? (
+              <ConnectionButton
+                expanded
+                initialConnected={isConnected}
+                instructorId={instructorId}
+                key={`${instructorId}-${isConnected}`}
+              />
+            ) : null}
+          </div>
+        </div>
 
-          <div className="mt-4 space-y-2">
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-              <h1 className="text-2xl font-semibold tracking-tight sm:text-[1.75rem]">
-                {candidate.full_name}
-              </h1>
-              <Badge variant={hasValidVog ? "success" : "warning"}>
-                <ShieldCheck className="h-3.5 w-3.5" />
-                {hasValidVog ? "VOG goedgekeurd" : "VOG niet goedgekeurd"}
-              </Badge>
-            </div>
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-muted-foreground">
-              {age != null ? (
-                <span className="inline-flex items-center gap-1.5">
-                  <Cake className="h-4 w-4" />
-                  {age} jaar
-                </span>
-              ) : null}
-              {cityName ? (
-                <span className="inline-flex items-center gap-1.5">
-                  <MapPin className="h-4 w-4" />
-                  {cityName}
-                </span>
-              ) : null}
-              <span className="inline-flex items-center gap-1.5">
-                <BriefcaseBusiness className="h-4 w-4" />
-                {details.years_experience ?? 0} jaar ervaring
+        <div className="mt-4 grid grid-cols-2 divide-border overflow-hidden rounded-lg border border-border bg-subtle sm:grid-cols-4 sm:divide-x [&>*]:max-sm:border-border [&>*:nth-child(odd)]:max-sm:border-r [&>*:nth-child(-n+2)]:max-sm:border-b">
+          <Link
+            className="group px-3 py-2.5 transition-colors hover:bg-card focus-visible:bg-card focus-visible:outline-none"
+            href="#reviews"
+          >
+            <p className="text-xs text-muted-foreground">Beoordeling</p>
+            <p className="mt-0.5 flex items-center gap-1.5 text-base font-semibold tabular-nums">
+              <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+              {stats?.avg_rating ?? "—"}
+              <span className="text-xs font-normal text-muted-foreground group-hover:text-primary">
+                ({stats?.review_count ?? 0})
               </span>
-            </div>
+            </p>
+          </Link>
+          <div className="px-3 py-2.5">
+            <p className="text-xs text-muted-foreground">Betrouwbaarheid</p>
+            <p className="mt-0.5 text-base font-semibold tabular-nums">
+              {stats?.reliability_score != null
+                ? `${stats.reliability_score}%`
+                : "Nieuw"}
+            </p>
           </div>
-
-          <div className="mt-5 grid grid-cols-3 divide-x divide-border overflow-hidden rounded-xl border border-border bg-subtle">
-            <Link
-              className="group p-3 transition-colors hover:bg-card focus-visible:bg-card focus-visible:outline-none sm:p-4"
-              href="#reviews"
-            >
-              <p className="text-xs text-muted-foreground">Beoordeling</p>
-              <p className="mt-1 flex items-center gap-1.5 text-lg font-semibold tabular-nums">
-                <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-                {stats?.avg_rating ?? "—"}
-              </p>
-              <p className="text-xs text-muted-foreground group-hover:text-primary">
-                {stats?.review_count ?? 0} reviews bekijken
-              </p>
-            </Link>
-            <div className="p-3 sm:p-4">
-              <p className="text-xs text-muted-foreground">Betrouwbaarheid</p>
-              <p className="mt-1 text-lg font-semibold tabular-nums">
-                {stats?.reliability_score != null
-                  ? `${stats.reliability_score}%`
-                  : "Nieuw"}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {stats?.completed_count ?? 0} afgerond
-              </p>
-            </div>
-            <div className="p-3 sm:p-4">
-              <p className="text-xs text-muted-foreground">Reisafstand</p>
-              <p className="mt-1 text-lg font-semibold tabular-nums">
-                {details.travel_distance_km != null
-                  ? `${details.travel_distance_km} km`
-                  : "—"}
-              </p>
-              <p className="text-xs text-muted-foreground">Vanaf woonplaats</p>
-            </div>
+          <div className="px-3 py-2.5">
+            <p className="text-xs text-muted-foreground">Afgerond via SportMatch</p>
+            <p className="mt-0.5 text-base font-semibold tabular-nums">
+              {stats?.completed_count ?? 0}
+            </p>
+          </div>
+          <div className="px-3 py-2.5">
+            <p className="text-xs text-muted-foreground">Reisafstand</p>
+            <p className="mt-0.5 text-base font-semibold tabular-nums">
+              {details.travel_distance_km != null
+                ? `${details.travel_distance_km} km`
+                : "—"}
+            </p>
           </div>
         </div>
       </Card>
 
-      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
-        <div className="space-y-6">
+      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_18rem] lg:gap-6">
+        <div className="space-y-4 lg:space-y-6">
           <Panel>
             <PanelHeader icon={UserRound} title="Over mij" />
-            <p className="whitespace-pre-line px-4 py-4 text-sm leading-7 text-foreground/85 sm:px-5">
+            <p className="whitespace-pre-line px-4 py-3.5 text-sm leading-6 text-foreground/85 sm:px-5">
               {details.work_experience?.trim() ||
                 "Deze instructeur heeft nog geen omschrijving toegevoegd."}
             </p>
@@ -340,18 +341,20 @@ export default async function CandidateProfilePage({
               iconClassName="bg-amber-50 text-amber-500"
               title="Ontvangen reviews"
             />
-            <div className="border-b border-border bg-subtle px-4 py-3 sm:px-5">
-              <ReviewFilters
-                hiddenParams={
-                  isOwnPreview
-                    ? {}
-                    : { job: query.job, location: query.location }
-                }
-                resetHref={reviewResetHref}
-                sort={reviewSort}
-                stars={reviewStars}
-              />
-            </div>
+            {showReviewFilters ? (
+              <div className="border-b border-border bg-subtle px-4 py-3 sm:px-5">
+                <ReviewFilters
+                  hiddenParams={
+                    isOwnPreview
+                      ? {}
+                      : { job: query.job, location: query.location }
+                  }
+                  resetHref={reviewResetHref}
+                  sort={reviewSort}
+                  stars={reviewStars}
+                />
+              </div>
+            ) : null}
             {visibleReviews.length === 0 ? (
               <PanelEmpty>
                 {reviews.length === 0
@@ -374,49 +377,7 @@ export default async function CandidateProfilePage({
           </Panel>
         </div>
 
-        <div className="space-y-6">
-          <Panel>
-            <PanelHeader as="h3" icon={Dumbbell} title="Sporten & lesvormen" />
-            <div className="space-y-4 px-4 py-4 sm:px-5">
-              <div>
-                <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  Sporten
-                </p>
-                <div className="flex flex-wrap gap-1.5">
-                  {sportNames.length > 0 ? (
-                    sportNames.map((sport) => (
-                      <Badge key={sport.id} variant="default">
-                        {sport.name}
-                      </Badge>
-                    ))
-                  ) : (
-                    <span className="text-sm text-muted-foreground">
-                      Niet ingevuld
-                    </span>
-                  )}
-                </div>
-              </div>
-              <div>
-                <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  Lesvormen
-                </p>
-                <div className="flex flex-wrap gap-1.5">
-                  {lessonNames.length > 0 ? (
-                    lessonNames.map((lessonType) => (
-                      <Badge key={lessonType.id} variant="outline">
-                        {lessonType.name}
-                      </Badge>
-                    ))
-                  ) : (
-                    <span className="text-sm text-muted-foreground">
-                      Niet ingevuld
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-          </Panel>
-
+        <div className="space-y-4 lg:space-y-6">
           <Panel>
             <PanelHeader
               as="h3"
@@ -427,14 +388,15 @@ export default async function CandidateProfilePage({
             {qualificationNames.length > 0 ? (
               <PanelList>
                 {qualificationNames.map((qualification) => (
-                  <div className="flex items-start gap-3 px-4 py-3 sm:px-5" key={qualification.id}>
-                    <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-primary-soft text-primary">
-                      <Award className="h-3.5 w-3.5" />
-                    </span>
+                  <div className="flex items-start gap-2.5 px-4 py-2.5 sm:px-5" key={qualification.id}>
+                    <Award className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
                     <div className="min-w-0">
-                      <p className="text-sm font-medium">{qualification.name}</p>
+                      <p className="text-sm font-medium leading-5">{qualification.name}</p>
                       {qualification.description ? (
-                        <p className="mt-0.5 text-xs leading-5 text-muted-foreground">
+                        <p
+                          className="line-clamp-1 text-xs leading-5 text-muted-foreground"
+                          title={qualification.description}
+                        >
                           {qualification.description}
                         </p>
                       ) : null}
@@ -448,19 +410,28 @@ export default async function CandidateProfilePage({
           </Panel>
 
           <Panel>
-            <PanelHeader as="h3" icon={BriefcaseBusiness} title="Werkervaring" />
-            <dl className="divide-y divide-border text-sm">
-              <div className="flex items-center justify-between gap-3 px-4 py-3 sm:px-5">
-                <dt className="text-muted-foreground">Ervaring</dt>
-                <dd className="font-medium tabular-nums">
-                  {details.years_experience ?? 0} jaar
-                </dd>
+            <PanelHeader as="h3" icon={Dumbbell} title="Sporten & lesvormen" />
+            <div className="space-y-4 px-4 py-4 sm:px-5">
+              <div>
+                <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Sporten
+                </p>
+                <ChipList
+                  items={sportNames.map(({ id, name }) => ({ id, name }))}
+                  limit={10}
+                  variant="default"
+                />
               </div>
-              <div className="flex items-center justify-between gap-3 px-4 py-3 sm:px-5">
-                <dt className="text-muted-foreground">Afgerond via SportMatch</dt>
-                <dd className="font-medium tabular-nums">{stats?.completed_count ?? 0}</dd>
+              <div>
+                <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Lesvormen
+                </p>
+                <ChipList
+                  items={lessonNames.map(({ id, name }) => ({ id, name }))}
+                  limit={8}
+                />
               </div>
-            </dl>
+            </div>
           </Panel>
         </div>
       </div>

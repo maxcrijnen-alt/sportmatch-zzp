@@ -61,7 +61,7 @@ export function JobCard({
 
   return (
     <Card className="group relative transition-[border-color,box-shadow] hover:border-border-strong hover:shadow-raised">
-      <div className="flex gap-4 p-4 sm:p-5">
+      <div className="flex gap-4 p-4">
         <DateBadge className="hidden sm:flex" date={job.starts_on} />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-1.5">
@@ -69,13 +69,21 @@ export function JobCard({
               {isUrgent ? <Zap className="h-3 w-3" /> : null}
               {jobTypeLabels[job.job_type]}
             </Badge>
-            {job.sport ? <Badge variant="default">{job.sport.name}</Badge> : null}
-            <Badge variant="outline">{lessonLabel}</Badge>
+            {job.sport ? (
+              <Badge variant="default">
+                {job.sport.name}
+                {lessonLabel.toLowerCase() !== job.sport.name.toLowerCase()
+                  ? ` · ${lessonLabel}`
+                  : ""}
+              </Badge>
+            ) : (
+              <Badge variant="outline">{lessonLabel}</Badge>
+            )}
             {match?.match_score != null ? (
               <Badge variant="accent">Match {Math.round(match.match_score)}%</Badge>
             ) : null}
           </div>
-          <h3 className="mt-2 text-[15px] font-semibold leading-snug">
+          <h3 className="mt-1.5 text-[15px] font-semibold leading-snug">
             <Link
               className="after:absolute after:inset-0 after:rounded-xl after:content-[''] focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-ring/40 group-hover:text-primary"
               href={href}
@@ -83,7 +91,7 @@ export function JobCard({
               {job.title}
             </Link>
           </h3>
-          <div className="mt-2 grid gap-x-4 gap-y-1.5 text-[13px] text-muted-foreground sm:grid-cols-2">
+          <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-[13px] text-muted-foreground">
             <span className="inline-flex items-center gap-1.5 sm:hidden">
               <CalendarDays className="h-3.5 w-3.5" />
               {formatDate(job.starts_on)}
@@ -109,7 +117,7 @@ export function JobCard({
                   : " · Afstand onbekend"
                 : ""}
             </span>
-            <span className="inline-flex min-w-0 items-center gap-1.5 sm:col-span-2">
+            <span className="inline-flex min-w-0 max-w-full items-center gap-1.5">
               <Building2 className="h-3.5 w-3.5 shrink-0" />
               <span className="truncate">
                 {job.organization?.name ?? "Sportschool"} ·{" "}

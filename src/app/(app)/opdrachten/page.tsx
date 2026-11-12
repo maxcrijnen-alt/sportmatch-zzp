@@ -2,7 +2,7 @@ import { cn } from "@/lib/utils";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowRight, SearchX, SlidersHorizontal } from "lucide-react";
+import { ArrowRight, CalendarDays, ChevronRight, SearchX, SlidersHorizontal } from "lucide-react";
 import { AgendaView } from "@/components/agenda/agenda-view";
 import { JobCard } from "@/components/jobs/job-card";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -139,15 +139,23 @@ export default async function OpdrachtenPage({
       />
 
       {profile.role === "instructor" ? (
-        <section className="space-y-3">
-          <SectionHeading title="Mijn week" />
-          <AgendaView
-            defaultView="week"
-            events={agendaEvents}
-            exportHref="/agenda/export"
-            role="instructor"
-          />
-        </section>
+        <details className="group rounded-xl border border-border bg-card shadow-card">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-semibold hover:bg-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 sm:px-5 [&::-webkit-details-marker]:hidden">
+            <span className="flex items-center gap-2">
+              <CalendarDays className="h-4 w-4 text-muted-foreground" />
+              Mijn week
+            </span>
+            <ChevronRight className="h-4 w-4 text-muted-foreground transition-transform group-open:rotate-90" />
+          </summary>
+          <div className="border-t border-border p-3 sm:p-4">
+            <AgendaView
+              defaultView="week"
+              events={agendaEvents}
+              exportHref="/agenda/export"
+              role="instructor"
+            />
+          </div>
+        </details>
       ) : null}
 
       <section className="space-y-3">

@@ -41,7 +41,7 @@ interface JobRow extends Job {
 export default async function OrganisatieOpdrachtenPage({
   searchParams,
 }: {
-  searchParams: Promise<{ location?: string }>;
+  searchParams: Promise<{ location?: string; status?: string }>;
 }) {
   const profile = await getSessionProfile();
   const orgContext = await getOrgContext();
@@ -137,6 +137,41 @@ export default async function OrganisatieOpdrachtenPage({
   });
 
   const workflowState = (job: JobRow) => workflowByJob.get(job.id)!.state;
+  const statusFilters = [
+    { key: "alle", label: "Alle", match: () => true },
+    {
+      key: "actie",
+      label: "Actie nodig",
+      match: (job: JobRow) =>
+        ["action_required", "planned", "partially_confirmed"].includes(workflowState(job)),
+    },
+    {
+      key: "zoeken",
+      label: "Nog niemand",
+      match: (job: JobRow) => workflowState(job) === "searching",
+    },
+    {
+      key: "bevestigd",
+      label: "Bevestigd",
+      match: (job: JobRow) => workflowState(job) === "confirmed",
+    },
+    {
+      key: "afgerond",
+      label: "Afgerond & gesloten",
+      match: (job: JobRow) =>
+        ["completed", "closed", "cancelled"].includes(workflowState(job)),
+    },
+  ] as const;
+  const activeStatus =
+    statusFilters.find((item) => item.key === params.status) ?? statusFilters[0];
+  const visibleJobs = jobs.filter(activeStatus.match);
+  const statusHref = (key: string) => {
+    const query = new URLSearchParams();
+    if (selectedLocationId) query.set("location", selectedLocationId);
+    if (key !== "alle") query.set("status", key);
+    const value = query.toString();
+    return `/organisatie/opdrachten${value ? `?${value}` : ""}`;
+  };
   const stateLabels = jobStatusIndicatorLabels;
   const stateTextClasses = {
     searching: "text-foreground",
@@ -163,18 +198,54 @@ export default async function OrganisatieOpdrachtenPage({
         title="Opdrachten"
       />
 
-      <section className="space-y-3">
-        <SectionHeading title="Weekoverzicht" />
-        <AgendaView
-          defaultView="week"
-          events={agendaEvents}
-          exportHref={agendaExportHref}
-          role="organization"
-        />
-      </section>
+      <details className="group rounded-xl border border-border bg-card shadow-card">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-semibold hover:bg-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 sm:px-5 [&::-webkit-details-marker]:hidden">
+          <span className="flex items-center gap-2">
+            <CalendarDays className="h-4 w-4 text-muted-foreground" />
+            Weekoverzicht
+          </span>
+          <ChevronRight className="h-4 w-4 text-muted-foreground transition-transform group-open:rotate-90" />
+        </summary>
+        <div className="border-t border-border p-3 sm:p-4">
+          <AgendaView
+            defaultView="week"
+            events={agendaEvents}
+            exportHref={agendaExportHref}
+            role="organization"
+          />
+        </div>
+      </details>
 
       <section className="space-y-3">
         <SectionHeading count={jobs.length} title="Opdrachtenlijst" />
+        {jobs.length > 0 ? (
+          <nav
+            aria-label="Filter op status"
+            className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0"
+          >
+            {statusFilters.map((item) => {
+              const count = jobs.filter(item.match).length;
+              const active = item.key === activeStatus.key;
+              return (
+                <Link
+                  aria-current={active ? "page" : undefined}
+                  className={cn(
+                    "inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border px-3 text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40",
+                    active
+                      ? "border-primary/30 bg-primary-soft text-primary-soft-foreground"
+                      : "border-border bg-card text-muted-foreground hover:text-foreground",
+                    count === 0 && !active && "opacity-60",
+                  )}
+                  href={statusHref(item.key)}
+                  key={item.key}
+                >
+                  {item.label}
+                  <span className="tabular-nums">{count}</span>
+                </Link>
+              );
+            })}
+          </nav>
+        ) : null}
 
         {jobs.length === 0 ? (
           <Card>
@@ -204,8 +275,13 @@ export default async function OrganisatieOpdrachtenPage({
               <span>Reacties</span>
               <span />
             </div>
+            {visibleJobs.length === 0 ? (
+              <p className="px-4 py-6 text-sm text-muted-foreground sm:px-5">
+                Geen opdrachten met deze status.
+              </p>
+            ) : null}
             <ul className="divide-y divide-border">
-              {jobs.map((job) => {
+              {visibleJobs.map((job) => {
                 const state = workflowState(job);
                 const applicationCount = job.applications?.[0]?.count ?? 0;
 

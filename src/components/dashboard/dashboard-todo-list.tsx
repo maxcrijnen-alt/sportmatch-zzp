@@ -27,7 +27,7 @@ function DashboardTodoList({ items }: { items: DashboardTodoItem[] }) {
         <PanelList>
           {items.map((item, index) => (
             <Link
-              className="group flex items-center gap-3 px-4 py-3 transition-colors hover:bg-subtle focus-visible:bg-subtle focus-visible:outline-none sm:px-5"
+              className="group flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-subtle focus-visible:bg-subtle focus-visible:outline-none sm:px-5"
               href={item.href}
               key={item.title}
             >
@@ -39,7 +39,7 @@ function DashboardTodoList({ items }: { items: DashboardTodoItem[] }) {
               </span>
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium leading-5">{item.title}</p>
-                <p className="text-[13px] leading-5 text-muted-foreground">
+                <p className="line-clamp-1 text-[13px] leading-5 text-muted-foreground">
                   {item.description}
                 </p>
               </div>

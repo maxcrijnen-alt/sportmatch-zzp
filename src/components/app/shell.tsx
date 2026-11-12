@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Logo, LogoMark } from "@/components/brand/logo";
+import { RoleIcon } from "@/components/brand/role-icon";
 import {
   LocationSelector,
   type LocationOption,
@@ -168,6 +169,15 @@ export function AppShell({
         ? "Beheerder"
         : "Instructeur";
 
+  const roleBadge =
+    role === "organization" || role === "instructor" ? (
+      <RoleIcon
+        className="h-4 w-4 rounded bg-transparent ring-0"
+        iconClassName="h-3.5 w-3.5"
+        role={role}
+      />
+    ) : null;
+
   const iconLinkClassName = (active: boolean) =>
     cn(
       "relative flex h-9 w-9 items-center justify-center rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40",
@@ -224,7 +234,7 @@ export function AppShell({
             <Avatar name={fullName} size="sm" />
             <div className="min-w-0">
               <p className="truncate text-sm font-medium leading-5">{fullName}</p>
-              <p className="text-xs leading-4 text-muted-foreground">{roleLabel}</p>
+              <p className="flex items-center gap-1 text-xs leading-4 text-muted-foreground">{roleBadge}{roleLabel}</p>
             </div>
           </div>
           <form action={signOutAction}>
@@ -328,7 +338,7 @@ export function AppShell({
                   <Avatar name={fullName} size="sm" />
                   <div className="min-w-0">
                     <p className="truncate text-sm font-semibold">{fullName}</p>
-                    <p className="text-xs text-muted-foreground">{roleLabel}</p>
+                    <p className="flex items-center gap-1 text-xs text-muted-foreground">{roleBadge}{roleLabel}</p>
                   </div>
                 </div>
                 <button

@@ -13,7 +13,6 @@ import {
   ShieldCheck,
   Sparkles,
   Star,
-  UserRound,
   Users,
 } from "lucide-react";
 import { InviteForm } from "@/components/jobs/invite-form";
@@ -26,7 +25,6 @@ import {
   Page,
   PageHeader,
   Panel,
-  PanelEmpty,
   PanelHeader,
   PanelList,
 } from "@/components/ui/page";
@@ -649,16 +647,6 @@ export default async function KandidatenPage({
     );
   };
 
-  const profileButton = (instructorId: string) => (
-    <Link
-      href={candidateProfileHref(instructorId)}
-      className={buttonVariants({ size: "sm", variant: "outline" })}
-    >
-      <UserRound className="h-3.5 w-3.5" />
-      Profiel
-    </Link>
-  );
-
   const matchContext = (match: CandidateMatch, showJob = false) => (
     <div className="space-y-1.5">
       <div className="flex flex-wrap items-center gap-1.5">
@@ -732,7 +720,10 @@ export default async function KandidatenPage({
       >
         {sectionNav.map((item) => (
           <a
-            className="inline-flex h-9 shrink-0 items-center gap-2 rounded-lg border border-border bg-card px-3 text-[13px] font-medium text-foreground shadow-xs transition-colors hover:border-border-strong hover:bg-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+            className={cn(
+              "inline-flex h-9 shrink-0 items-center gap-2 rounded-lg border border-border bg-card px-3 text-[13px] font-medium text-foreground shadow-xs transition-colors hover:border-border-strong hover:bg-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40",
+              item.count === 0 && "border-dashed bg-transparent text-muted-foreground shadow-none",
+            )}
             href={item.href}
             key={item.href}
           >
@@ -772,7 +763,6 @@ export default async function KandidatenPage({
                   : undefined,
                 actions: (
                   <>
-                    {profileButton(application.instructor_id)}
                     <Link
                       href={`/organisatie/opdrachten/${application.job?.id}`}
                       className={buttonVariants({ size: "sm" })}
@@ -796,21 +786,23 @@ export default async function KandidatenPage({
       <Panel className="scroll-mt-24" id="poule">
         <PanelHeader
           count={visiblePoolIds.length}
-          description="Opgeslagen instructeurs van jouw sportschool."
+          className={visiblePoolIds.length === 0 ? "border-b-0" : undefined}
+          description={
+            visiblePoolIds.length === 0
+              ? "Nog geen instructeurs opgeslagen."
+              : "Opgeslagen instructeurs van jouw sportschool."
+          }
           icon={BookmarkCheck}
           iconClassName="bg-primary-soft text-primary"
           title="Mijn poule"
         />
-        {visiblePoolIds.length === 0 ? (
-          <PanelEmpty>Nog geen instructeurs opgeslagen.</PanelEmpty>
-        ) : (
+        {visiblePoolIds.length === 0 ? null : (
           <PanelList>
             {visiblePoolIds.map((instructorId) =>
               candidateRow({
                 instructorId,
                 actions: (
                   <>
-                    {profileButton(instructorId)}
                     {selectedJob && !alreadyInvitedOrApplied.has(instructorId) ? (
                       <InviteForm instructorId={instructorId} jobId={selectedJob.id} />
                     ) : selectedJob && alreadyInvitedOrApplied.has(instructorId) ? (
@@ -832,12 +824,16 @@ export default async function KandidatenPage({
       <Panel className="scroll-mt-24" id="samengewerkt">
         <PanelHeader
           count={workedBeforeIds.length}
+          className={workedBeforeIds.length === 0 ? "border-b-0" : undefined}
+          description={
+            workedBeforeIds.length === 0
+              ? "Nog geen eerdere samenwerkingen in deze selectie."
+              : undefined
+          }
           icon={History}
           title="Eerder mee samengewerkt"
         />
-        {workedBeforeIds.length === 0 ? (
-          <PanelEmpty>Nog geen eerdere samenwerkingen in deze selectie.</PanelEmpty>
-        ) : (
+        {workedBeforeIds.length === 0 ? null : (
           <PanelList>
             {workedBeforeIds.map((instructorId) => {
               const returningMatch = returningMatchesById.get(instructorId);
@@ -849,7 +845,6 @@ export default async function KandidatenPage({
                   : undefined,
                 actions: (
                   <>
-                    {profileButton(instructorId)}
                     {returningMatch ? (
                       <Link
                         href={`/organisatie/opdrachten/${returningMatch.job.id}`}
@@ -873,12 +868,16 @@ export default async function KandidatenPage({
         <PanelHeader
           count={visibleCandidateMatches.length}
           icon={Sparkles}
+          className={visibleCandidateMatches.length === 0 ? "border-b-0" : undefined}
+          description={
+            visibleCandidateMatches.length === 0
+              ? "Geen extra passende instructeurs gevonden."
+              : "Op sport, lesvorm, diploma’s, afstand en beschikbaarheid."
+          }
           iconClassName="bg-accent text-accent-foreground"
           title="Passende instructeurs"
         />
-        {visibleCandidateMatches.length === 0 ? (
-          <PanelEmpty>Geen extra passende instructeurs gevonden.</PanelEmpty>
-        ) : (
+        {visibleCandidateMatches.length === 0 ? null : (
           <PanelList>
             {visibleCandidateMatches.map((match) =>
               candidateRow({
@@ -886,7 +885,6 @@ export default async function KandidatenPage({
                 context: matchContext(match),
                 actions: (
                   <>
-                    {profileButton(match.userId)}
                     <Link
                       href={`/organisatie/opdrachten/${match.job.id}`}
                       className={buttonVariants({ size: "sm" })}
@@ -908,12 +906,16 @@ export default async function KandidatenPage({
         <PanelHeader
           count={highlyRatedMatches.length}
           icon={Star}
+          className={highlyRatedMatches.length === 0 ? "border-b-0" : undefined}
+          description={
+            highlyRatedMatches.length === 0
+              ? "Nog geen passende instructeurs met ontvangen reviews."
+              : undefined
+          }
           iconClassName="bg-amber-50 text-amber-500"
           title="Hoog beoordeeld"
         />
-        {highlyRatedMatches.length === 0 ? (
-          <PanelEmpty>Nog geen passende instructeurs met ontvangen reviews.</PanelEmpty>
-        ) : (
+        {highlyRatedMatches.length === 0 ? null : (
           <PanelList>
             {highlyRatedMatches.map((match) =>
               candidateRow({
@@ -921,7 +923,6 @@ export default async function KandidatenPage({
                 context: jobContext(match.job.title, match.lessonTypeName),
                 actions: (
                   <>
-                    {profileButton(match.userId)}
                     <Link
                       href={`/organisatie/opdrachten/${match.job.id}`}
                       className={buttonVariants({ size: "sm" })}

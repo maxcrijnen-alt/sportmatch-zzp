@@ -6,6 +6,7 @@ import {
   AlertTriangle,
   ArrowRight,
   CalendarCheck,
+  CalendarDays,
   ChevronRight,
   Clock3,
   Inbox,
@@ -333,6 +334,15 @@ export default async function DashboardPage({
           <Panel>
             <PanelHeader
               count={urgentJobs.length}
+              actions={
+                <Link
+                  className={buttonVariants({ size: "sm", variant: "ghost" })}
+                  href="/agenda"
+                >
+                  <CalendarDays className="h-3.5 w-3.5" />
+                  Agenda
+                </Link>
+              }
               description="Binnen 7 dagen"
               icon={AlertTriangle}
               iconClassName="bg-destructive-soft text-destructive"
@@ -347,11 +357,11 @@ export default async function DashboardPage({
 
                   return (
                     <Link
-                      className="group flex items-center gap-3 px-4 py-3 transition-colors hover:bg-subtle sm:px-5"
+                      className="group flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-subtle sm:px-5"
                       href={`/organisatie/opdrachten/${job.id}`}
                       key={job.id}
                     >
-                      <DateBadge date={job.starts_on} />
+                      <DateBadge date={job.starts_on} size="sm" />
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-medium group-hover:text-primary">
                           {job.title}
@@ -702,16 +712,25 @@ export default async function DashboardPage({
         <div className="space-y-6">
           <Panel>
             <PanelHeader
+              actions={
+                <Link
+                  className={buttonVariants({ size: "sm", variant: "ghost" })}
+                  href="/agenda"
+                >
+                  <CalendarDays className="h-3.5 w-3.5" />
+                  Agenda
+                </Link>
+              }
               icon={CalendarCheck}
               iconClassName="bg-primary-soft text-primary"
               title="Eerstvolgende bevestigde klus"
             />
             {nextConfirmedJob ? (
               <Link
-                className="group flex items-center gap-3 px-4 py-4 transition-colors hover:bg-subtle sm:px-5"
+                className="group flex items-center gap-3 px-4 py-3 transition-colors hover:bg-subtle sm:px-5"
                 href={`/opdrachten/${nextConfirmedJob.id}`}
               >
-                <DateBadge date={nextConfirmedJob.starts_on} />
+                <DateBadge date={nextConfirmedJob.starts_on} size="sm" />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium group-hover:text-primary">
                     {nextConfirmedJob.title}

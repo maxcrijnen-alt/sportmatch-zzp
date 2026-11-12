@@ -268,14 +268,22 @@ export default async function OpdrachtDetailPage({
             >
               {jobTypeLabels[job.job_type]}
             </Badge>
-            {job.sport ? (
-              <Badge variant="default">{job.sport.name}</Badge>
-            ) : null}
-            <Badge variant="outline">
-              {job.custom_lesson_type ||
+            {(() => {
+              const lessonLabel =
+                job.custom_lesson_type ||
                 job.lesson_type?.name ||
-                "Lesvorm niet opgegeven"}
-            </Badge>
+                "Lesvorm niet opgegeven";
+              return job.sport ? (
+                <Badge variant="default">
+                  {job.sport.name}
+                  {lessonLabel.toLowerCase() !== job.sport.name.toLowerCase()
+                    ? ` · ${lessonLabel}`
+                    : ""}
+                </Badge>
+              ) : (
+                <Badge variant="outline">{lessonLabel}</Badge>
+              );
+            })()}
             <Badge variant="muted">{jobStatusLabels[job.status]}</Badge>
           </>
         }

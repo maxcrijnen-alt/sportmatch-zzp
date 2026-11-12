@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { Plus, Settings2 } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { AgendaView } from "@/components/agenda/agenda-view";
 import { Page, PageHeader } from "@/components/ui/page";
@@ -57,7 +58,7 @@ export default async function AgendaPage({ searchParams }: AgendaPageProps) {
         title="Agenda"
         description={
           orgContext
-            ? "Je lesrooster en invalopdrachten op één plek."
+            ? "Lesrooster en invalopdrachten. Klik op een tegel om te filteren."
             : undefined
         }
         actions={
@@ -67,9 +68,11 @@ export default async function AgendaPage({ searchParams }: AgendaPageProps) {
                 className={buttonVariants({ variant: "outline" })}
                 href="/agenda/koppelingen"
               >
+                <Settings2 className="h-4 w-4" />
                 Roosterbronnen
               </Link>
               <Link className={buttonVariants()} href="/agenda/lessen/nieuw">
+                <Plus className="h-4 w-4" />
                 Les toevoegen
               </Link>
             </>
@@ -82,6 +85,8 @@ export default async function AgendaPage({ searchParams }: AgendaPageProps) {
         exportHref={exportHref}
         highlightedJobId={params.job}
         highlightedLessonId={params.lesson}
+        defaultView={orgContext ? "week" : "list"}
+        overview={Boolean(orgContext)}
         role={profile.role}
       />
     </Page>

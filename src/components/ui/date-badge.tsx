@@ -18,10 +18,12 @@ function DateBadge({
   date,
   className,
   tone = "default",
+  size = "md",
 }: {
   date: string;
   className?: string;
   tone?: "default" | "muted";
+  size?: "sm" | "md";
 }) {
   const { weekday, day, month } = parts(date);
 
@@ -29,7 +31,8 @@ function DateBadge({
     <span
       aria-hidden="true"
       className={cn(
-        "flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-lg border text-center leading-none",
+        "flex shrink-0 flex-col items-center justify-center rounded-lg border text-center leading-none",
+        size === "sm" ? "h-10 w-10" : "h-12 w-12",
         tone === "muted"
           ? "border-border bg-subtle text-muted-foreground"
           : "border-border bg-card text-foreground shadow-xs",
@@ -39,10 +42,14 @@ function DateBadge({
       <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
         {weekday}
       </span>
-      <span className="mt-0.5 text-base font-semibold tabular-nums">{day}</span>
-      <span className="text-[10px] font-medium uppercase text-muted-foreground">
-        {month}
+      <span className={cn("mt-0.5 font-semibold tabular-nums", size === "sm" ? "text-sm" : "text-base")}>
+        {day}
       </span>
+      {size === "md" ? (
+        <span className="text-[10px] font-medium uppercase text-muted-foreground">
+          {month}
+        </span>
+      ) : null}
     </span>
   );
 }
