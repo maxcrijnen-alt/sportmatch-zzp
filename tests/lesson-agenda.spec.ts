@@ -133,10 +133,7 @@ test("volledig rooster, invalopdracht, wijzigingen en idempotente voorbeeldsync"
     await expect(page.locator('input[name="revision"]')).toHaveValue("2");
     await page.getByRole("main").getByRole("link", { name: "Agenda", exact: true }).click();
     await expect(
-      page
-        .getByRole("link")
-        .filter({ hasText: "Pilot Circuittraining" })
-        .first(),
+      page.locator(`main a[href="/agenda/lessen/${lessonId}"]`),
     ).toContainText("Inval nodig · nog geen opdracht");
     await page.goto(detailUrl);
     await page
@@ -259,7 +256,7 @@ test("volledig rooster, invalopdracht, wijzigingen en idempotente voorbeeldsync"
           .eq("organization_id", orgId)
       ).data,
     ).toHaveLength(14);
-    await page.goto("/agenda");
+    await page.goto(`/agenda?location=${centrum}`);
     await page
       .getByRole("link")
       .filter({ hasText: "Voorbeeld · Circuittraining" })
@@ -276,7 +273,7 @@ test("volledig rooster, invalopdracht, wijzigingen en idempotente voorbeeldsync"
     await expect(source.getByRole("status")).toHaveText(
       "Voorbeeldrooster verborgen.",
     );
-    await page.goto("/agenda");
+    await page.goto(`/agenda?location=${centrum}`);
     await expect(
       page.getByRole("link").filter({ hasText: "Voorbeeld ·" }),
     ).toHaveCount(0);
