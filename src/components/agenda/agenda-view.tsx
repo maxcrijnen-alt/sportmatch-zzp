@@ -235,7 +235,7 @@ function EventCard({
         <span className="mt-1 block text-[11px] leading-4">
           <PersonLine event={event} role={role} />
         </span>
-        <span className="mt-1 flex items-center gap-1 text-[11px] font-medium leading-4">
+        <span className="mt-1 flex flex-wrap items-center gap-x-1 gap-y-0.5 text-[11px] font-medium leading-4">
           <JobStatusIndicator showLabel={false} size="xs" state={event.state} />
           <span aria-hidden="true" className={stateTextClasses[event.state]}>
             {shortStateLabels[event.state]}
