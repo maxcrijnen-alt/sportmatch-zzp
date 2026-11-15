@@ -71,9 +71,10 @@ end $$;
 grant execute on function pg_temp.expect_refused(text,text) to authenticated;
 
 -- Existing least-privilege and pool semantics must survive CREATE OR REPLACE.
+-- 38 since search_organization_candidates (candidate discovery, 20261115120000).
 do $$ begin
   if (select count(*) from pg_proc p join pg_namespace n on n.oid=p.pronamespace
-      where n.nspname='public' and p.prosecdef and has_function_privilege('authenticated',p.oid,'EXECUTE')) <> 37 then
+      where n.nspname='public' and p.prosecdef and has_function_privilege('authenticated',p.oid,'EXECUTE')) <> 38 then
     raise exception 'FAIL: unexpected public SECURITY DEFINER API surface';
   end if;
   if not (select prosecdef from pg_proc where oid='public.accept_organization_invitation(uuid)'::regprocedure) then

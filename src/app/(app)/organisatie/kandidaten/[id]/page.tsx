@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/page";
 import { getSessionProfile } from "@/lib/auth/session";
 import { formatDate } from "@/lib/labels";
+import { pickCandidateListParams } from "@/lib/candidates/filters";
 import { filterAndSortReviews, parseReviewFilters } from "@/lib/reviews/filter";
 import { getOrgContext } from "@/lib/org/context";
 import { createClient } from "@/lib/supabase/server";
@@ -43,7 +44,13 @@ export default async function CandidateProfilePage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ job?: string; location?: string; stars?: string; sort?: string }>;
+  searchParams: Promise<{
+    job?: string;
+    location?: string;
+    stars?: string;
+    sort?: string;
+    [key: string]: string | string[] | undefined;
+  }>;
 }) {
   const sessionProfile = await getSessionProfile();
   const orgContext = await getOrgContext();
@@ -174,9 +181,8 @@ export default async function CandidateProfilePage({
     candidate.custom_city || (cityResult.data?.name as string | undefined) || null;
   const hasValidVog = vogResult.data === true;
 
-  const backParams = new URLSearchParams();
-  if (!isOwnPreview && query.job) backParams.set("job", query.job);
-  if (!isOwnPreview && query.location) backParams.set("location", query.location);
+  // Return to the exact candidate search (filters, sorting, page).
+  const backParams = isOwnPreview ? new URLSearchParams() : pickCandidateListParams(query);
   const backQuery = backParams.toString();
   const backHref = isOwnPreview
     ? "/profiel"
@@ -316,11 +322,7 @@ export default async function CandidateProfilePage({
             {showReviewFilters ? (
               <div className="border-b border-border bg-subtle px-4 py-3 sm:px-5">
                 <ReviewFilters
-                  hiddenParams={
-                    isOwnPreview
-                      ? {}
-                      : { job: query.job, location: query.location }
-                  }
+                  hiddenParams={Object.fromEntries(backParams)}
                   resetHref={reviewResetHref}
                   sort={reviewSort}
                   stars={reviewStars}
