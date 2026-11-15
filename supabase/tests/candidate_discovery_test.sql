@@ -722,9 +722,13 @@ begin
     (select avg_rating is null and review_count = 0 and reliability_score = 32
      from public.organization_applicant_summaries(v_org, array[pg_temp.cd('conflict')])),
     'known low reliability without reviews');
+  -- Across all pages: everyone except alpha (reviews) and conflict (known
+  -- reliability) has unknown statistics, reported as NULL and never 0.
   perform pg_temp.check(
-    (select count(*) from public.organization_applicant_summaries(v_org, pg_temp.applicant_ids(100, 0))
-     where avg_rating is null and reliability_score is null and review_count = 0) >= 98,
+    (select count(*)
+     from generate_series(0, 200, 100) as page_offset,
+          lateral public.organization_applicant_summaries(v_org, pg_temp.applicant_ids(100, page_offset)) s
+     where s.avg_rating is null and s.reliability_score is null and s.review_count = 0) = 251,
     'unknown statistics must stay NULL, never 0');
 end $$;
 
