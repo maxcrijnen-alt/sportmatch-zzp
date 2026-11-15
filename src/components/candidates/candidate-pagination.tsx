@@ -8,10 +8,12 @@ export function CandidatePagination({
   page,
   pageCount,
   hrefForPage,
+  label = "Paginering kandidaten",
 }: {
   page: number;
   pageCount: number;
   hrefForPage: (page: number) => string;
+  label?: string;
 }) {
   if (pageCount <= 1) return null;
 
@@ -22,7 +24,7 @@ export function CandidatePagination({
 
   return (
     <nav
-      aria-label="Paginering kandidaten"
+      aria-label={label}
       className="flex items-center justify-between gap-3 border-t border-border px-4 py-3 sm:px-5"
     >
       {previous ? (

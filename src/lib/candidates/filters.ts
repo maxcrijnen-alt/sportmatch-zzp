@@ -213,11 +213,14 @@ export function activeFilterCount(filters: CandidateFilters): number {
 /** Zet filters terug naar URL-parameters; standaardwaarden blijven weg. */
 export function candidateSearchParams(
   filters: CandidateFilters,
-  context: { job?: string | null; location?: string | null } = {},
+  context: { job?: string | null; location?: string | null; applicationsPage?: number } = {},
 ): URLSearchParams {
   const params = new URLSearchParams();
   if (context.job) params.set("job", context.job);
   if (context.location) params.set("location", context.location);
+  if (context.applicationsPage && context.applicationsPage > 1) {
+    params.set("reactiesPagina", String(context.applicationsPage));
+  }
   if (filters.q) params.set(PARAM.q, filters.q);
   if (filters.sport) params.set(PARAM.sport, filters.sport);
   if (filters.lessonType) params.set(PARAM.lessonType, filters.lessonType);
@@ -235,7 +238,7 @@ export function candidateSearchParams(
 }
 
 /** Alle parameters die het overzicht (en de terugknop van een profiel) kent. */
-export const CANDIDATE_LIST_PARAMS = ["job", "location", ...Object.values(PARAM)];
+export const CANDIDATE_LIST_PARAMS = ["job", "location", "reactiesPagina", ...Object.values(PARAM)];
 
 /**
  * Neemt alleen bekende overzichtsparameters over, bijvoorbeeld om vanaf een

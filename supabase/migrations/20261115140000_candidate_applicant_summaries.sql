@@ -1,10 +1,11 @@
--- Applicant summaries for the "Reacties" inbox on /organisatie/kandidaten.
+-- Applicant summaries for the paginated "Reacties" inbox on
+-- /organisatie/kandidaten.
 --
--- The inbox showed rating and reliability by paging through the full
--- candidate search (every instructor x every open job) up to ten times, and
--- lost the statistics beyond 200 candidates. This returns exactly the
--- pending applicants of one organization in a single, set-based call:
--- cost depends on the number of applicants, not on all instructors.
+-- The inbox pages its applications in the application (20 per page, stable
+-- order, exact count). For the instructors on the current page it needs
+-- rating, reliability and pool status: this returns exactly those, in one
+-- bounded, set-based call. Cost depends on the page, not on all instructors
+-- or all applications, and no response can exceed the API row limit.
 --
 -- Additive only; search_organization_candidates is unchanged.
 
@@ -99,16 +100,16 @@ revoke all on function private.instructor_stats(uuid[]) from public, anon, authe
 -- organization_applicant_summaries
 --
 -- Audience and checks are identical to search_organization_candidates:
--- organization role, active membership of p_organization, same demo scope;
--- p_location and p_job must belong to the organization. One row per
--- instructor with a pending application on the organization's jobs (within
--- the optional location/job selection). Only fields the inbox already
--- showed; no birth date, contact details, KvK/btw or documents.
+-- organization role, active membership of p_organization, same demo scope.
+-- p_instructors holds the instructor ids of one inbox page (at most 100).
+-- Only ids with a pending application on this organization's jobs and inside
+-- the caller's scope are returned, so the function cannot be used to look up
+-- arbitrary instructors. Only fields the inbox shows; no birth date, contact
+-- details, KvK/btw or documents.
 -- ---------------------------------------------------------------------------
 create function public.organization_applicant_summaries(
   p_organization uuid,
-  p_location uuid default null,
-  p_job uuid default null
+  p_instructors uuid[]
 )
 returns table (
   user_id uuid,
@@ -140,45 +141,32 @@ begin
       message = 'Geen toegang tot de kandidaten van deze organisatie.';
   end if;
 
-  if p_location is not null and not exists (
-    select 1 from public.organization_locations l
-    where l.id = p_location and l.organization_id = p_organization
-  ) then
-    raise exception using errcode = '42501',
-      message = 'Vestiging niet gevonden of geen toegang.';
-  end if;
-
-  -- Applications on closed jobs can still be pending, so any status counts.
-  if p_job is not null and not exists (
-    select 1 from public.jobs j
-    where j.id = p_job
-      and j.organization_id = p_organization
-      and (p_location is null or j.location_id = p_location)
-  ) then
-    raise exception using errcode = '42501',
-      message = 'Opdracht niet gevonden of geen toegang.';
+  if p_instructors is null or coalesce(cardinality(p_instructors), 0) > 100 then
+    raise exception using errcode = '22023',
+      message = 'Vraag samenvattingen op voor maximaal 100 instructeurs tegelijk.';
   end if;
 
   -- Organization role: demo_scope_matches reduces to the caller's session.
   v_demo_session := public.current_demo_session_id();
 
   return query
-  -- Driven by this organization's pending applications, not by all profiles.
-  with pending as materialized (
-    select distinct a.instructor_id as uid
-    from public.jobs j
-    join public.job_applications a on a.job_id = j.id
-    where j.organization_id = p_organization
-      and a.status = 'pending'
-      and (p_location is null or j.location_id = p_location)
-      and (p_job is null or a.job_id = p_job)
+  with requested as materialized (
+    select distinct id as uid from unnest(p_instructors) as id where id is not null
   ),
   applicants as materialized (
     select p.id as uid, p.full_name as name, p.avatar_url as avatar
-    from pending pe
-    join public.profiles p on p.id = pe.uid
+    from requested r
+    join public.profiles p on p.id = r.uid
     where p.role = 'instructor'
       and p.demo_session_id is not distinct from v_demo_session
+      and exists (
+        select 1
+        from public.job_applications a
+        join public.jobs j on j.id = a.job_id
+        where a.instructor_id = p.id
+          and a.status = 'pending'
+          and j.organization_id = p_organization
+      )
   ),
   stats as materialized (
     select * from private.instructor_stats(array(select ap.uid from applicants ap))
@@ -195,7 +183,7 @@ begin
 end;
 $$;
 
-revoke all on function public.organization_applicant_summaries(uuid, uuid, uuid)
+revoke all on function public.organization_applicant_summaries(uuid, uuid[])
   from public, anon;
-grant execute on function public.organization_applicant_summaries(uuid, uuid, uuid)
+grant execute on function public.organization_applicant_summaries(uuid, uuid[])
   to authenticated;

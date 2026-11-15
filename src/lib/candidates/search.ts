@@ -163,19 +163,22 @@ interface ApplicantSummaryRow {
 }
 
 /**
- * Statistieken voor alle instructeurs met een openstaande reactie, in één
- * aanroep (`organization_applicant_summaries`), ongeacht het aantal.
+ * Statistieken voor de reagerende instructeurs van één inboxpagina, in één
+ * begrensde aanroep (`organization_applicant_summaries`, maximaal 100 id's).
  */
 export async function getApplicantSummaries(
   supabase: SupabaseClient,
-  context: { organizationId: string; locationId: string | null; jobId: string | null },
+  organizationId: string,
+  instructorIds: string[],
 ): Promise<{ summaries: Map<string, ApplicantSummary>; error: string | null }> {
-  const { data, error } = await supabase.rpc("organization_applicant_summaries", {
-    p_organization: context.organizationId,
-    p_location: context.locationId,
-    p_job: context.jobId,
-  });
   const summaries = new Map<string, ApplicantSummary>();
+  const ids = Array.from(new Set(instructorIds));
+  if (ids.length === 0) return { summaries, error: null };
+
+  const { data, error } = await supabase.rpc("organization_applicant_summaries", {
+    p_organization: organizationId,
+    p_instructors: ids,
+  });
   if (error) return { summaries, error: error.message };
 
   for (const row of (data as ApplicantSummaryRow[] | null) ?? []) {

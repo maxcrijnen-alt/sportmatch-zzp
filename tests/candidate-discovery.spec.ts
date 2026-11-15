@@ -359,26 +359,120 @@ test("kandidaten zoeken, filteren, sorteren, pagineren en uitnodigen over de vol
     await results.getByRole("link", { name: "Mijn poule", exact: true }).click();
     await expect(results.getByText("Nog geen instructeurs opgeslagen.")).toBeVisible();
 
-    // Applications inbox: every pending applicant with its statistics,
-    // independent of the candidate search paging.
-    expect((await admin.from("job_applications").insert(
-      instructorIds.map((id) => ({ job_id: openJob, instructor_id: id, status: "pending" })),
-    )).error).toBeNull();
-    await page.goto("/organisatie/kandidaten");
+    // -----------------------------------------------------------------------
+    // Applications inbox beyond the API row limit (max_rows = 1000):
+    // 107 instructors x 10 open jobs = 1070 pending applications, paginated
+    // server side. Fixed timestamps put the pool member and Alpha (reviews)
+    // on the last pages, past row 1000.
+    // -----------------------------------------------------------------------
+    const extraJobs = await admin.from("jobs").insert(
+      Array.from({ length: 9 }, (_, index) => ({
+        ...baseJob, organization_id: orgIds[0], location_id: locationA, created_by: ownerId,
+        title: `${prefix} Reactie ${index + 1}`, starts_on: jobDate, status: "open",
+      })),
+    ).select("id");
+    expect(extraJobs.error).toBeNull();
+    const inboxJobs = [openJob, ...extraJobs.data!.map((job) => job.id as string)];
+    const poolMemberId = bulkIds[6];
+    const poolMemberName = `${prefix} Bulk 007`;
+    expect((await admin.from("organization_instructor_connections")
+      .insert({ organization_id: orgIds[0], instructor_id: poolMemberId, created_by: ownerId })).error).toBeNull();
+    const inboxOrder = [
+      ...instructorIds.filter((id) => id !== alphaId && id !== poolMemberId),
+      poolMemberId,
+      alphaId,
+    ];
+    const startedAt = Date.now();
+    const applicationRows = inboxOrder.flatMap((instructorId, instructorIndex) =>
+      inboxJobs.map((job, jobIndex) => ({
+        job_id: job,
+        instructor_id: instructorId,
+        status: "pending",
+        created_at: new Date(startedAt - (instructorIndex * inboxJobs.length + jobIndex) * 1000).toISOString(),
+      })),
+    );
+    const inboxTotal = applicationRows.length;
+    expect(inboxTotal).toBe(1070);
+    for (let index = 0; index < applicationRows.length; index += 500) {
+      expect((await admin.from("job_applications").insert(applicationRows.slice(index, index + 500))).error)
+        .toBeNull();
+    }
+    const inboxPages = Math.ceil(inboxTotal / 20);
+    const expectedIds = async (from: number, to: number) => {
+      const slice = await admin.from("job_applications")
+        .select("id, job:jobs!inner(organization_id)")
+        .eq("job.organization_id", orgIds[0]).eq("status", "pending")
+        .order("created_at", { ascending: false }).order("id", { ascending: false })
+        .range(from, to);
+      expect(slice.error).toBeNull();
+      return slice.data!.map((row) => row.id as string);
+    };
+
     const inbox = page.locator("#reacties");
     const rows = inbox.getByTestId("application-row");
-    await expect(rows).toHaveCount(total);
+    const inboxNav = inbox.getByRole("navigation", { name: "Paginering reacties" });
+    const rowIds = () => rows.evaluateAll((elements) =>
+      elements.map((element) => element.getAttribute("data-application-id") ?? ""));
+
+    await page.goto("/organisatie/kandidaten");
+    await expect(rows).toHaveCount(20);
+    await expect(inbox.getByText(`1–20 van ${inboxTotal}, nieuwste eerst`)).toBeVisible();
+    await expect(inboxNav.getByText(`Pagina 1 van ${inboxPages}`)).toBeVisible();
     await expect(page.getByRole("navigation", { name: "Kandidaatsecties" })
-      .getByRole("link", { name: /Reacties/ })).toContainText(String(total));
-    const alphaRow = rows.filter({ hasText: `${prefix} Alpha` });
-    await expect(alphaRow.getByText("5,0", { exact: true })).toBeVisible();
-    await expect(alphaRow.getByText("100%", { exact: true })).toBeVisible();
-    const newRow = rows.filter({ hasText: `${prefix} Nieuw` });
-    await expect(newRow.getByText("Eerste klus")).toBeVisible();
-    await expect(newRow.getByText("Nieuw", { exact: true })).toBeVisible();
-    // Every row resolved a real name (no fallback placeholder).
+      .getByRole("link", { name: /Reacties/ })).toContainText(String(inboxTotal));
+    expect(await rowIds()).toEqual(await expectedIds(0, 19));
+    await inboxNav.getByRole("link", { name: "Volgende" }).click();
+    await page.waitForURL(/reactiesPagina=2/);
+    await expect(inboxNav.getByText(`Pagina 2 van ${inboxPages}`)).toBeVisible();
+    expect(await rowIds()).toEqual(await expectedIds(20, 39));
+
+    // Every application past the API row limit is reachable, in order, once.
+    const pastLimit: string[] = [];
+    for (let pageNumber = 51; pageNumber <= inboxPages; pageNumber++) {
+      await page.goto(`/organisatie/kandidaten?reactiesPagina=${pageNumber}`);
+      await expect(inboxNav.getByText(`Pagina ${pageNumber} van ${inboxPages}`)).toBeVisible();
+      pastLimit.push(...(await rowIds()));
+    }
+    expect(pastLimit).toEqual(await expectedIds(1000, inboxTotal - 1));
+    expect(new Set(pastLimit).size).toBe(inboxTotal - 1000);
+
+    // Last page: Alpha's ten applications with correct rating and reliability.
+    await page.goto(`/organisatie/kandidaten?reactiesPagina=${inboxPages}`);
+    await expect(rows).toHaveCount(inboxTotal - (inboxPages - 1) * 20);
+    for (const row of await rows.all()) {
+      await expect(row).toContainText(`${prefix} Alpha`);
+      await expect(row.getByText("5,0", { exact: true })).toBeVisible();
+      await expect(row.getByText("(1)", { exact: true })).toBeVisible();
+      await expect(row.getByText("100%", { exact: true })).toBeVisible();
+      await expect(row.getByRole("button", { name: "Toevoegen aan poule" })).toBeVisible();
+    }
+    // Second-to-last page: the pool member is shown as in the pool, others not;
+    // no reviews means "Eerste klus" and "Nieuw", never 0.
+    await page.goto(`/organisatie/kandidaten?reactiesPagina=${inboxPages - 1}`);
+    const poolRows = rows.filter({ hasText: poolMemberName });
+    await expect(poolRows).toHaveCount(10);
+    await expect(poolRows.getByRole("button", { name: "Verwijderen uit poule" })).toHaveCount(10);
+    await expect(poolRows.getByText("Eerste klus")).toHaveCount(10);
+    await expect(poolRows.getByText("Nieuw", { exact: true })).toHaveCount(10);
+    await expect(rows.filter({ hasNotText: poolMemberName })
+      .getByRole("button", { name: "Verwijderen uit poule" })).toHaveCount(0);
     await expect(rows.filter({ hasText: /^Instructeur/ })).toHaveCount(0);
-    await expect(rows.filter({ hasText: "Eerste klus" })).toHaveCount(total - 1);
+
+    // Too high and invalid pages fall back safely; job and location filters stay.
+    await page.goto("/organisatie/kandidaten?reactiesPagina=99999");
+    await expect(inboxNav.getByText(`Pagina 1 van ${inboxPages}`)).toBeVisible();
+    await page.goto(`/organisatie/kandidaten?reactiesPagina=${inboxPages + 10}`);
+    await expect(inboxNav.getByText(`Pagina ${inboxPages} van ${inboxPages}`)).toBeVisible();
+    await page.goto(`/organisatie/kandidaten?job=${inboxJobs[3]}&reactiesPagina=6`);
+    await expect(inbox.getByText(`101–107 van 107, nieuwste eerst`)).toBeVisible();
+    await expect(rows).toHaveCount(7);
+    await page.goto(`/organisatie/kandidaten?location=${locationA}&reactiesPagina=2`);
+    await expect(inbox.getByText(`21–40 van ${inboxTotal}, nieuwste eerst`)).toBeVisible();
+    // Paging the candidate search keeps the inbox page.
+    await page.goto(`/organisatie/kandidaten?reactiesPagina=3`);
+    await results.getByRole("link", { name: "Volgende" }).click();
+    await page.waitForURL(/pagina=2/);
+    expect(new URL(page.url()).searchParams.get("reactiesPagina")).toBe("3");
 
     // Mobile and desktop layout.
     await page.goto(q(`&job=${openJob}`));

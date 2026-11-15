@@ -31,23 +31,20 @@ import {
   type CandidateFilters as Filters,
 } from "@/lib/candidates/filters";
 import {
-  getApplicantSummaries,
-  searchCandidates,
-  type ApplicantSummary,
-} from "@/lib/candidates/search";
+  APPLICATIONS_PAGE_PARAM,
+  APPLICATIONS_PAGE_SIZE,
+  getApplicationsPage,
+  parseApplicationsPage,
+} from "@/lib/candidates/applications";
+import { getApplicantSummaries, searchCandidates } from "@/lib/candidates/search";
 import { formatDate } from "@/lib/labels";
 import { getOrgContext } from "@/lib/org/context";
 import { resolveLocationFilter } from "@/lib/org/location-filter";
 import { createClient } from "@/lib/supabase/server";
-import type { JobApplication } from "@/types/database";
 
 export const metadata: Metadata = {
   title: "Kandidaten",
 };
-
-interface ApplicationRow extends JobApplication {
-  job: { id: string; title: string; starts_on: string; location_id: string } | null;
-}
 
 interface OpenJobRow {
   id: string;
@@ -95,19 +92,17 @@ export default async function KandidatenPage({
     .order("title");
   if (selectedLocationId) openJobsQuery = openJobsQuery.eq("location_id", selectedLocationId);
 
-  let applicationsQuery = supabase
-    .from("job_applications")
-    .select("*, job:jobs!inner (id, title, starts_on, organization_id, location_id)")
-    .eq("job.organization_id", organizationId)
-    .eq("status", "pending")
-    .order("created_at", { ascending: false });
-  if (selectedLocationId) applicationsQuery = applicationsQuery.eq("job.location_id", selectedLocationId);
-  if (jobParam) applicationsQuery = applicationsQuery.eq("job_id", jobParam);
-
-  const [openJobsResult, applicationsResult, sportsResult, lessonTypesResult] =
+  // The inbox is paginated server side (bounded responses, exact count) with
+  // the existing job and location filters.
+  const [openJobsResult, applicationsPage, sportsResult, lessonTypesResult] =
     await Promise.all([
       openJobsQuery,
-      applicationsQuery,
+      getApplicationsPage(supabase, {
+        organizationId,
+        locationId: selectedLocationId,
+        jobId: jobParam,
+        page: parseApplicationsPage(params[APPLICATIONS_PAGE_PARAM]),
+      }),
       supabase.from("sports").select("id, name, is_active").order("name"),
       supabase
         .from("lesson_types")
@@ -119,7 +114,7 @@ export default async function KandidatenPage({
   const openJobs = (openJobsResult.data as OpenJobRow[] | null) ?? [];
   const selectedJob = jobParam ? openJobs.find((job) => job.id === jobParam) ?? null : null;
   const selectedJobId = selectedJob?.id ?? null;
-  const applications = (applicationsResult.data as unknown as ApplicationRow[] | null) ?? [];
+  const applications = applicationsPage.applications;
   const sports = (sportsResult.data as { id: string; name: string; is_active: boolean }[] | null) ?? [];
   const lessonTypes =
     (lessonTypesResult.data as
@@ -135,18 +130,13 @@ export default async function KandidatenPage({
   const result = await searchCandidates(supabase, filters, searchContext, CANDIDATE_PAGE_SIZE);
   const currentFilters: Filters = { ...filters, page: result.page };
 
-  // Rating and reliability for the applications inbox: one call for all
-  // pending applicants, independent of the candidate search and its paging.
-  const applicantSummaries =
-    applications.length > 0
-      ? (
-          await getApplicantSummaries(supabase, {
-            organizationId,
-            locationId: selectedLocationId,
-            jobId: jobParam,
-          })
-        ).summaries
-      : new Map<string, ApplicantSummary>();
+  // Rating, reliability and pool status only for the instructors on the
+  // current inbox page: one bounded, set-based call.
+  const { summaries: applicantSummaries } = await getApplicantSummaries(
+    supabase,
+    organizationId,
+    applications.map((application) => application.instructor_id),
+  );
   const applicantProfiles = new Map<string, { name: string; avatar: string | null }>();
   const missingApplicantIds = Array.from(
     new Set(
@@ -186,7 +176,21 @@ export default async function KandidatenPage({
     ].filter((id): id is string => Boolean(id)),
   );
 
-  const context = { job: selectedJobId, location: selectedLocationId };
+  const context = {
+    job: selectedJobId,
+    location: selectedLocationId,
+    applicationsPage: applicationsPage.page,
+  };
+  const applicationsHref = (page: number) => {
+    const query = candidateSearchParams(currentFilters, { ...context, applicationsPage: page }).toString();
+    return `/organisatie/kandidaten${query ? `?${query}` : ""}#reacties`;
+  };
+  const firstApplication =
+    applicationsPage.total === 0 ? 0 : (applicationsPage.page - 1) * APPLICATIONS_PAGE_SIZE + 1;
+  const lastApplication = Math.min(
+    applicationsPage.total,
+    applicationsPage.page * APPLICATIONS_PAGE_SIZE,
+  );
   const listHref = (overrides: Partial<Filters> = {}) => {
     const query = candidateSearchParams({ ...currentFilters, ...overrides }, context).toString();
     return `/organisatie/kandidaten${query ? `?${query}` : ""}`;
@@ -240,7 +244,7 @@ export default async function KandidatenPage({
         className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0"
       >
         {[
-          { href: "#reacties", label: "Reacties", count: applications.length, icon: Inbox },
+          { href: "#reacties", label: "Reacties", count: applicationsPage.total, icon: Inbox },
           { href: "#zoeken", label: "Kandidaten", count: result.total, icon: Users },
         ].map((item) => (
           <a
@@ -260,12 +264,23 @@ export default async function KandidatenPage({
 
       <Panel className="scroll-mt-24" id="reacties">
         <PanelHeader
-          count={applications.length}
+          count={applicationsPage.total}
+          description={
+            applicationsPage.total > APPLICATIONS_PAGE_SIZE
+              ? `${firstApplication}–${lastApplication} van ${applicationsPage.total}, nieuwste eerst`
+              : undefined
+          }
           icon={Inbox}
           iconClassName="bg-orange-50 text-status-pending"
           title="Reacties"
         />
-        {applications.length === 0 ? (
+        {applicationsPage.error ? (
+          <div className="px-4 py-4 sm:px-5">
+            <Alert variant="destructive">
+              <AlertDescription>De reacties konden niet worden geladen.</AlertDescription>
+            </Alert>
+          </div>
+        ) : applicationsPage.total === 0 ? (
           <EmptyState
             action={
               <Link
@@ -288,6 +303,7 @@ export default async function KandidatenPage({
               return (
                 <div
                   className="grid gap-3 px-4 py-4 sm:px-5 lg:grid-cols-[minmax(0,17rem)_minmax(0,1fr)_auto] lg:items-center lg:gap-6"
+                  data-application-id={application.id}
                   data-testid="application-row"
                   key={application.id}
                 >
@@ -353,6 +369,12 @@ export default async function KandidatenPage({
             })}
           </PanelList>
         )}
+        <CandidatePagination
+          hrefForPage={applicationsHref}
+          label="Paginering reacties"
+          page={applicationsPage.page}
+          pageCount={applicationsPage.pageCount}
+        />
       </Panel>
 
       <Panel className="scroll-mt-24" id="zoeken">
