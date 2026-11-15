@@ -74,6 +74,8 @@ zonder ingeschakelde demo-E2E.
 | Geen geneste interactieve navigatie, één tabstop en Enter | `link-semantics.spec.ts` (desktop/mobiel) |
 | Segmentstatus, herhaling, vestigingsurgentie, tegenvoorstel en lege contactvelden | `hardening.spec.ts` (desktop/mobiel, lokale Supabase) |
 | Directe tegenvoorstel-/selectie-RPC's en VOG-datum in meerdere sessionzones | `supabase/tests/functional_hardening_test.sql` |
+| Reviewkenmerken: maximaal drie, rolgebonden, geen dubbele of onbekende codes, dubbelblinde vrijgave (ook lessenblokken met meerdere instructeurs), demo-isolatie, één `submit_review`-signatuur | `supabase/tests/review_attributes_test.sql` |
+| Reviewformulier met kenmerken, gemanipuleerde verzoeken, melding naast review en kenmerklabels op alle reviewpagina's | `review-attributes.spec.ts` (desktop/mobiel, lokale Supabase) |
 
 Iedere GitHub-run toont de fasen afzonderlijk. Het artifact
 `sportmatch-test-results-*` bewaart zeven dagen het HTML-/JSON-rapport, de

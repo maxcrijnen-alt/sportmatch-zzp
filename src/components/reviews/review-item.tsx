@@ -1,12 +1,17 @@
+import { ReviewAttributeList } from "@/components/reviews/review-attributes";
 import { Stars } from "@/components/ui/stars";
 import { cn } from "@/lib/utils";
 
-/** Compacte reviewregel: sterren, context, datum en eventueel commentaar. */
+/**
+ * Compacte reviewregel: sterren, context, datum, gekozen kenmerken en
+ * eventueel commentaar. Reviews zonder kenmerken tonen geen labelrij.
+ */
 function ReviewItem({
   rating,
   subtitle,
   date,
   comment,
+  attributes,
   aside,
   className,
 }: {
@@ -14,6 +19,7 @@ function ReviewItem({
   subtitle?: React.ReactNode;
   date: string;
   comment?: string | null;
+  attributes?: readonly string[] | null;
   aside?: React.ReactNode;
   className?: string;
 }) {
@@ -34,6 +40,7 @@ function ReviewItem({
         </div>
         {aside ? <div className="shrink-0">{aside}</div> : null}
       </div>
+      <ReviewAttributeList attributes={attributes} className="mt-1.5" />
       {comment ? (
         <p className="mt-1 text-sm leading-6 text-foreground/90">“{comment}”</p>
       ) : null}

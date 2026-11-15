@@ -23,6 +23,7 @@ import { JobFacts } from "@/components/jobs/job-facts";
 import { ProblemReportForm } from "@/components/jobs/problem-report-form";
 import { ReplacementForm } from "@/components/jobs/replacement-form";
 import { ReviewForm } from "@/components/jobs/review-form";
+import { ReviewAttributeList } from "@/components/reviews/review-attributes";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -596,7 +597,7 @@ export default async function OpdrachtDetailPage({
             <CardTitle className="text-base">Beoordeel de organisatie</CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
-            <ReviewForm jobId={job.id} />
+            <ReviewForm jobId={job.id} side="instructor" />
           </CardContent>
         </Card>
       ) : null}
@@ -608,14 +609,17 @@ export default async function OpdrachtDetailPage({
           </CardHeader>
           <CardContent className="space-y-2 pt-0 text-sm">
             {releasedReviews.map((review) => (
-              <p key={review.id}>
-                {"★".repeat(review.rating)}
-                {"☆".repeat(5 - review.rating)}{" "}
-                <span className="text-muted-foreground">
-                  door{" "}
-                  {review.side === "instructor" ? "instructeur" : "organisatie"}
-                </span>
-              </p>
+              <div className="space-y-1" key={review.id}>
+                <p>
+                  {"★".repeat(review.rating)}
+                  {"☆".repeat(5 - review.rating)}{" "}
+                  <span className="text-muted-foreground">
+                    door{" "}
+                    {review.side === "instructor" ? "instructeur" : "organisatie"}
+                  </span>
+                </p>
+                <ReviewAttributeList attributes={review.attributes} />
+              </div>
             ))}
           </CardContent>
         </Card>
