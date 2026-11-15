@@ -159,16 +159,25 @@ test("sportschool kan een instructeur in de private poule bewaren en verwijderen
   await startDemo(page, "sportschool");
   await page.goto("/organisatie/kandidaten");
 
-  await page.getByRole("button", { name: "Toevoegen aan poule" }).first().click();
-  const pool = page.locator("section").filter({
-    has: page.getByRole("heading", { name: "Mijn poule" }),
-  });
+  // The pool is a relation filter on the single candidate list.
+  const results = page.locator("#zoeken");
+  const card = results.getByTestId("candidate-card").filter({
+    has: page.getByRole("button", { name: "Toevoegen aan poule" }),
+  }).first();
+  const name = await card.getByRole("heading", { level: 3 }).innerText();
+  await card.getByRole("button", { name: "Toevoegen aan poule" }).click();
   await expect(
-    pool.getByRole("button", { name: "Verwijderen uit poule" }),
+    results.getByTestId("candidate-card").filter({ hasText: name })
+      .getByRole("button", { name: "Verwijderen uit poule" }),
   ).toBeVisible();
 
+  await results.getByRole("link", { name: "Mijn poule", exact: true }).click();
+  await page.waitForURL(/relatie=poule/);
+  const pool = results.getByTestId("candidate-card");
+  await expect(pool).toHaveCount(1);
+  await expect(pool.getByRole("heading", { level: 3 })).toHaveText(name);
   await pool.getByRole("button", { name: "Verwijderen uit poule" }).click();
-  await expect(pool.getByText("Nog geen instructeurs opgeslagen.")).toBeVisible();
+  await expect(results.getByText("Nog geen instructeurs opgeslagen.")).toBeVisible();
   await closeDemo(page);
 });
 
@@ -178,12 +187,16 @@ test("sportschool bevestigt voordat de private poule bulk wordt uitgenodigd", as
   await startDemo(page, "sportschool");
   await page.goto("/organisatie/kandidaten");
 
-  await page.getByRole("button", { name: "Toevoegen aan poule" }).first().click();
-  const pool = page.locator("section").filter({
-    has: page.getByRole("heading", { name: "Mijn poule" }),
-  });
+  const results = page.locator("#zoeken");
+  await results.getByRole("button", { name: "Toevoegen aan poule" }).first().click();
+  // Wait for the saved state before leaving the page.
   await expect(
-    pool.getByRole("button", { name: "Verwijderen uit poule" }),
+    results.getByRole("button", { name: "Verwijderen uit poule" }).first(),
+  ).toBeVisible();
+  await page.goto("/organisatie/kandidaten?relatie=poule");
+  await expect(results.getByTestId("candidate-card")).toHaveCount(1);
+  await expect(
+    results.getByRole("button", { name: "Verwijderen uit poule" }),
   ).toBeVisible();
 
   const title = `Poule uitnodiging ${Date.now()}`;

@@ -620,10 +620,15 @@ export async function inviteInstructorAction(
   });
 
   if (error) {
+    // job_invitations is unique per job and instructor.
+    if ((error as { code?: string }).code === "23505") {
+      return initialError("Deze instructeur is al uitgenodigd voor deze opdracht.");
+    }
     return initialError(rpcErrorMessage(error));
   }
 
   revalidatePath(`/organisatie/opdrachten/${jobId}`);
+  revalidatePath("/organisatie/kandidaten");
   return { error: null, success: "Uitnodiging verstuurd." };
 }
 
