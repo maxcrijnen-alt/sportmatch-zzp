@@ -189,6 +189,10 @@ test("sportschool bevestigt voordat de private poule bulk wordt uitgenodigd", as
 
   const results = page.locator("#zoeken");
   await results.getByRole("button", { name: "Toevoegen aan poule" }).first().click();
+  // Wait for the saved state before leaving the page.
+  await expect(
+    results.getByRole("button", { name: "Verwijderen uit poule" }).first(),
+  ).toBeVisible();
   await page.goto("/organisatie/kandidaten?relatie=poule");
   await expect(results.getByTestId("candidate-card")).toHaveCount(1);
   await expect(

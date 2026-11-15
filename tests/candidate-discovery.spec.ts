@@ -250,7 +250,7 @@ test("kandidaten zoeken, filteren, sorteren, pagineren en uitnodigen over de vol
     await expect(firstCard.getByText("Betrouwbaarheid 100%")).toBeVisible();
     // No reviews: "Eerste klus", never zero stars or 0%.
     const newcomer = cards.filter({ hasText: `${prefix} Nieuw` });
-    await page.goto(q("&q=" + encodeURIComponent(`${prefix} Nieuw`)));
+    await page.goto(`/organisatie/kandidaten?q=${encodeURIComponent(`${prefix} Nieuw`)}`);
     await expect(newcomer.getByText("Eerste klus")).toBeVisible();
     await expect(newcomer.getByText("Betrouwbaarheid nog onbekend")).toBeVisible();
     await expect(newcomer.getByText("afstand onbekend")).toBeVisible();
