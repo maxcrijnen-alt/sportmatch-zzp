@@ -8,6 +8,10 @@ import { getSessionProfile } from "@/lib/auth/session";
 import { getOrgContext } from "@/lib/org/context";
 import { createClient } from "@/lib/supabase/server";
 import { getScheduledLesson } from "@/lib/agenda/lessons";
+import {
+  ALL_REVIEW_ATTRIBUTE_CODES,
+  MAX_REVIEW_ATTRIBUTES,
+} from "@/lib/reviews/attributes";
 
 export interface JobActionState {
   error: string | null;
@@ -992,6 +996,22 @@ export async function completeJobAction(jobId: string): Promise<void> {
 // Reviews
 // ---------------------------------------------------------------------------
 
+// Vormcontrole voor nette foutmeldingen. Of een kenmerk bij de beoordelende
+// partij hoort, bepaalt uitsluitend de database (submit_review + constraint).
+const reviewAttributesSchema = z
+  .array(z.string())
+  .max(MAX_REVIEW_ATTRIBUTES, "Kies maximaal drie kenmerken.")
+  .refine((values) => new Set(values).size === values.length, {
+    message: "Kies ieder kenmerk maar één keer.",
+  })
+  .refine(
+    (values) =>
+      values.every((value) =>
+        (ALL_REVIEW_ATTRIBUTE_CODES as readonly string[]).includes(value),
+      ),
+    { message: "Een gekozen kenmerk is onbekend. Vernieuw de pagina en probeer het opnieuw." },
+  );
+
 export async function submitReviewAction(
   _previous: JobActionState,
   formData: FormData,
@@ -1009,15 +1029,31 @@ export async function submitReviewAction(
   const revieweeId = String(formData.get("revieweeId") ?? "") || null;
   const alsoReport = formData.get("alsoReport") === "on";
   const reportDetails = String(formData.get("reportDetails") ?? "");
+  const parsedAttributes = reviewAttributesSchema.safeParse(
+    formData.getAll("attributes").map((value) => String(value)),
+  );
+
+  if (!parsedAttributes.success) {
+    return initialError(
+      parsedAttributes.error.issues[0]?.message ?? "Controleer de gekozen kenmerken.",
+    );
+  }
+  const attributes = parsedAttributes.data;
 
   const { data: reviewId, error } = await supabase.rpc("submit_review", {
     p_job: jobId,
     p_rating: rating,
     p_comment: comment,
     p_reviewee: revieweeId,
+    // Alleen meesturen wanneer er kenmerken zijn gekozen: zo blijft een
+    // beoordeling zonder kenmerken ook werken vóórdat de migration live staat.
+    ...(attributes.length > 0 ? { p_attributes: attributes } : {}),
   });
 
   if (error) {
+    if ((error as { code?: string }).code === "23505") {
+      return initialError("Je hebt deze beoordeling al verstuurd.");
+    }
     return initialError(rpcErrorMessage(error));
   }
 
@@ -1044,6 +1080,7 @@ export async function submitReviewAction(
   revalidatePath(`/opdrachten/${jobId}`);
   revalidatePath(`/organisatie/opdrachten/${jobId}`);
   revalidatePath("/reviews");
+  revalidatePath("/organisatie/reviews");
   return { error: null, success: "Bedankt voor je beoordeling!" };
 }
 

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { ReviewAttributeList } from "@/components/reviews/review-attributes";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import {
@@ -54,8 +55,12 @@ export default async function AdminReviewsPage() {
             {reviews.map((review) => (
               <TableRow key={review.id}>
                 <TableCell className="font-medium">{review.job?.title}</TableCell>
-                <TableCell className="text-warning">
-                  {"★".repeat(review.rating)}
+                <TableCell>
+                  <span className="text-warning">{"★".repeat(review.rating)}</span>
+                  <ReviewAttributeList
+                    attributes={review.attributes}
+                    className="mt-1"
+                  />
                 </TableCell>
                 <TableCell className="text-sm">
                   {review.side === "instructor" ? "Instructeur" : "Organisatie"}

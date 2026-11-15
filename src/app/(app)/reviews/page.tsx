@@ -179,6 +179,7 @@ export default async function ReviewsPage({
                     <Badge variant="secondary">Wacht op tegenpartij</Badge>
                   ) : null
                 }
+                attributes={review.attributes}
                 comment={review.comment}
                 date={formatDate(review.created_at)}
                 key={review.id}

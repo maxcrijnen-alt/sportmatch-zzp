@@ -355,6 +355,8 @@ export interface Review {
   side: PartySide;
   rating: number;
   comment: string;
+  /** Stabiele kenmerkcodes, zie `src/lib/reviews/attributes.ts`. */
+  attributes: string[];
   released_at: string | null;
   created_at: string;
 }

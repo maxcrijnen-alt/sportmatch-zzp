@@ -55,6 +55,7 @@ export default defineConfig({
         /(public|pilot|auth|auth-confirm|registration|membership|instructor-privacy)\.spec\.ts/,
         /(hardening|link-semantics)\.spec\.ts/,
         /lesson-agenda\.spec\.ts/,
+        /review-attributes\.spec\.ts/,
       ],
     },
   ],

@@ -23,6 +23,7 @@ import { PoolInviteForm } from "@/components/jobs/pool-invite-form";
 import { NoShowForm } from "@/components/jobs/no-show-form";
 import { ProblemReportForm } from "@/components/jobs/problem-report-form";
 import { ReviewForm } from "@/components/jobs/review-form";
+import { ReviewAttributeList } from "@/components/reviews/review-attributes";
 import { SelectCandidateForm } from "@/components/jobs/select-candidate-form";
 import { StopSearchForm } from "@/components/jobs/stop-search-form";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -607,7 +608,7 @@ export default async function OrganisatieOpdrachtDetailPage({
                 <CardTitle className="text-base">Beoordeel de instructeur</CardTitle>
               </CardHeader>
               <CardContent className="pt-0">
-                <ReviewForm jobId={job.id} />
+                <ReviewForm jobId={job.id} side="organization" />
               </CardContent>
             </Card>
           ) : null}
@@ -629,7 +630,11 @@ export default async function OrganisatieOpdrachtDetailPage({
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <ReviewForm jobId={job.id} revieweeId={instructorId} />
+                      <ReviewForm
+                        jobId={job.id}
+                        revieweeId={instructorId}
+                        side="organization"
+                      />
                     </CardContent>
                   </Card>
                 ))}
@@ -643,14 +648,17 @@ export default async function OrganisatieOpdrachtDetailPage({
               </CardHeader>
               <CardContent className="space-y-2 text-sm">
                 {releasedReviews.map((review) => (
-                  <p key={review.id}>
-                    {"★".repeat(review.rating)}
-                    {"☆".repeat(5 - review.rating)}{" "}
-                    <span className="text-muted-foreground">
-                      door{" "}
-                      {review.side === "instructor" ? "instructeur" : "organisatie"}
-                    </span>
-                  </p>
+                  <div className="space-y-1" key={review.id}>
+                    <p>
+                      {"★".repeat(review.rating)}
+                      {"☆".repeat(5 - review.rating)}{" "}
+                      <span className="text-muted-foreground">
+                        door{" "}
+                        {review.side === "instructor" ? "instructeur" : "organisatie"}
+                      </span>
+                    </p>
+                    <ReviewAttributeList attributes={review.attributes} />
+                  </div>
                 ))}
               </CardContent>
             </Card>

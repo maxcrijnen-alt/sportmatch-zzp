@@ -113,6 +113,7 @@ export default async function OrganizationReviewsPage({
           <PanelList>
             {visibleReviews.map((review) => (
               <ReviewItem
+                attributes={review.attributes}
                 comment={review.comment}
                 date={formatDate(review.created_at)}
                 key={review.id}
