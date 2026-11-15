@@ -69,13 +69,13 @@ zonder ingeschakelde demo-E2E.
 | Sportschool/instructeur, kandidaten, agenda, vestigingsfilter, beschikbaarheid | `flows.spec.ts` |
 | Lessenblokken, herhaling, sjablonen, poule opslaan/verwijderen, bulkbevestiging, mobiele navigatie | `flows.spec.ts` |
 | RLS, organisatie- en demo-isolatie, VOG, uitnodiging/chat/notificatie, bevestiging, reviews en business gates | `supabase/tests/smoke_test.sql` |
+| Kandidatenzoektocht: volledige set (>100 sportkoppelingen), totalen, paginering zonder duplicaten, filters, sorteringen met onbekend achteraan, beschikbaarheidsstatussen, autorisatie, demo-isolatie, privacy en pariteit met VOG/conflict/statistieken | `supabase/tests/candidate_discovery_test.sql` |
+| Kandidatenoverzicht: zoeken, filters, sorteren, pagineren, ongeldige parameters, uitnodigen, terugnavigeren | `candidate-discovery.spec.ts` (desktop/mobiel, lokale Supabase), `candidate-filters.spec.ts` |
 | Publieke pagina's op desktop/mobiel en Amsterdamse tijd | `public.spec.ts`, `timezone.spec.ts` |
 | Gedeelde opdrachtstatus, dekking per les, herhalingsurgentie en onderhandelen | `job-workflow.spec.ts` |
 | Geen geneste interactieve navigatie, één tabstop en Enter | `link-semantics.spec.ts` (desktop/mobiel) |
 | Segmentstatus, herhaling, vestigingsurgentie, tegenvoorstel en lege contactvelden | `hardening.spec.ts` (desktop/mobiel, lokale Supabase) |
 | Directe tegenvoorstel-/selectie-RPC's en VOG-datum in meerdere sessionzones | `supabase/tests/functional_hardening_test.sql` |
-| Kandidatenzoektocht: volledige set (>100 sportkoppelingen), totalen, paginering zonder duplicaten, filters, sorteringen met onbekend achteraan, beschikbaarheidsstatussen, autorisatie, demo-isolatie, privacy en pariteit met VOG/conflict/statistieken | `supabase/tests/candidate_discovery_test.sql` |
-| Kandidatenoverzicht: zoeken, filters, sorteren, pagineren, ongeldige parameters, uitnodigen, terugnavigeren | `candidate-discovery.spec.ts` (desktop/mobiel, lokale Supabase), `candidate-filters.spec.ts` |
 
 Iedere GitHub-run toont de fasen afzonderlijk. Het artifact
 `sportmatch-test-results-*` bewaart zeven dagen het HTML-/JSON-rapport, de
