@@ -359,6 +359,27 @@ test("kandidaten zoeken, filteren, sorteren, pagineren en uitnodigen over de vol
     await results.getByRole("link", { name: "Mijn poule", exact: true }).click();
     await expect(results.getByText("Nog geen instructeurs opgeslagen.")).toBeVisible();
 
+    // Applications inbox: every pending applicant with its statistics,
+    // independent of the candidate search paging.
+    expect((await admin.from("job_applications").insert(
+      instructorIds.map((id) => ({ job_id: openJob, instructor_id: id, status: "pending" })),
+    )).error).toBeNull();
+    await page.goto("/organisatie/kandidaten");
+    const inbox = page.locator("#reacties");
+    const rows = inbox.getByTestId("application-row");
+    await expect(rows).toHaveCount(total);
+    await expect(page.getByRole("navigation", { name: "Kandidaatsecties" })
+      .getByRole("link", { name: /Reacties/ })).toContainText(String(total));
+    const alphaRow = rows.filter({ hasText: `${prefix} Alpha` });
+    await expect(alphaRow.getByText("5,0", { exact: true })).toBeVisible();
+    await expect(alphaRow.getByText("100%", { exact: true })).toBeVisible();
+    const newRow = rows.filter({ hasText: `${prefix} Nieuw` });
+    await expect(newRow.getByText("Eerste klus")).toBeVisible();
+    await expect(newRow.getByText("Nieuw", { exact: true })).toBeVisible();
+    // Every row resolved a real name (no fallback placeholder).
+    await expect(rows.filter({ hasText: /^Instructeur/ })).toHaveCount(0);
+    await expect(rows.filter({ hasText: "Eerste klus" })).toHaveCount(total - 1);
+
     // Mobile and desktop layout.
     await page.goto(q(`&job=${openJob}`));
     if (testInfo.project.name === "mobile") {

@@ -593,6 +593,139 @@ begin
   end loop;
 end $$;
 
+-- ---------------------------------------------------------------------------
+-- Applicant summaries for the inbox: more than 200 pending applicants in one
+-- call, scoped, authorized and with the same statistics.
+-- ---------------------------------------------------------------------------
+reset role;
+insert into public.jobs (id, organization_id, location_id, created_by, job_type, sport_id,
+                         title, starts_on, start_time, end_time, pay_type, pay_hourly_rate_cents, status)
+values (pg_temp.cd('job_many'), pg_temp.cd('org_a'), pg_temp.cd('loc_utrecht'), pg_temp.cd('owner'), 'one_time',
+        (select id from public.sports where slug = 'fitness'), 'Many applicants',
+        date '2030-07-03', '18:00', '19:00', 'hourly', 4500, 'open');
+insert into auth.users (id, email, raw_user_meta_data)
+select pg_temp.cd('app_' || n), 'app-' || n || '@candidate-discovery.test',
+       jsonb_build_object('role', 'instructor', 'full_name', 'Applicant ' || lpad(n::text, 3, '0'))
+from generate_series(1, 130) n;
+insert into public.instructor_profiles (user_id)
+select pg_temp.cd('app_' || n) from generate_series(1, 130) n;
+-- 120 bulk + 130 new + alpha (reviews) + conflict (low reliability) pending;
+-- far withdrawn; the demo instructor's (cross-scope) application is ignored.
+insert into public.job_applications (job_id, instructor_id, status)
+select pg_temp.cd('job_many'), uid, 'pending'
+from (select pg_temp.cd('bulk_' || n) as uid from generate_series(1, 120) n
+      union all select pg_temp.cd('app_' || n) from generate_series(1, 130) n
+      union all select pg_temp.cd('alpha')
+      union all select pg_temp.cd('conflict')) applicants;
+insert into public.job_applications (job_id, instructor_id, status)
+values (pg_temp.cd('job_many'), pg_temp.cd('far'), 'withdrawn'),
+       (pg_temp.cd('job_many'), pg_temp.cd('demo_instr'), 'pending');
+
+do $$
+declare
+  v_fn regprocedure := 'public.organization_applicant_summaries(uuid,uuid,uuid)';
+begin
+  perform pg_temp.check((select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+                         where n.nspname = 'public' and p.proname = 'organization_applicant_summaries') = 1,
+                        'organization_applicant_summaries must not have overloads');
+  perform pg_temp.check((select prosecdef and proconfig @> array['search_path=""'] from pg_proc where oid = v_fn),
+                        'applicant summaries must be SECURITY DEFINER with an empty search_path');
+  perform pg_temp.check(not has_function_privilege('anon', v_fn, 'EXECUTE')
+                        and not has_function_privilege('public', v_fn, 'EXECUTE')
+                        and has_function_privilege('authenticated', v_fn, 'EXECUTE'),
+                        'applicant summary grants are wrong');
+  perform pg_temp.check(not has_function_privilege('authenticated', 'private.instructor_stats(uuid[])', 'EXECUTE')
+                        and not has_function_privilege('anon', 'private.instructor_stats(uuid[])', 'EXECUTE'),
+                        'internal statistics helper is executable by clients');
+  perform pg_temp.check(not exists (
+      select 1 from unnest((select proargnames from pg_proc where oid = v_fn)) name
+      where name in ('age', 'hourly_rate_cents', 'storage_path', 'work_experience', 'city_name')
+         or name ~* '(birth|kvk|btw|phone|email|contact|address|document)'),
+    'applicant summaries return private fields');
+end $$;
+
+set role authenticated;
+select pg_temp.act_as('alpha');
+select pg_temp.expect_error(format($$select * from public.organization_applicant_summaries(%L)$$, pg_temp.cd('org_a')),
+                            '42501', 'Geen toegang');
+select pg_temp.act_as('invited_member');
+select pg_temp.expect_error(format($$select * from public.organization_applicant_summaries(%L)$$, pg_temp.cd('org_a')),
+                            '42501', 'Geen toegang');
+select pg_temp.act_as('owner_b');
+select pg_temp.expect_error(format($$select * from public.organization_applicant_summaries(%L)$$, pg_temp.cd('org_a')),
+                            '42501', 'Geen toegang');
+select set_config('request.jwt.claim.sub', '', false);
+select pg_temp.expect_error(format($$select * from public.organization_applicant_summaries(%L)$$, pg_temp.cd('org_a')),
+                            '42501', 'Geen toegang');
+select pg_temp.act_as('owner');
+select pg_temp.expect_error(format($$select * from public.organization_applicant_summaries(%L, null, %L)$$,
+                                   pg_temp.cd('org_a'), pg_temp.cd('job_b')), '42501', 'Opdracht niet gevonden');
+select pg_temp.expect_error(format($$select * from public.organization_applicant_summaries(%L, %L)$$,
+                                   pg_temp.cd('org_a'), pg_temp.cd('loc_b')), '42501', 'Vestiging niet gevonden');
+select pg_temp.expect_error(format($$select * from public.organization_applicant_summaries(%L, %L, %L)$$,
+                                   pg_temp.cd('org_a'), pg_temp.cd('loc_amsterdam'), pg_temp.cd('job_many')),
+                            '42501', 'Opdracht niet gevonden');
+
+do $$
+declare
+  v_org uuid := pg_temp.cd('org_a');
+begin
+  -- 250 + alpha + conflict on job_many, plus the earlier applicant on job_open.
+  perform pg_temp.check((select count(*) from public.organization_applicant_summaries(v_org)) = 253,
+    'not every pending applicant is summarised');
+  perform pg_temp.check((select count(distinct user_id) from public.organization_applicant_summaries(v_org)) = 253,
+    'duplicate applicant summaries');
+  perform pg_temp.check((select count(*) from public.organization_applicant_summaries(v_org, null, pg_temp.cd('job_many'))) = 252,
+    'job filter');
+  perform pg_temp.check(
+    (select array_agg(full_name) from public.organization_applicant_summaries(v_org, null, pg_temp.cd('job_open')))
+      = array['Reagerende Kandidaat'], 'job filter for the single applicant');
+  perform pg_temp.check((select count(*) from public.organization_applicant_summaries(v_org, pg_temp.cd('loc_amsterdam'))) = 0,
+    'location filter');
+  perform pg_temp.check(not exists (
+      select 1 from public.organization_applicant_summaries(v_org)
+      where user_id in (pg_temp.cd('far'), pg_temp.cd('demo_instr'))),
+    'withdrawn or cross-scope application summarised');
+  perform pg_temp.check(
+    (select array_agg(user_id) from public.organization_applicant_summaries(v_org) where in_pool)
+      = array[pg_temp.cd('bulk_7')], 'pool flag');
+  perform pg_temp.check(
+    (select avg_rating = 5 and review_count = 1 and reliability_score = 100
+     from public.organization_applicant_summaries(v_org) where user_id = pg_temp.cd('alpha')),
+    'alpha statistics');
+  perform pg_temp.check(
+    (select avg_rating is null and review_count = 0 and reliability_score = 32
+     from public.organization_applicant_summaries(v_org) where user_id = pg_temp.cd('conflict')),
+    'known low reliability without reviews');
+  perform pg_temp.check(
+    (select count(*) from public.organization_applicant_summaries(v_org)
+     where avg_rating is null and reliability_score is null and review_count = 0) = 251,
+    'unknown statistics must stay NULL, never 0');
+end $$;
+
+-- Parity with instructor_public_stats for every applicant.
+do $$
+declare
+  r record;
+begin
+  for r in select * from public.organization_applicant_summaries(pg_temp.cd('org_a')) loop
+    perform pg_temp.check(
+      (select st.avg_rating is not distinct from r.avg_rating
+              and st.review_count = r.review_count
+              and st.completed_count = r.completed_count
+              and st.reliability_score is not distinct from r.reliability_score
+       from public.instructor_public_stats(r.user_id) st),
+      'applicant statistics differ from instructor_public_stats for ' || r.user_id);
+  end loop;
+end $$;
+
+-- A demo organization only sees applicants inside its own demo.
+select pg_temp.act_as('demo_owner');
+do $$ begin
+  perform pg_temp.check(not exists (select 1 from public.organization_applicant_summaries(pg_temp.cd('org_demo'))),
+    'demo organization sees applicants of another scope');
+end $$;
+
 reset role;
 rollback;
 select 'CANDIDATE DISCOVERY TESTS GESLAAGD' as resultaat;

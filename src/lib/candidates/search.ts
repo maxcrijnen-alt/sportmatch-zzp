@@ -136,3 +136,59 @@ export async function searchCandidates(
     error: null,
   };
 }
+
+/** Samenvatting van een instructeur met een openstaande reactie. */
+export interface ApplicantSummary {
+  id: string;
+  name: string;
+  avatarUrl: string | null;
+  /** `null` zolang er geen vrijgegeven reviews zijn; nooit 0. */
+  avgRating: number | null;
+  reviewCount: number;
+  completedCount: number;
+  /** `null` zonder bevestigde opdrachten; nooit 0. */
+  reliability: number | null;
+  inPool: boolean;
+}
+
+interface ApplicantSummaryRow {
+  user_id: string;
+  full_name: string;
+  avatar_url: string | null;
+  avg_rating: number | string | null;
+  review_count: number;
+  completed_count: number;
+  reliability_score: number | string | null;
+  in_pool: boolean;
+}
+
+/**
+ * Statistieken voor alle instructeurs met een openstaande reactie, in één
+ * aanroep (`organization_applicant_summaries`), ongeacht het aantal.
+ */
+export async function getApplicantSummaries(
+  supabase: SupabaseClient,
+  context: { organizationId: string; locationId: string | null; jobId: string | null },
+): Promise<{ summaries: Map<string, ApplicantSummary>; error: string | null }> {
+  const { data, error } = await supabase.rpc("organization_applicant_summaries", {
+    p_organization: context.organizationId,
+    p_location: context.locationId,
+    p_job: context.jobId,
+  });
+  const summaries = new Map<string, ApplicantSummary>();
+  if (error) return { summaries, error: error.message };
+
+  for (const row of (data as ApplicantSummaryRow[] | null) ?? []) {
+    summaries.set(row.user_id, {
+      id: row.user_id,
+      name: row.full_name,
+      avatarUrl: row.avatar_url,
+      avgRating: Number(row.review_count) > 0 ? toNumber(row.avg_rating) : null,
+      reviewCount: Number(row.review_count),
+      completedCount: Number(row.completed_count),
+      reliability: toNumber(row.reliability_score),
+      inPool: row.in_pool,
+    });
+  }
+  return { summaries, error: null };
+}

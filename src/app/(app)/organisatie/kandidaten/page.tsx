@@ -30,7 +30,11 @@ import {
   RELATION_FILTERS,
   type CandidateFilters as Filters,
 } from "@/lib/candidates/filters";
-import { searchCandidates, type Candidate } from "@/lib/candidates/search";
+import {
+  getApplicantSummaries,
+  searchCandidates,
+  type ApplicantSummary,
+} from "@/lib/candidates/search";
 import { formatDate } from "@/lib/labels";
 import { getOrgContext } from "@/lib/org/context";
 import { resolveLocationFilter } from "@/lib/org/location-filter";
@@ -54,8 +58,6 @@ interface OpenJobRow {
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-// Applicant summaries come from the same search, in bounded pages.
-const MAX_APPLICANT_SUMMARY_PAGES = 10;
 
 function formatRating(value: number) {
   return value.toLocaleString("nl-NL", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
@@ -133,21 +135,18 @@ export default async function KandidatenPage({
   const result = await searchCandidates(supabase, filters, searchContext, CANDIDATE_PAGE_SIZE);
   const currentFilters: Filters = { ...filters, page: result.page };
 
-  // Rating and reliability for the applications inbox, without per-row RPCs.
-  const applicantSummaries = new Map<string, Candidate>();
-  if (applications.length > 0) {
-    for (let page = 1; page <= MAX_APPLICANT_SUMMARY_PAGES; page++) {
-      const summary = await searchCandidates(
-        supabase,
-        { ...DEFAULT_FILTERS, relation: "gereageerd", page },
-        searchContext,
-        CANDIDATE_PAGE_SIZE,
-      );
-      if (summary.error || summary.page !== page) break;
-      for (const candidate of summary.candidates) applicantSummaries.set(candidate.id, candidate);
-      if (page >= summary.pageCount) break;
-    }
-  }
+  // Rating and reliability for the applications inbox: one call for all
+  // pending applicants, independent of the candidate search and its paging.
+  const applicantSummaries =
+    applications.length > 0
+      ? (
+          await getApplicantSummaries(supabase, {
+            organizationId,
+            locationId: selectedLocationId,
+            jobId: jobParam,
+          })
+        ).summaries
+      : new Map<string, ApplicantSummary>();
   const applicantProfiles = new Map<string, { name: string; avatar: string | null }>();
   const missingApplicantIds = Array.from(
     new Set(
@@ -289,6 +288,7 @@ export default async function KandidatenPage({
               return (
                 <div
                   className="grid gap-3 px-4 py-4 sm:px-5 lg:grid-cols-[minmax(0,17rem)_minmax(0,1fr)_auto] lg:items-center lg:gap-6"
+                  data-testid="application-row"
                   key={application.id}
                 >
                   <div className="flex min-w-0 items-center gap-3">
